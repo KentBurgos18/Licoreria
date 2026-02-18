@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
+    <link rel="apple-touch-icon" href="/public/img/icono-LB.png">
+    <link rel="manifest" href="/public/manifest.webmanifest">
+    <title>Iniciar Sesión - LOCOBAR</title>
+    <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 440px;
+            width: 100%;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .logo-icon {
+            max-width: 140px;
+            height: auto;
+            display: block;
+            margin: 0 auto 4px auto;
+        }
+        .login-title-wrap {
+            display: inline-block;
+            text-align: center;
+        }
+        .login-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin: 0;
+            letter-spacing: 0.02em;
+        }
+        .login-separator {
+            width: 100%;
+            height: 2px;
+            background: #0f3460;
+            margin: 4px 0;
+            border: none;
+        }
+        .login-slogan {
+            font-size: 0.95rem;
+            color: #6c757d;
+            margin: 0;
+        }
+        .form-control:focus {
+            border-color: #0f3460;
+            box-shadow: 0 0 0 0.25rem rgba(15, 52, 96, 0.25);
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+            border: none;
+            padding: 12px;
+            font-weight: 600;
+        }
+        .btn-login:hover {
+            background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+        }
+        .input-group-text {
+            background-color: #f8f9fa;
+            border-right: none;
+        }
+        .input-group .form-control {
+            border-left: none;
+        }
+        .input-group:focus-within .input-group-text {
+            border-color: #0f3460;
+        }
+        .footer-text {
+            text-align: center;
+            margin-top: 25px;
+            color: #6c757d;
+            font-size: 0.85em;
+        }
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .user-type-badge {
+            display: none;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <img src="/public/img/icono-LB.png" alt="LOCOBAR" class="logo-icon">
+            <div class="login-title-wrap">
+                <h1 class="login-title">LOCOBAR</h1>
+                <hr class="login-separator">
+            </div>
+            <p class="login-slogan" id="brandSloganText">Donde el sabor se vuelve locura</p>
+        </div>
+        
+        <div id="alertContainer"></div>
+        
+        <form id="loginForm">
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                    <input type="email" class="form-control" id="email" required 
+                           placeholder="tu@email.com" autocomplete="email">
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="form-label">Contraseña</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <input type="password" class="form-control" id="password" required 
+                           placeholder="••••••••" autocomplete="current-password">
+                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-login w-100" id="loginBtn">
+                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+            </button>
+        </form>
+        
+        <div class="text-center mt-3">
+            <a href="#" id="forgotPasswordLink" style="color: #0f3460; text-decoration: none; font-size: 0.9em;">
+                <i class="bi bi-question-circle"></i> ¿Olvidaste tu contraseña?
+            </a>
+        </div>
+        
+        <div class="register-link">
+            <p class="mb-0">¿No tienes cuenta? <a href="/customer/register">Regístrate aquí</a></p>
+        </div>
+        
+        <div class="footer-text">
+            <p class="mb-0">© 2026 LOCOBAR</p>
+        </div>
+    </div>
+
+    <!-- Modal 1: Solicitar código de recuperación -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-key"></i> Recuperar Contraseña
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" id="closeForgotPasswordModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="forgotPasswordStep1">
+                        <p class="mb-3">Ingresa tu correo electrónico para recibir un código de verificación:</p>
+                        <div class="mb-3">
+                            <label class="form-label">Correo Electrónico</label>
+                            <input type="email" class="form-control" id="forgotPasswordEmail" 
+                                   placeholder="tu@email.com" required autocomplete="email">
+                        </div>
+                        <div id="forgotPasswordError" class="alert alert-danger" style="display: none;"></div>
+                    </div>
+                    <div id="forgotPasswordStep2" style="display: none;">
+                        <p class="mb-3">Ingresa el código de verificación que recibiste en tu correo:</p>
+                        <div class="mb-3">
+                            <label class="form-label">Código de Verificación</label>
+                            <input type="text" class="form-control text-center" id="forgotPasswordCode" 
+                                   placeholder="000000" maxlength="6" style="font-size: 1.5em; letter-spacing: 0.5em;" required>
+                            <small class="form-text text-muted">El código expira en 15 minutos</small>
+                        </div>
+                        <div id="forgotPasswordCodeError" class="alert alert-danger" style="display: none;"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="cancelForgotPassword">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="sendCodeBtn">
+                        <span class="btn-text">Enviar Código</span>
+                        <span class="btn-spinner" style="display: none;">
+                            <span class="spinner-border spinner-border-sm me-2"></span>Enviando...
+                        </span>
+                    </button>
+                    <button type="button" class="btn btn-primary" id="verifyCodeBtn" style="display: none;">
+                        <span class="btn-text">Validar Código</span>
+                        <span class="btn-spinner" style="display: none;">
+                            <span class="spinner-border spinner-border-sm me-2"></span>Validando...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Cambiar contraseña con clave temporal -->
+    <div class="modal fade" id="resetPasswordModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-shield-lock"></i> Cambiar Contraseña
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Ingresa la clave temporal que recibiste en tu correo y tu nueva contraseña:</p>
+                    <div class="mb-3">
+                        <label class="form-label">Clave Temporal</label>
+                        <input type="text" class="form-control" id="resetTempPassword" 
+                               placeholder="Ingresa la clave temporal" required>
+                        <small class="form-text text-muted">Revisa tu correo electrónico. La clave temporal expira en 5 minutos.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nueva Contraseña</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="resetNewPassword" 
+                                   placeholder="Mínimo 6 caracteres" required minlength="6">
+                            <button class="btn btn-outline-secondary" type="button" id="toggleNewPassword">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirmar Nueva Contraseña</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="resetConfirmPassword" 
+                                   placeholder="Repite la contraseña" required minlength="6">
+                            <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div id="passwordMatchError" class="text-danger mt-2" style="display: none;">
+                            Las contraseñas no coinciden
+                        </div>
+                    </div>
+                    <div id="resetPasswordError" class="alert alert-danger" style="display: none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary w-100" id="resetPasswordBtn">
+                        <span class="btn-text">Actualizar Contraseña</span>
+                        <span class="btn-spinner" style="display: none;">
+                            <span class="spinner-border spinner-border-sm me-2"></span>Actualizando...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/libs/js/jquery.min.js"></script>
+    <script src="/libs/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Verificar si ya está logueado
+        $(document).ready(function() {
+            // Cargar texto/eslogan y título de pestaña configurados
+            $.ajax({
+                url: '/api/public/brand-slogan',
+                method: 'GET',
+                success: function(response) {
+                    if (response) {
+                        if (response.brandSlogan) $('#brandSloganText').text(response.brandSlogan);
+                        if (response.pageTitleLogin) document.title = response.pageTitleLogin;
+                    }
+                }
+            });
+
+            // Verificar token de admin
+            const adminToken = localStorage.getItem('adminToken');
+            if (adminToken) {
+                $.ajax({
+                    url: '/api/admin/auth/me',
+                    method: 'GET',
+                    headers: { 'Authorization': 'Bearer ' + adminToken },
+                    success: function() {
+                        window.location.href = '/dashboard';
+                    },
+                    error: function() {
+                        localStorage.removeItem('adminToken');
+                        localStorage.removeItem('adminUser');
+                    }
+                });
+            }
+            
+            // Verificar token de cliente
+            const customerToken = localStorage.getItem('customerToken');
+            if (customerToken) {
+                $.ajax({
+                    url: '/api/auth/me',
+                    method: 'GET',
+                    headers: { 'Authorization': 'Bearer ' + customerToken },
+                    success: function() {
+                        window.location.href = '/customer/catalog';
+                    },
+                    error: function() {
+                        localStorage.removeItem('customerToken');
+                        localStorage.removeItem('customer');
+                    }
+                });
+            }
+        });
+
+        // Toggle mostrar/ocultar contraseña
+        $('#togglePassword').click(function() {
+            const passwordInput = $('#password');
+            const icon = $(this).find('i');
+            
+            if (passwordInput.attr('type') === 'password') {
+                passwordInput.attr('type', 'text');
+                icon.removeClass('bi-eye').addClass('bi-eye-slash');
+            } else {
+                passwordInput.attr('type', 'password');
+                icon.removeClass('bi-eye-slash').addClass('bi-eye');
+            }
+        });
+
+        // Manejar submit del formulario
+        $('#loginForm').submit(function(e) {
+            e.preventDefault();
+            
+            const email = $('#email').val().trim();
+            const password = $('#password').val();
+            
+            if (!email || !password) {
+                showAlert('Por favor ingresa email y contraseña', 'warning');
+                return;
+            }
+            
+            // Deshabilitar botón mientras procesa
+            $('#loginBtn').prop('disabled', true).html(
+                '<span class="spinner-border spinner-border-sm me-2"></span>Verificando...'
+            );
+            
+            // Login unificado
+            $.ajax({
+                url: '/api/auth/login',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ email, password }),
+                success: function(response) {
+                    // Determinar tipo de usuario y guardar datos correspondientes
+                    if (response.userType === 'admin') {
+                        localStorage.setItem('adminToken', response.token);
+                        localStorage.setItem('adminUser', JSON.stringify(response.user));
+                        var roleLabel = response.user.role === 'ADMIN' ? 'Administrador' : (response.user.role === 'MANAGER' ? 'Encargado' : 'Empleado');
+                        showAlert('¡Bienvenido, ' + response.user.name + '! (' + roleLabel + ')', 'success');
+                    } else {
+                        localStorage.setItem('customerToken', response.token);
+                        localStorage.setItem('customer', JSON.stringify(response.user));
+                        showAlert('¡Bienvenido, ' + response.user.name + '!', 'success');
+                    }
+                    
+                    // Redirigir según tipo de usuario (replace para que Atrás no vuelva al login)
+                    setTimeout(() => {
+                        window.location.replace(response.redirectTo);
+                    }, 1000);
+                },
+                error: function(xhr) {
+                    const error = xhr.responseJSON?.error || 'Error al iniciar sesión';
+                    showAlert(error, 'danger');
+                    
+                    $('#loginBtn').prop('disabled', false).html(
+                        '<i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión'
+                    );
+                }
+            });
+        });
+
+        // Si vuelven con Atrás y ya están logueados, redirigir de inmediato (evita pantalla "Verificando...")
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                var customerToken = localStorage.getItem('customerToken');
+                var adminToken = localStorage.getItem('adminToken');
+                if (adminToken) {
+                    window.location.replace('/dashboard');
+                    return;
+                }
+                if (customerToken) {
+                    window.location.replace('/customer/catalog');
+                }
+            }
+        });
+
+        function showAlert(message, type) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            $('#alertContainer').html(alertHtml);
+        }
+
+        // Variables para el flujo de recuperación de contraseña
+        let resetEmail = '';
+
+        // Abrir modal de recuperación de contraseña
+        $('#forgotPasswordLink').click(function(e) {
+            e.preventDefault();
+            resetEmail = '';
+            $('#forgotPasswordEmail').val('');
+            $('#forgotPasswordCode').val('');
+            $('#forgotPasswordStep1').show();
+            $('#forgotPasswordStep2').hide();
+            $('#sendCodeBtn').show();
+            $('#verifyCodeBtn').hide();
+            $('#forgotPasswordError').hide();
+            $('#forgotPasswordCodeError').hide();
+            const modal = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
+            modal.show();
+        });
+
+        // Enviar código de verificación
+        $('#sendCodeBtn').click(function() {
+            const email = $('#forgotPasswordEmail').val().trim();
+            
+            if (!email) {
+                $('#forgotPasswordError').text('Por favor ingresa tu correo electrónico').show();
+                return;
+            }
+
+            // Validar formato de email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                $('#forgotPasswordError').text('Por favor ingresa un correo electrónico válido').show();
+                return;
+            }
+
+            resetEmail = email;
+            const btn = $(this);
+            const btnText = btn.find('.btn-text');
+            const btnSpinner = btn.find('.btn-spinner');
+            
+            btn.prop('disabled', true);
+            btnText.hide();
+            btnSpinner.show();
+
+            $.ajax({
+                url: '/api/auth/forgot-password',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ email, tenantId: 1 }),
+                success: function(response) {
+                    $('#forgotPasswordError').hide();
+                    $('#forgotPasswordStep1').hide();
+                    $('#forgotPasswordStep2').show();
+                    $('#sendCodeBtn').hide();
+                    $('#verifyCodeBtn').show();
+                    btn.prop('disabled', false);
+                    btnText.show();
+                    btnSpinner.hide();
+                    $('#forgotPasswordCode').focus();
+                },
+                error: function(xhr) {
+                    let error = xhr.responseJSON?.error || 'Error al enviar código';
+                    // Si el error es "Not found" o similar, mostrar mensaje más amigable
+                    if (xhr.status === 404 || error.toLowerCase().includes('not found')) {
+                        error = 'No se encontró una cuenta con este correo electrónico. Verifica que el email sea correcto.';
+                    }
+                    $('#forgotPasswordError').text(error).show();
+                    btn.prop('disabled', false);
+                    btnText.show();
+                    btnSpinner.hide();
+                }
+            });
+        });
+
+        // Validar código de verificación
+        $('#verifyCodeBtn').click(function() {
+            const code = $('#forgotPasswordCode').val().trim();
+            
+            if (!code || code.length !== 6) {
+                $('#forgotPasswordCodeError').text('Por favor ingresa el código de 6 dígitos').show();
+                return;
+            }
+
+            const btn = $(this);
+            const btnText = btn.find('.btn-text');
+            const btnSpinner = btn.find('.btn-spinner');
+            
+            btn.prop('disabled', true);
+            btnText.hide();
+            btnSpinner.show();
+
+            $.ajax({
+                url: '/api/auth/verify-reset-code',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ email: resetEmail, code, tenantId: 1 }),
+                success: function(response) {
+                    // Cerrar modal de código
+                    bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal')).hide();
+                    
+                    // Abrir modal de cambio de contraseña
+                    $('#resetTempPassword').val('');
+                    $('#resetNewPassword').val('');
+                    $('#resetConfirmPassword').val('');
+                    $('#resetPasswordError').hide();
+                    $('#passwordMatchError').hide();
+                    const resetModal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
+                    resetModal.show();
+                    
+                    btn.prop('disabled', false);
+                    btnText.show();
+                    btnSpinner.hide();
+                },
+                error: function(xhr) {
+                    const error = xhr.responseJSON?.error || 'Error al validar código';
+                    $('#forgotPasswordCodeError').text(error).show();
+                    btn.prop('disabled', false);
+                    btnText.show();
+                    btnSpinner.hide();
+                }
+            });
+        });
+
+        // Validar que las contraseñas coincidan mientras se escribe
+        $('#resetConfirmPassword').on('input', function() {
+            const newPassword = $('#resetNewPassword').val();
+            const confirmPassword = $(this).val();
+            
+            if (confirmPassword && newPassword !== confirmPassword) {
+                $('#passwordMatchError').show();
+            } else {
+                $('#passwordMatchError').hide();
+            }
+        });
+
+        $('#resetNewPassword').on('input', function() {
+            const newPassword = $(this).val();
+            const confirmPassword = $('#resetConfirmPassword').val();
+            
+            if (confirmPassword && newPassword !== confirmPassword) {
+                $('#passwordMatchError').show();
+            } else {
+                $('#passwordMatchError').hide();
+            }
+        });
+
+        // Toggle mostrar/ocultar nueva contraseña
+        $('#toggleNewPassword').click(function() {
+            const passwordInput = $('#resetNewPassword');
+            const icon = $(this).find('i');
+            
+            if (passwordInput.attr('type') === 'password') {
+                passwordInput.attr('type', 'text');
+                icon.removeClass('bi-eye').addClass('bi-eye-slash');
+            } else {
+                passwordInput.attr('type', 'password');
+                icon.removeClass('bi-eye-slash').addClass('bi-eye');
+            }
+        });
+
+        // Toggle mostrar/ocultar confirmación de contraseña
+        $('#toggleConfirmPassword').click(function() {
+            const passwordInput = $('#resetConfirmPassword');
+            const icon = $(this).find('i');
+            
+            if (passwordInput.attr('type') === 'password') {
+                passwordInput.attr('type', 'text');
+                icon.removeClass('bi-eye').addClass('bi-eye-slash');
+            } else {
+                passwordInput.attr('type', 'password');
+                icon.removeClass('bi-eye-slash').addClass('bi-eye');
+            }
+        });
+
+        // Actualizar contraseña
+        $('#resetPasswordBtn').click(function() {
+            const tempPassword = $('#resetTempPassword').val().trim();
+            const newPassword = $('#resetNewPassword').val();
+            const confirmPassword = $('#resetConfirmPassword').val();
+
+            // Validaciones
+            if (!tempPassword) {
+                $('#resetPasswordError').text('Por favor ingresa la clave temporal').show();
+                return;
+            }
+
+            if (!newPassword || newPassword.length < 6) {
+                $('#resetPasswordError').text('La contraseña debe tener al menos 6 caracteres').show();
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                $('#resetPasswordError').text('Las contraseñas no coinciden').show();
+                return;
+            }
+
+            const btn = $(this);
+            const btnText = btn.find('.btn-text');
+            const btnSpinner = btn.find('.btn-spinner');
+            
+            btn.prop('disabled', true);
+            btnText.hide();
+            btnSpinner.show();
+
+            $.ajax({
+                url: '/api/auth/reset-password',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    email: resetEmail,
+                    tempPassword,
+                    newPassword,
+                    confirmPassword,
+                    tenantId: 1
+                }),
+                success: function(response) {
+                    showAlert('Contraseña actualizada exitosamente. Redirigiendo al login...', 'success');
+                    
+                    // Cerrar modal
+                    bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal')).hide();
+                    
+                    // Refrescar página después de 2 segundos
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                },
+                error: function(xhr) {
+                    const error = xhr.responseJSON?.error || 'Error al actualizar contraseña';
+                    $('#resetPasswordError').text(error).show();
+                    btn.prop('disabled', false);
+                    btnText.show();
+                    btnSpinner.hide();
+                }
+            });
+        });
+
+        // Permitir Enter para enviar código
+        $('#forgotPasswordEmail').on('keypress', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                $('#sendCodeBtn').click();
+            }
+        });
+
+        // Permitir Enter para validar código
+        $('#forgotPasswordCode').on('keypress', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                $('#verifyCodeBtn').click();
+            }
+        });
+
+        // Limpiar campos del modal al cerrar
+        // Nota: NO reiniciamos resetEmail aquí para conservar el correo
+        // durante el flujo de cambio de contraseña (evita errores de "Todos los campos son requeridos").
+        $('#forgotPasswordModal').on('hidden.bs.modal', function() {
+            $('#forgotPasswordEmail').val('');
+            $('#forgotPasswordCode').val('');
+            $('#forgotPasswordStep1').show();
+            $('#forgotPasswordStep2').hide();
+            $('#sendCodeBtn').show();
+            $('#verifyCodeBtn').hide();
+            $('#forgotPasswordError').hide();
+            $('#forgotPasswordCodeError').hide();
+        });
+    </script>
+</body>
+</html>

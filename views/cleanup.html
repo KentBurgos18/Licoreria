@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpieza de Datos - LOCOBAR</title>
+    <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 800px;
+        }
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .danger-box {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">
+            <i class="bi bi-trash3"></i> Limpieza de Clientes y Ventas
+        </h1>
+        
+        <div class="danger-box">
+            <h5><i class="bi bi-exclamation-triangle"></i> ⚠️ ADVERTENCIA</h5>
+            <p><strong>Esta acción eliminará:</strong></p>
+            <ul>
+                <li>Todos los clientes excepto el primero (cliente de prueba)</li>
+                <li><strong>TODAS las ventas</strong> del sistema</li>
+                <li><strong>TODOS los items de ventas</strong></li>
+                <li>Pagos relacionados con clientes eliminados</li>
+                <li>Créditos relacionados con clientes eliminados</li>
+                <li>Participantes de compras grupales relacionados</li>
+            </ul>
+            <p class="mb-0"><strong>Esta acción NO se puede deshacer.</strong></p>
+        </div>
+        
+        <div class="warning-box">
+            <p><strong>El cliente de prueba que se conservará será el primero en la base de datos (ID más bajo).</strong></p>
+        </div>
+        
+        <div id="loading" class="text-center" style="display: none;">
+            <div class="spinner-border text-danger" role="status">
+                <span class="visually-hidden">Eliminando...</span>
+            </div>
+            <p class="mt-2">Procesando limpieza...</p>
+        </div>
+        
+        <div id="results"></div>
+        
+        <div class="mt-4">
+            <button class="btn btn-danger btn-lg w-100" onclick="executeCleanup()" id="cleanupBtn">
+                <i class="bi bi-trash3"></i> Ejecutar Limpieza
+            </button>
+        </div>
+        
+        <div class="mt-3">
+            <a href="/dashboard" class="btn btn-secondary w-100">
+                <i class="bi bi-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </div>
+
+    <script src="/libs/js/jquery.min.js"></script>
+    <script src="/libs/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function executeCleanup() {
+            if (!confirm('¿Estás SEGURO de que quieres eliminar todos los clientes (excepto el de prueba) y todas las ventas?\n\nEsta acción NO se puede deshacer.')) {
+                return;
+            }
+            
+            if (!confirm('Última confirmación: ¿Realmente quieres continuar?')) {
+                return;
+            }
+            
+            $('#loading').show();
+            $('#results').html('');
+            $('#cleanupBtn').prop('disabled', true);
+            
+            $.ajax({
+                url: '/api/customers/cleanup',
+                method: 'POST',
+                contentType: 'application/json',
+                success: function(response) {
+                    $('#loading').hide();
+                    
+                    if (response.success) {
+                        let html = `
+                            <div class="alert alert-success">
+                                <h5><i class="bi bi-check-circle"></i> Limpieza Completada Exitosamente</h5>
+                            </div>
+                            
+                            <div class="card mb-3">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">Cliente Conservado</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>ID:</strong> ${response.summary.testCustomer.id}</p>
+                                    <p><strong>Nombre:</strong> ${response.summary.testCustomer.name}</p>
+                                    <p><strong>Email:</strong> ${response.summary.testCustomer.email || 'N/A'}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-3">
+                                <div class="card-header bg-danger text-white">
+                                    <h5 class="mb-0">Registros Eliminados</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li><strong>Clientes:</strong> ${response.summary.deleted.customers}</li>
+                                        <li><strong>Ventas:</strong> ${response.summary.deleted.sales}</li>
+                                        <li><strong>Items de Ventas:</strong> ${response.summary.deleted.saleItems}</li>
+                                        <li><strong>Pagos:</strong> ${response.summary.deleted.payments}</li>
+                                        <li><strong>Créditos:</strong> ${response.summary.deleted.credits}</li>
+                                        <li><strong>Participantes:</strong> ${response.summary.deleted.participants}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0">Estado Final</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li><strong>Clientes restantes:</strong> ${response.summary.remaining.customers}</li>
+                                        <li><strong>Ventas restantes:</strong> ${response.summary.remaining.sales}</li>
+                                        <li><strong>Items de ventas restantes:</strong> ${response.summary.remaining.saleItems}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        `;
+                        
+                        $('#results').html(html);
+                    } else {
+                        $('#results').html(`
+                            <div class="alert alert-danger">
+                                <h5><i class="bi bi-x-circle"></i> Error</h5>
+                                <p>${response.message || 'Error al ejecutar la limpieza'}</p>
+                            </div>
+                        `);
+                    }
+                },
+                error: function(xhr) {
+                    $('#loading').hide();
+                    const error = xhr.responseJSON?.message || xhr.responseJSON?.error || 'Error al ejecutar la limpieza';
+                    $('#results').html(`
+                        <div class="alert alert-danger">
+                            <h5><i class="bi bi-x-circle"></i> Error</h5>
+                            <p>${error}</p>
+                        </div>
+                    `);
+                },
+                complete: function() {
+                    $('#cleanupBtn').prop('disabled', false);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

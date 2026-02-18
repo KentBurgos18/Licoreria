@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f3460">
+    <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
+    <link rel="apple-touch-icon" href="/public/img/icono-LB.png">
+    <link rel="manifest" href="/public/manifest.webmanifest">
+    <title>LOCOBAR</title>
+    <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .navbar-custom {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        .navbar-brand img {
+            max-height: 40px;
+            width: auto;
+        }
+        #userMenu .user-name-text { display: none; }
+        @media (min-width: 576px) {
+            #userMenu .user-name-text { display: inline; }
+        }
+        #spa-loading {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.2s ease;
+        }
+        #spa-loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        /* Pantalla completa en móvil: respetar notch y barra de inicio */
+        html, body {
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        body {
+            -webkit-overflow-scrolling: touch;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar (común a todas las vistas) -->
+    <nav class="navbar navbar-dark navbar-custom">
+        <div class="container-fluid">
+            <a class="navbar-brand spa-link d-flex align-items-center" href="/customer/catalog" data-spa-href="/customer/catalog">
+                <img src="/public/img/banner-LB.png" alt="LOCOBAR">
+            </a>
+            <div class="d-flex align-items-center">
+                <div class="dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false" title="Mi cuenta">
+                        <i class="bi bi-person-circle fs-4"></i>
+                        <span class="user-name-text ms-1" id="userName">Usuario</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item spa-link" href="/customer/orders" data-spa-href="/customer/orders"><i class="bi bi-receipt"></i> Mis Pedidos</a></li>
+                        <li><a class="dropdown-item spa-link" href="/customer/credits" data-spa-href="/customer/credits"><i class="bi bi-credit-card"></i> Crédito que está debiendo</a></li>
+                        <li><a class="dropdown-item spa-link" href="/customer/group-purchases" data-spa-href="/customer/group-purchases"><i class="bi bi-people"></i> Compras Grupales</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenedor donde se inyecta cada vista (sin recargar la página) -->
+    <main id="app-content"></main>
+
+    <!-- Indicador de carga (como Rollercoin) -->
+    <div id="spa-loading" aria-hidden="true">
+        <div class="text-center">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2 text-muted">Cargando...</p>
+        </div>
+    </div>
+
+    <script src="/libs/js/jquery.min.js"></script>
+    <script src="/libs/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function logout() {
+            localStorage.removeItem('customerToken');
+            localStorage.removeItem('customer');
+            localStorage.removeItem('customerCart');
+            window.location.href = '/customer/login';
+        }
+        var customer = JSON.parse(localStorage.getItem('customer')) || null;
+        if (customer) {
+            document.getElementById('userName').textContent = customer.name;
+        }
+    </script>
+    <script src="/js/customer-spa-router.js"></script>
+</body>
+</html>

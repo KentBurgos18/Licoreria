@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f3460">
+    <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
+    <title>Carrito - LOCOBAR</title>
+    <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .navbar-custom {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        /* Tarjeta de producto compacta: imagen a la izquierda (estrecha), contenido a la derecha */
+        .cart-item {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            gap: 12px;
+        }
+        .cart-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .cart-item-image-wrap {
+            flex-shrink: 0;
+            width: 90px;
+            height: 90px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+        .cart-item-image-wrap img,
+        .cart-item-image-wrap .cart-image-placeholder {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .cart-image-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ccc;
+            font-size: 2em;
+        }
+        .cart-item-body {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .cart-item-body h5 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0;
+            line-height: 1.3;
+        }
+        .cart-item-price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2px;
+        }
+        /* Controles de cantidad agrupados y ovalados */
+        .quantity-controls {
+            display: inline-flex;
+            align-items: stretch;
+            background: #f8f9fa;
+            border-radius: 20px;
+            border: 1px solid #dee2e6;
+            overflow: hidden;
+            height: 36px;
+        }
+        .quantity-controls .btn {
+            flex: 1;
+            min-width: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            border: none;
+            background: transparent;
+            padding: 0;
+            margin: 0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .quantity-controls .btn:hover {
+            background: rgba(0,0,0,0.08);
+        }
+        .quantity-controls .btn-danger {
+            color: #dc3545;
+        }
+        .quantity-controls .btn-danger:hover {
+            background: rgba(220, 53, 69, 0.1);
+        }
+        .quantity-controls span {
+            flex: 1;
+            min-width: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-left: 1px solid #dee2e6;
+            border-right: 1px solid #dee2e6;
+        }
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .page-header h2 {
+            margin: 0;
+            font-size: 1.3rem;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .btn-back-shopping {
+            white-space: nowrap;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+        .page-header-spacer {
+            visibility: hidden;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+        /* Responsivo */
+        @media (max-width: 768px) {
+            .cart-item {
+                padding: 10px;
+            }
+            .cart-item-image-wrap {
+                width: 70px;
+                height: 70px;
+            }
+            .cart-item-body h5 {
+                font-size: 0.9rem;
+            }
+            .page-header h2 {
+                font-size: 1.1rem;
+            }
+            .btn-back-shopping {
+                padding: 4px 8px;
+                font-size: 0.75rem;
+            }
+            .page-header-spacer {
+                display: none;
+            }
+        }
+        @media (max-width: 576px) {
+            .user-name-text {
+                display: none;
+            }
+            .cart-item-image-wrap {
+                width: 60px;
+                height: 60px;
+            }
+        }
+        body {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark navbar-custom">
+        <div class="container-fluid">
+            <a class="navbar-brand spa-link" href="/customer/catalog">
+                <i class="bi bi-shop"></i> LOCOBAR
+            </a>
+            <div class="d-flex align-items-center">
+                <div class="dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false" title="Mi cuenta">
+                        <i class="bi bi-person-circle fs-4"></i>
+                        <span class="user-name-text ms-1" id="userName">Usuario</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item spa-link" href="/customer/orders"><i class="bi bi-receipt"></i> Mis Pedidos</a></li>
+                        <li><a class="dropdown-item spa-link" href="/customer/credits"><i class="bi bi-credit-card"></i> Crédito que está debiendo</a></li>
+                        <li><a class="dropdown-item spa-link" href="/customer/group-purchases"><i class="bi bi-people"></i> Compras Grupales</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="spa-view-content">
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <div class="page-header">
+            <a href="/customer/catalog" class="btn btn-outline-primary btn-back-shopping spa-link">
+                <i class="bi bi-arrow-left"></i> Seguir Comprando
+            </a>
+            <h2><i class="bi bi-cart3"></i> Mi Carrito</h2>
+            <span class="page-header-spacer">Seguir Comprando</span>
+        </div>
+        
+        <div id="alertContainer"></div>
+
+        <div id="cartContent">
+            <!-- Cart items will be loaded here -->
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-8"></div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Resumen del Pedido</h5>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal:</span>
+                            <span id="subtotal">$0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span id="taxLabel">IVA:</span>
+                            <span id="tax">$0.00</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-3">
+                            <strong>Total:</strong>
+                            <strong id="total">$0.00</strong>
+                        </div>
+                        <button class="btn btn-primary w-100" onclick="goToCheckout()" id="checkoutBtn" disabled>
+                            <i class="bi bi-credit-card"></i> Proceder al Pago
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/libs/js/jquery.min.js"></script>
+    <script src="/libs/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let cart = JSON.parse(localStorage.getItem('customerCart')) || [];
+        let customer = JSON.parse(localStorage.getItem('customer')) || null;
+        let currentTaxRate = null; // Solo desde Configuración (api/public/tax-rate)
+
+        $(document).ready(function() {
+            $.get('/api/public/brand-slogan', function(r) { if (r && r.pageTitleCart) document.title = r.pageTitleCart; });
+            // Check authentication
+            const token = localStorage.getItem('customerToken');
+            if (!token) {
+                window.location.href = '/customer/login';
+                return;
+            }
+
+            if (customer) {
+                $('#userName').text(customer.name);
+            }
+
+            // Sincronizar imágenes del carrito con el backend
+            syncCartImages();
+        });
+
+        function syncCartImages() {
+            if (cart.length === 0) {
+                loadTaxRate();
+                return;
+            }
+
+            // Obtener IDs de productos sin imagen
+            const productIds = cart.filter(item => !item.imageUrl).map(item => item.productId);
+            
+            if (productIds.length === 0) {
+                loadTaxRate();
+                return;
+            }
+
+            // Cargar información de productos desde el backend
+            $.ajax({
+                url: '/api/customer/products',
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('customerToken')
+                },
+                success: function(response) {
+                    if (response && response.products) {
+                        // Actualizar imágenes en el carrito
+                        cart = cart.map(cartItem => {
+                            const product = response.products.find(p => p.id === cartItem.productId);
+                            if (product && product.imageUrl && !cartItem.imageUrl) {
+                                cartItem.imageUrl = product.imageUrl;
+                            }
+                            return cartItem;
+                        });
+                        localStorage.setItem('customerCart', JSON.stringify(cart));
+                    }
+                    loadTaxRate();
+                },
+                error: function() {
+                    loadTaxRate();
+                }
+            });
+        }
+
+        function loadTaxRate() {
+            $.ajax({
+                url: '/api/public/tax-rate',
+                method: 'GET',
+                data: { tenantId: 1 },
+                success: function(response) {
+                    currentTaxRate = response.configured && response.value != null ? parseFloat(response.value) : null;
+                    updateTaxLabel();
+                    displayCart();
+                },
+                error: function() {
+                    currentTaxRate = null;
+                    updateTaxLabel();
+                    displayCart();
+                }
+            });
+        }
+
+        function updateTaxLabel() {
+            if (currentTaxRate == null) {
+                $('#taxLabel').text('IVA: No configurado');
+            } else {
+                $('#taxLabel').text(`IVA (${currentTaxRate.toFixed(0)}%):`);
+            }
+        }
+
+        function displayCart() {
+            const cartContent = $('#cartContent');
+            
+            if (cart.length === 0) {
+                cartContent.html(`
+                    <div class="text-center py-5">
+                        <i class="bi bi-cart-x" style="font-size: 4em; color: #ccc;"></i>
+                        <h4 class="mt-3 text-muted">Tu carrito está vacío</h4>
+                        <a href="/customer/catalog" class="btn btn-primary mt-3 spa-link">
+                            <i class="bi bi-arrow-left"></i> Volver al Catálogo
+                        </a>
+                    </div>
+                `);
+                $('#checkoutBtn').prop('disabled', true);
+                updateTotals();
+                return;
+            }
+
+            let html = '';
+            
+            cart.forEach((item, index) => {
+                const nameEscaped = (item.productName || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                
+                // Lógica de botones: si cantidad = 1, mostrar eliminar, si > 1, mostrar menos
+                const leftButton = item.quantity === 1 
+                    ? `<button class="btn btn-sm btn-danger" onclick="removeItem(${index})" title="Eliminar"><i class="bi bi-trash"></i></button>`
+                    : `<button class="btn btn-sm" onclick="updateQuantity(${index}, ${item.quantity - 1})"><i class="bi bi-dash"></i></button>`;
+                
+                html += `<div class="cart-item">
+                    <div class="cart-item-image-wrap">${item.imageUrl ? `<img src="${item.imageUrl}" alt="${nameEscaped}">` : `<div class="cart-image-placeholder"><i class="bi bi-image"></i></div>`}</div>
+                    <div class="cart-item-body">
+                        <h5>${item.productName}</h5>
+                        <div class="cart-item-price-row">
+                            <strong class="text-primary">$${item.price.toFixed(2)}</strong>
+                            <div class="quantity-controls">
+                                ${leftButton}
+                                <span>${item.quantity}</span>
+                                <button class="btn btn-sm" onclick="addOneMore(${index}, '${nameEscaped}')" ${item.quantity >= item.maxStock ? 'disabled' : ''}><i class="bi bi-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            cartContent.html(html);
+            updateTotals();
+            $('#checkoutBtn').prop('disabled', false);
+        }
+
+        function updateQuantity(index, newQuantity) {
+            if (newQuantity < 1) {
+                removeItem(index);
+                return;
+            }
+
+            const item = cart[index];
+            if (newQuantity > item.maxStock) {
+                showAlert('Producto agotado', 'danger');
+                return;
+            }
+
+            cart[index].quantity = newQuantity;
+            localStorage.setItem('customerCart', JSON.stringify(cart));
+            displayCart();
+        }
+
+        function addOneMore(index, productName) {
+            const item = cart[index];
+            if (item.quantity >= item.maxStock) {
+                showAlert('Producto agotado', 'danger');
+                return;
+            }
+
+            cart[index].quantity += 1;
+            localStorage.setItem('customerCart', JSON.stringify(cart));
+            displayCart();
+            showAlert('Producto agregado con éxito!', 'success');
+        }
+
+        function removeItem(index) {
+            cart.splice(index, 1);
+            localStorage.setItem('customerCart', JSON.stringify(cart));
+            displayCart();
+        }
+
+        function updateTotals() {
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const tax = currentTaxRate != null ? subtotal * (currentTaxRate / 100) : 0;
+            const total = subtotal + tax;
+
+            $('#subtotal').text(`$${subtotal.toFixed(2)}`);
+            $('#tax').text(`$${tax.toFixed(2)}`);
+            $('#total').text(`$${total.toFixed(2)}`);
+        }
+
+        function goToCheckout() {
+            if (cart.length === 0) {
+                showAlert('El carrito está vacío', 'warning');
+                return;
+            }
+            if (window.spaNavigate) window.spaNavigate('/customer/checkout'); else window.location.href = '/customer/checkout';
+        }
+
+        function logout() {
+            localStorage.removeItem('customerToken');
+            localStorage.removeItem('customer');
+            localStorage.removeItem('customerCart');
+            window.location.href = '/customer/login';
+        }
+
+        function showAlert(message, type) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show position-fixed" 
+                     style="top: 80px; right: 20px; z-index: 9999; min-width: 300px;" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            $('body').append(alertHtml);
+            setTimeout(() => {
+                $('.alert').alert('close');
+            }, 3000);
+        }
+    </script>
+    </div><!-- #spa-view-content -->
+</body>
+</html>

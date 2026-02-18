@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
+    <title>Registro - LOCOBAR</title>
+    <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Maps API (carga optimizada) -->
+    <script>(g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]);for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.googleapis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+        key: "AIzaSyA2QRfT8cdYlLfnzeLOA7HTzqOCibzfBt8",
+        v: "weekly"
+    });</script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .register-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .logo-icon {
+            max-width: 140px;
+            height: auto;
+            display: block;
+            margin: 0 auto 4px auto;
+        }
+        .login-title-wrap {
+            display: inline-block;
+            text-align: center;
+        }
+        .login-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin: 0;
+            letter-spacing: 0.02em;
+        }
+        .login-separator {
+            width: 100%;
+            height: 2px;
+            background: #0f3460;
+            margin: 2px 0;
+            border: none;
+        }
+        .login-slogan {
+            font-size: 0.95rem;
+            color: #6c757d;
+            margin: 0;
+        }
+        
+        /* Estilos para el contenedor del autocomplete */
+        .places-autocomplete-wrapper {
+            width: 100%;
+            position: relative;
+        }
+        
+        /* Estilos para el componente PlaceAutocompleteElement */
+        .places-autocomplete-wrapper gmp-place-autocomplete {
+            width: 100%;
+            display: block;
+        }
+        
+        /* Estilos para el input del fallback */
+        #mapSearchInput,
+        #mapSearchInputFallback {
+            width: 100% !important;
+            padding: 10px 15px !important;
+            border: 1px solid #ced4da !important;
+            border-radius: 6px !important;
+            font-size: 14px !important;
+            background-color: white !important;
+            color: #212529 !important;
+        }
+        
+        #mapSearchInput:focus,
+        #mapSearchInputFallback:focus {
+            border-color: #86b7fe !important;
+            outline: 0 !important;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+        }
+        
+        /* Asegurar que el modal-body permita overflow visible para el dropdown */
+        #mapModal .modal-body {
+            overflow: visible !important;
+        }
+        
+        #mapModal .p-3.border-bottom {
+            overflow: visible !important;
+            position: relative;
+            z-index: 1060;
+        }
+        
+        /* Botón de detectar ubicación */
+        .btn-detect-location {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn-detect-location:hover {
+            background-color: #218838;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
+        }
+        
+        .btn-detect-location:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn-detect-location i {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="logo">
+            <img src="/public/img/icono-LB.png" alt="LOCOBAR" class="logo-icon">
+            <div class="login-title-wrap">
+                <h1 class="login-title">LOCOBAR</h1>
+                <hr class="login-separator">
+            </div>
+            <p class="login-slogan" id="brandSloganText">Donde el sabor se vuelve locura</p>
+        </div>
+        <h2 class="text-center mb-4">REGISTRO</h2>
+        <div id="alertContainer"></div>
+        
+        <form id="registerForm">
+            <div class="mb-3">
+                <label class="form-label">Nombre Completo <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="name" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Número de Cédula <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="cedula" required pattern="[A-Za-z0-9-]+" 
+                       placeholder="Ej: 1234567890" maxlength="50">
+                <small class="form-text text-muted">Solo letras, números y guiones. Debe ser único.</small>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Email <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" id="email" required autocomplete="email">
+                <div id="emailFeedback" class="form-text" style="display: none;"></div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Teléfono</label>
+                <input type="tel" class="form-control" id="phone">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Dirección</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="address" readonly placeholder="Seleccione ubicación en el mapa">
+                    <button type="button" class="btn btn-outline-primary" onclick="openMapModal()">
+                        <i class="bi bi-geo-alt-fill"></i> Mapa
+                    </button>
+                </div>
+                <input type="hidden" id="latitude">
+                <input type="hidden" id="longitude">
+                <small class="form-text text-muted">Haz clic en "Mapa" para seleccionar la ubicación.</small>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Contraseña <span class="text-danger">*</span></label>
+                <input type="password" class="form-control" id="password" minlength="6" required>
+                <small class="form-text text-muted">Mínimo 6 caracteres</small>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Confirmar Contraseña <span class="text-danger">*</span></label>
+                <input type="password" class="form-control" id="confirmPassword" minlength="6" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mb-3">
+                <i class="bi bi-person-plus"></i> Registrarse
+            </button>
+            <div class="text-center">
+                <p class="mb-0">¿Ya tienes cuenta? <a href="/customer/login">Inicia sesión aquí</a></p>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal de Verificación de Código -->
+    <div class="modal fade" id="verificationModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-shield-check"></i> Verificación de Correo Electrónico
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Se ha enviado un código de verificación a tu correo electrónico. Por favor ingrésalo a continuación:</p>
+                    <div class="mb-3">
+                        <label class="form-label">Código de Verificación</label>
+                        <input type="text" class="form-control text-center" id="verificationCode" 
+                               placeholder="000000" maxlength="6" style="font-size: 1.5em; letter-spacing: 0.5em;" required>
+                        <small class="form-text text-muted">El código expira en 15 minutos</small>
+                    </div>
+                    <div id="verificationError" class="alert alert-danger" style="display: none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary w-100" id="verifyCodeBtn">
+                        <span class="btn-text">Verificar Código</span>
+                        <span class="btn-spinner" style="display: none;">
+                            <span class="spinner-border spinner-border-sm me-2"></span>Verificando...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Selección de Ubicación en Mapa (Google Maps) -->
+    <div class="modal fade" id="mapModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="modal-title mb-0"><i class="bi bi-geo-alt-fill"></i> Seleccionar Ubicación</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn-detect-location" onclick="obtenerUbicacionActual()" title="Detectar mi ubicación">
+                            <i class="bi bi-geo-alt"></i> Detectar mi ubicación
+                        </button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                </div>
+                <div class="modal-body p-0">
+                    <!-- Buscador de direcciones -->
+                    <div class="p-3 border-bottom">
+                        <div id="placesAutocompleteContainer" class="places-autocomplete-wrapper">
+                            <!-- El PlaceAutocompleteElement se insertará aquí -->
+                        </div>
+                        <small class="text-muted mt-2 d-block">Escribe para buscar (ej: "Locobar") o haz clic en el mapa.</small>
+                    </div>
+                    <!-- Contenedor del mapa Google Maps -->
+                    <div id="googleMap" style="height: 400px; width: 100%;"></div>
+                    <!-- Info de ubicación seleccionada -->
+                    <div class="p-3 border-top bg-light">
+                        <div class="row">
+                            <div class="col-12">
+                                <label class="form-label fw-bold"><i class="bi bi-pin-map"></i> Dirección seleccionada:</label>
+                                <input type="text" class="form-control" id="selectedAddress" readonly 
+                                       placeholder="Haz clic en el mapa o busca una dirección">
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <label class="form-label small text-muted">Latitud:</label>
+                                <input type="text" class="form-control form-control-sm" id="selectedLatitude" readonly>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted">Longitud:</label>
+                                <input type="text" class="form-control form-control-sm" id="selectedLongitude" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="confirmMapLocation()">
+                        <i class="bi bi-check-circle"></i> Confirmar Ubicación
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/libs/js/jquery.min.js"></script>
+    <script src="/libs/js/bootstrap.bundle.min.js"></script>
+    <script src="/libs/js/google-maps-helper.js"></script>
+    
+    <script>
+        // Configurar Google Maps Helper para el formulario de registro
+        $(document).ready(function() {
+            $.get('/api/public/brand-slogan', function(r) {
+                if (r) {
+                    if (r.brandSlogan) $('#brandSloganText').text(r.brandSlogan);
+                    if (r.pageTitleRegister) document.title = r.pageTitleRegister;
+                }
+            });
+            // Configurar el helper con los campos específicos del registro
+            GoogleMapsHelper.config({
+                addressFieldId: '#address',
+                latitudeFieldId: '#latitude',
+                longitudeFieldId: '#longitude',
+                mapId: 'REGISTER_MAP',
+                defaultLocation: { lat: 19.4326, lng: -99.1332 }, // México City
+                countryRestriction: null // Sin restricción de país
+            });
+
+            // Precargar librerías de Google Maps
+            GoogleMapsHelper.preload();
+        });
+
+        // Función para abrir el modal del mapa (llamada desde el botón)
+        function openMapModal() {
+            GoogleMapsHelper.openMapModal();
+        }
+
+        // Función para obtener ubicación actual (llamada desde el botón del modal)
+        function obtenerUbicacionActual() {
+            GoogleMapsHelper.getCurrentLocation();
+        }
+
+        // Función para confirmar ubicación (llamada desde el botón del modal)
+        function confirmMapLocation() {
+            GoogleMapsHelper.confirmMapLocation();
+        }
+
+        // Validación de email en tiempo real
+        let emailCheckTimeout;
+        $('#email').on('input', function() {
+            const email = $(this).val().trim();
+            const emailFeedback = $('#emailFeedback');
+            
+            // Limpiar timeout anterior
+            clearTimeout(emailCheckTimeout);
+            
+            // Ocultar feedback si el campo está vacío
+            if (!email) {
+                emailFeedback.hide();
+                $(this).removeClass('is-invalid is-valid');
+                return;
+            }
+            
+            // Validar formato básico primero
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                emailFeedback.hide();
+                $(this).removeClass('is-invalid is-valid');
+                return;
+            }
+            
+            // Esperar 500ms después de que el usuario deje de escribir
+            emailCheckTimeout = setTimeout(function() {
+                $.ajax({
+                    url: '/api/auth/check-email',
+                    method: 'GET',
+                    data: { email: email, tenantId: 1 },
+                    success: function(response) {
+                        if (response.exists) {
+                            $('#email').addClass('is-invalid').removeClass('is-valid');
+                            emailFeedback.removeClass('text-success').addClass('text-danger')
+                                .html('<i class="bi bi-exclamation-circle"></i> ' + response.message)
+                                .show();
+                        } else {
+                            $('#email').addClass('is-valid').removeClass('is-invalid');
+                            emailFeedback.removeClass('text-danger').addClass('text-success')
+                                .html('<i class="bi bi-check-circle"></i> ' + response.message)
+                                .show();
+                        }
+                    },
+                    error: function() {
+                        // En caso de error, no mostrar feedback pero permitir continuar
+                        $('#email').removeClass('is-invalid is-valid');
+                        emailFeedback.hide();
+                    }
+                });
+            }, 500);
+        });
+
+        $(document).ready(function() {
+            $('#registerForm').submit(function(e) {
+                e.preventDefault();
+                
+                const password = $('#password').val();
+                const confirmPassword = $('#confirmPassword').val();
+
+                if (password !== confirmPassword) {
+                    showAlert('Las contraseñas no coinciden', 'danger');
+                    return;
+                }
+
+                if (password.length < 6) {
+                    showAlert('La contraseña debe tener al menos 6 caracteres', 'danger');
+                    return;
+                }
+
+                const cedula = $('#cedula').val().trim();
+                if (!cedula) {
+                    showAlert('El número de cédula es requerido', 'danger');
+                    return;
+                }
+
+                const email = $('#email').val().trim();
+                if (!email) {
+                    showAlert('El correo electrónico es requerido', 'danger');
+                    return;
+                }
+
+                // Validar formato de email
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    showAlert('Por favor ingresa un correo electrónico válido', 'danger');
+                    return;
+                }
+
+                // Verificar si el email tiene clase is-invalid (ya existe)
+                if ($('#email').hasClass('is-invalid')) {
+                    showAlert('Este correo electrónico ya está registrado. Por favor usa otro correo.', 'danger');
+                    return;
+                }
+
+                const formData = {
+                    name: $('#name').val(),
+                    cedula: cedula,
+                    email: email, // Email con trim aplicado
+                    phone: $('#phone').val() || null,
+                    address: $('#address').val() || null,
+                    latitude: $('#latitude').val() || null,
+                    longitude: $('#longitude').val() || null,
+                    password: password
+                };
+
+                $.ajax({
+                    url: '/api/auth/register',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function(response) {
+                        if (response.requiresVerification) {
+                            // Guardar email para verificación
+                            window.registrationEmail = email;
+                            
+                            // Mostrar modal de verificación
+                            $('#verificationCode').val('');
+                            $('#verificationError').hide();
+                            const verificationModal = new bootstrap.Modal(document.getElementById('verificationModal'));
+                            verificationModal.show();
+                            
+                            // Enfocar el campo de código
+                            setTimeout(() => {
+                                $('#verificationCode').focus();
+                            }, 500);
+                        } else {
+                            // Si no requiere verificación (caso antiguo)
+                            localStorage.setItem('customerToken', response.token);
+                            localStorage.setItem('customer', JSON.stringify(response.customer));
+                            
+                            showAlert('Registro exitoso. Redirigiendo...', 'success');
+                            setTimeout(() => {
+                                window.location.href = '/customer/catalog';
+                            }, 1500);
+                        }
+                    },
+                    error: function(xhr) {
+                        const error = xhr.responseJSON?.error || 'Error al registrarse';
+                        showAlert(error, 'danger');
+                    }
+                });
+            });
+        });
+
+        // Verificar código de registro
+        $('#verifyCodeBtn').click(function() {
+            const code = $('#verificationCode').val().trim();
+            
+            if (!code || code.length !== 6) {
+                $('#verificationError').text('Por favor ingresa el código de 6 dígitos').show();
+                return;
+            }
+
+            const btn = $(this);
+            const btnText = btn.find('.btn-text');
+            const btnSpinner = btn.find('.btn-spinner');
+            
+            btn.prop('disabled', true);
+            btnText.hide();
+            btnSpinner.show();
+
+            $.ajax({
+                url: '/api/auth/verify-registration-code',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ 
+                    email: window.registrationEmail, 
+                    code: code,
+                    tenantId: 1 
+                }),
+                success: function(response) {
+                    // Guardar token y datos del cliente
+                    localStorage.setItem('customerToken', response.token);
+                    localStorage.setItem('customer', JSON.stringify(response.customer));
+                    
+                    // Cerrar modal
+                    bootstrap.Modal.getInstance(document.getElementById('verificationModal')).hide();
+                    
+                    // Mostrar mensaje de éxito
+                    showAlert('¡Código verificado exitosamente! Redirigiendo...', 'success');
+                    
+                    // Redirigir al catálogo
+                    setTimeout(() => {
+                        window.location.href = '/customer/catalog';
+                    }, 1500);
+                },
+                error: function(xhr) {
+                    const error = xhr.responseJSON?.error || 'Error al verificar código';
+                    $('#verificationError').text(error).show();
+                    btn.prop('disabled', false);
+                    btnText.show();
+                    btnSpinner.hide();
+                }
+            });
+        });
+
+        // Permitir Enter para verificar código
+        $('#verificationCode').on('keypress', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                $('#verifyCodeBtn').click();
+            }
+        });
+
+        function showAlert(message, type) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            $('#alertContainer').html(alertHtml);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
+    <title>Crear Producto - Licorería</title>
+    <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/libs/css/select2.min.css" rel="stylesheet">
+    <style>
+        .components-section {
+            display: none;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .component-item {
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        
+        .remove-component {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        
+        .product-type-selector {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .product-type-option {
+            flex: 1;
+            padding: 20px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .product-type-option:hover {
+            border-color: #007bff;
+            background-color: #f8f9ff;
+        }
+        
+        .product-type-option.selected {
+            border-color: #007bff;
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .product-type-option h5 {
+            margin: 0 0 10px 0;
+        }
+        
+        .product-type-option p {
+            margin: 0;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .product-type-option.selected p {
+            opacity: 1;
+        }
+        
+        .stock-min-section {
+            display: none;
+        }
+        
+        .combo-preview {
+            background-color: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .combo-cost-info {
+            background-color: #f3e5f5;
+            border: 1px solid #9c27b0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .logo-img {
+            max-width: 140px;
+            height: auto;
+            display: block;
+            margin: 0 auto 20px auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="text-center mb-3">
+            <img src="/public/img/Logo-LB.png" alt="LOCOBAR" class="logo-img">
+        </div>
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="mb-0">Crear Nuevo Producto</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="productForm">
+                            <!-- Product Type Selector -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Tipo de Producto</label>
+                                <div class="product-type-selector">
+                                    <div class="product-type-option" data-type="SIMPLE">
+                                        <h5>📦 Producto Simple</h5>
+                                        <p>Producto individual con inventario propio</p>
+                                    </div>
+                                    <div class="product-type-option" data-type="COMBO">
+                                        <h5>🎁 Combo Virtual</h5>
+                                        <p>Producto compuesto sin inventario propio</p>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="productType" name="productType" required>
+                            </div>
+
+                            <!-- Basic Product Info -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="name" class="form-label">Nombre del Producto</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="sku" class="form-label">SKU</label>
+                                    <input type="text" class="form-control" id="sku" name="sku" required>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="salePrice" class="form-label">Precio de Venta</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="salePrice" name="salePrice" 
+                                               step="0.01" min="0" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="costMode" class="form-label">Modo de Costo</label>
+                                    <select class="form-select" id="costMode" name="costMode">
+                                        <option value="AVERAGE">Promedio</option>
+                                        <option value="FIFO">FIFO</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Stock Min (only for SIMPLE products) -->
+                            <div class="stock-min-section mb-3">
+                                <label for="stockMin" class="form-label">Stock Mínimo</label>
+                                <input type="number" class="form-control" id="stockMin" name="stockMin" 
+                                       step="0.001" min="0" placeholder="Opcional">
+                                <div class="form-text">Alerta cuando el stock esté por debajo de este nivel</div>
+                            </div>
+
+                            <!-- Initial Stock (only for SIMPLE products) -->
+                            <div class="stock-min-section mb-3">
+                                <label for="initialStock" class="form-label">Stock Inicial</label>
+                                <input type="number" class="form-control" id="initialStock" name="initialStock"
+                                       step="0.001" min="0" placeholder="0">
+                                <div class="form-text">Cantidad inicial para inventario (se registra como compra)</div>
+                            </div>
+
+                            <div class="stock-min-section mb-3">
+                                <label for="unitCost" class="form-label">Costo Unitario (opcional)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="unitCost" name="unitCost"
+                                           step="0.01" min="0" placeholder="Opcional">
+                                </div>
+                            </div>
+
+                            <!-- Combo Components Section -->
+                            <div class="components-section">
+                                <h4 class="mb-3">Componentes del Combo</h4>
+                                
+                                <div class="mb-3">
+                                    <label for="componentSearch" class="form-label">Buscar Componente</label>
+                                    <select class="form-select" id="componentSearch" style="width: 100%;">
+                                        <option value="">Seleccione un producto...</option>
+                                    </select>
+                                </div>
+
+                                <div id="componentsList">
+                                    <!-- Components will be added here dynamically -->
+                                </div>
+
+                                <button type="button" class="btn btn-outline-primary" id="addComponent">
+                                    <i class="bi bi-plus"></i> Agregar Componente
+                                </button>
+
+                                <!-- Combo Preview -->
+                                <div class="combo-preview" id="comboPreview" style="display: none;">
+                                    <h5>📊 Resumen del Combo</h5>
+                                    <div id="comboPreviewContent">
+                                        <!-- Preview content will be updated dynamically -->
+                                    </div>
+                                </div>
+
+                                <!-- Combo Cost Info -->
+                                <div class="combo-cost-info" id="comboCostInfo" style="display: none;">
+                                    <h5>💰 Información de Costo</h5>
+                                    <div id="comboCostContent">
+                                        <!-- Cost info will be updated dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div class="d-flex justify-content-between mt-4">
+                                <a href="/products" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check"></i> Crear Producto
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/libs/js/jquery.min.js"></script>
+    <script src="/libs/js/bootstrap.bundle.min.js"></script>
+    <script src="/libs/js/select2.min.js"></script>
+    <script>
+        let components = [];
+        let componentIdCounter = 0;
+
+        $(document).ready(function() {
+            // Initialize product type selector
+            $('.product-type-option').click(function() {
+                $('.product-type-option').removeClass('selected');
+                $(this).addClass('selected');
+                const selectedType = $(this).data('type');
+                $('#productType').val(selectedType);
+                
+                // Show/hide sections based on product type
+                if (selectedType === 'COMBO') {
+                    $('.components-section').slideDown();
+                    $('.stock-min-section').slideUp();
+                } else {
+                    $('.components-section').slideUp();
+                    $('.stock-min-section').slideDown();
+                }
+            });
+
+            // Initialize component search
+            $('#componentSearch').select2({
+                ajax: {
+                    url: '/api/products',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            tenantId: getCurrentTenantId(),
+                            productType: 'SIMPLE',
+                            search: params.term,
+                            page: params.page || 1
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: data.products.map(product => ({
+                                id: product.id,
+                                text: `${product.name} (${product.sku})`,
+                                product: product
+                            }))
+                        };
+                    }
+                },
+                minimumInputLength: 2,
+                placeholder: 'Buscar producto simple...',
+                allowClear: true
+            });
+
+            // Add component button
+            $('#addComponent').click(function() {
+                const selected = $('#componentSearch').select2('data');
+                if (selected.length === 0) {
+                    showAlert('Por favor seleccione un componente', 'warning');
+                    return;
+                }
+
+                const component = selected[0].product;
+                
+                // Check if component already added
+                if (components.find(c => c.componentProductId === component.id)) {
+                    showAlert('Este componente ya fue agregado', 'warning');
+                    return;
+                }
+
+                addComponentToList(component);
+                $('#componentSearch').val(null).trigger('change');
+            });
+
+            // Form submission
+            $('#productForm').submit(function(e) {
+                e.preventDefault();
+                
+                const productType = $('#productType').val();
+                if (!productType) {
+                    showAlert('Por favor seleccione un tipo de producto', 'warning');
+                    return;
+                }
+
+                if (productType === 'COMBO' && components.length === 0) {
+                    showAlert('Los combos deben tener al menos un componente', 'warning');
+                    return;
+                }
+
+                const formData = {
+                    tenantId: getCurrentTenantId(),
+                    name: $('#name').val(),
+                    sku: $('#sku').val(),
+                    productType: productType,
+                    salePrice: parseFloat($('#salePrice').val()),
+                    costMode: $('#costMode').val(),
+                    isActive: true,
+                    stockMin: productType === 'SIMPLE' ? 
+                        ($('#stockMin').val() ? parseFloat($('#stockMin').val()) : null) : null,
+                    initialStock: productType === 'SIMPLE' ?
+                        ($('#initialStock').val() ? parseFloat($('#initialStock').val()) : 0) : undefined,
+                    unitCost: productType === 'SIMPLE' ?
+                        ($('#unitCost').val() ? parseFloat($('#unitCost').val()) : null) : undefined,
+                    components: productType === 'COMBO' ? components : undefined
+                };
+
+                $.ajax({
+                    url: '/api/products',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function(response) {
+                        showAlert('Producto creado exitosamente', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/products';
+                        }, 1500);
+                    },
+                    error: function(xhr) {
+                        const error = xhr.responseJSON?.error || 'Error al crear producto';
+                        showAlert(error, 'danger');
+                    }
+                });
+            });
+        });
+
+        function addComponentToList(component) {
+            const componentId = ++componentIdCounter;
+            const componentData = {
+                componentProductId: component.id,
+                qty: 1
+            };
+            
+            components.push(componentData);
+
+            const componentHtml = `
+                <div class="component-item" data-component-id="${componentId}">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-component" 
+                            onclick="removeComponent(${componentId})">
+                        <i class="bi bi-x"></i>
+                    </button>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Componente</label>
+                            <input type="text" class="form-control" value="${component.name} (${component.sku})" readonly>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Cantidad</label>
+                            <input type="number" class="form-control component-qty" value="1" 
+                                   min="0.001" step="0.001" required
+                                   onchange="updateComponentQty(${componentId}, this.value)">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Stock Actual</label>
+                            <input type="text" class="form-control" value="${component.currentStock || 'N/A'}" readonly>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            $('#componentsList').append(componentHtml);
+            updateComboPreview();
+        }
+
+        function removeComponent(componentId) {
+            components = components.filter(c => c.componentId !== componentId);
+            $(`[data-component-id="${componentId}"]`).remove();
+            updateComboPreview();
+        }
+
+        function updateComponentQty(componentId, qty) {
+            const component = components.find(c => c.componentId === componentId);
+            if (component) {
+                component.qty = parseFloat(qty);
+                updateComboPreview();
+            }
+        }
+
+        function updateComboPreview() {
+            if (components.length === 0) {
+                $('#comboPreview').hide();
+                $('#comboCostInfo').hide();
+                return;
+            }
+
+            // Update preview
+            let previewHtml = '<ul class="mb-0">';
+            let totalComponentPrice = 0;
+
+            components.forEach(component => {
+                const componentElement = $(`[data-component-id="${component.componentId}"]`);
+                const componentName = componentElement.find('input[readonly]').val();
+                previewHtml += `<li>${componentName} - Cantidad: ${component.qty}</li>`;
+            });
+
+            previewHtml += '</ul>';
+            $('#comboPreviewContent').html(previewHtml);
+            $('#comboPreview').show();
+
+            // Calculate and show cost info
+            calculateComboCost();
+        }
+
+        function calculateComboCost() {
+            // This would make an API call to get current costs
+            // For now, just show basic info
+            const comboPrice = parseFloat($('#salePrice').val()) || 0;
+            
+            let costHtml = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Precio del Combo:</strong> $${comboPrice.toFixed(2)}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Componentes:</strong> ${components.length}
+                    </div>
+                </div>
+            `;
+
+            $('#comboCostContent').html(costHtml);
+            $('#comboCostInfo').show();
+        }
+
+        function getCurrentTenantId() {
+            // This should get the current tenant ID from session or context
+            return 1; // Placeholder
+        }
+
+        function showAlert(message, type) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            $('.card-body').prepend(alertHtml);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                $('.alert').alert('close');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

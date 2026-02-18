@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
+    <title>Mis Compras Grupales - LOCOBAR</title>
+    <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .navbar-custom {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+        }
+        .payment-card {
+            border-left: 4px solid #28a745;
+        }
+        .pending-card {
+            border-left: 4px solid #ffc107;
+        }
+        .overdue-card {
+            border-left: 4px solid #dc3545;
+        }
+        #userMenu .user-name-text {
+            display: none;
+        }
+        @media (min-width: 576px) {
+            #userMenu .user-name-text {
+                display: inline;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark navbar-custom">
+        <div class="container-fluid">
+            <a class="navbar-brand spa-link" href="/customer/catalog">
+                <i class="bi bi-shop"></i> LOCOBAR
+            </a>
+            <div class="d-flex align-items-center">
+                <div class="dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false" title="Mi cuenta">
+                        <i class="bi bi-person-circle fs-4"></i>
+                        <span class="user-name-text ms-1" id="userName">Usuario</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item spa-link" href="/customer/orders"><i class="bi bi-receipt"></i> Mis Pedidos</a></li>
+                        <li><a class="dropdown-item spa-link" href="/customer/credits"><i class="bi bi-credit-card"></i> Crédito que está debiendo</a></li>
+                        <li><a class="dropdown-item spa-link" href="/customer/group-purchases"><i class="bi bi-people"></i> Compras Grupales</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="spa-view-content">
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <h2 class="mb-4">
+            <i class="bi bi-people"></i> Mis Compras Grupales
+        </h2>
+
+        <div id="groupPurchasesList">
+            <div class="text-center text-muted">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2">Cargando compras grupales...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Registrar Pago</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="paymentForm">
+                        <input type="hidden" id="paymentParticipantId">
+                        <div class="mb-3">
+                            <label class="form-label">Saldo Pendiente</label>
+                            <input type="text" class="form-control" id="paymentBalance" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Monto a Pagar <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="paymentAmount" step="0.01" min="0.01" required>
+                            <small class="form-text text-muted">Puede ser un pago parcial</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Método de Pago <span class="text-danger">*</span></label>
+                            <select class="form-select" id="paymentMethod" required>
+                                <option value="">Seleccione...</option>
+                                <option value="CASH">Efectivo</option>
+                                <option value="CARD">Tarjeta</option>
+                                <option value="TRANSFER">Transferencia</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fecha de Pago <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="paymentDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notas</label>
+                            <textarea class="form-control" id="paymentNotes" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="savePayment()">Registrar Pago</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/libs/js/jquery.min.js"></script>
+    <script src="/libs/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const token = localStorage.getItem('customerToken');
+        const customer = JSON.parse(localStorage.getItem('customer') || '{}');
+
+        if (!token) {
+            window.location.href = '/customer/login';
+        }
+
+        $(document).ready(function() {
+            $.get('/api/public/brand-slogan', function(r) { if (r && r.pageTitleGroupPurchases) document.title = r.pageTitleGroupPurchases; });
+            if (customer.name) {
+                $('#userName').text(customer.name);
+            }
+            loadGroupPurchases();
+            updateCartBadge();
+        });
+
+        function loadGroupPurchases() {
+            if (!token) return;
+
+            $.ajax({
+                url: '/api/group-purchases',
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                data: {
+                    tenantId: 1
+                },
+                success: function(response) {
+                    displayGroupPurchases(response.groupPurchases);
+                },
+                error: function(xhr) {
+                    if (xhr.status === 401) {
+                        window.location.href = '/customer/login';
+                        return;
+                    }
+                    $('#groupPurchasesList').html(`
+                        <div class="alert alert-danger">
+                            Error al cargar compras grupales
+                        </div>
+                    `);
+                }
+            });
+        }
+
+        function displayGroupPurchases(groupPurchases) {
+            const container = $('#groupPurchasesList');
+            container.empty();
+
+            // Filter to show only purchases where current customer is a participant
+            const customerGroupPurchases = [];
+            groupPurchases.forEach(gp => {
+                if (gp.participants) {
+                    const participant = gp.participants.find(p => p.customerId == customer.id);
+                    if (participant) {
+                        customerGroupPurchases.push({
+                            groupPurchase: gp,
+                            participant: participant
+                        });
+                    }
+                }
+            });
+
+            if (customerGroupPurchases.length === 0) {
+                container.html(`
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No tienes compras grupales activas
+                    </div>
+                `);
+                return;
+            }
+
+            customerGroupPurchases.forEach(({ groupPurchase, participant }) => {
+                const productName = groupPurchase.product ? groupPurchase.product.name : 'N/A';
+                const total = parseFloat(groupPurchase.totalAmount).toFixed(2);
+                const amountDue = parseFloat(participant.amountDue);
+                const amountPaid = parseFloat(participant.amountPaid || 0);
+                const remaining = amountDue - amountPaid;
+                const interestAmount = parseFloat(participant.interestAmount || 0);
+                const totalDue = remaining + interestAmount;
+
+                let statusBadge = '';
+                let cardClass = 'payment-card';
+                if (participant.status === 'PAID') {
+                    statusBadge = '<span class="badge bg-success">Pagado</span>';
+                    cardClass = 'payment-card';
+                } else if (participant.status === 'PARTIAL') {
+                    statusBadge = '<span class="badge bg-warning">Pago Parcial</span>';
+                    cardClass = 'pending-card';
+                } else if (participant.status === 'OVERDUE') {
+                    statusBadge = '<span class="badge bg-danger">Vencido</span>';
+                    cardClass = 'overdue-card';
+                } else {
+                    statusBadge = '<span class="badge bg-info">Pendiente</span>';
+                    cardClass = 'pending-card';
+                }
+
+                const dueDateText = participant.dueDate ? 
+                    new Date(participant.dueDate).toLocaleDateString('es-ES') : 
+                    'Sin fecha límite';
+
+                const isOverdue = participant.dueDate && 
+                    new Date() > new Date(participant.dueDate) && 
+                    remaining > 0.01;
+
+                const card = `
+                    <div class="card mb-3 ${cardClass}">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h5 class="card-title">${productName}</h5>
+                                    <p class="text-muted mb-2">
+                                        <small>Compra Grupal #${groupPurchase.id} | 
+                                        Total del grupo: $${total} | 
+                                        Fecha: ${new Date(groupPurchase.createdAt).toLocaleDateString('es-ES')}</small>
+                                    </p>
+                                    <div class="row mb-2">
+                                        <div class="col-md-6">
+                                            <strong>Mi monto a pagar:</strong> $${amountDue.toFixed(2)}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>Ya pagado:</strong> $${amountPaid.toFixed(2)}
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-6">
+                                            <strong>Saldo pendiente:</strong> $${remaining.toFixed(2)}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>Intereses acumulados:</strong> $${interestAmount.toFixed(2)}
+                                        </div>
+                                    </div>
+                                    ${interestAmount > 0 ? 
+                                        `<div class="alert alert-warning mt-2">
+                                            <strong>Total a pagar (con intereses):</strong> $${totalDue.toFixed(2)}
+                                        </div>` : ''
+                                    }
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <strong>Fecha límite:</strong> ${dueDateText}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>Estado:</strong> ${statusBadge}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    ${participant.status !== 'PAID' ? 
+                                        `<button class="btn btn-primary btn-lg w-100 mb-2" onclick="openPaymentModal(${participant.id}, ${remaining}, ${totalDue})">
+                                            <i class="bi bi-cash"></i> Pagar Ahora
+                                        </button>` : 
+                                        '<div class="alert alert-success"><i class="bi bi-check-circle"></i> Pagado</div>'
+                                    }
+                                    ${isOverdue ? 
+                                        '<div class="alert alert-danger mt-2"><small>Esta deuda está vencida</small></div>' : ''
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.append(card);
+            });
+        }
+
+        function openPaymentModal(participantId, remaining, totalDue) {
+            $('#paymentParticipantId').val(participantId);
+            $('#paymentBalance').val('$' + totalDue.toFixed(2));
+            $('#paymentAmount').val(totalDue.toFixed(2));
+            $('#paymentMethod').val('CASH');
+            $('#paymentDate').val(new Date().toISOString().split('T')[0]);
+            $('#paymentNotes').val('');
+            
+            const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+            modal.show();
+        }
+
+        function savePayment() {
+            const participantId = $('#paymentParticipantId').val();
+            const amount = parseFloat($('#paymentAmount').val());
+            const paymentMethod = $('#paymentMethod').val();
+            const paymentDate = $('#paymentDate').val();
+            const notes = $('#paymentNotes').val() || null;
+
+            if (!participantId || !amount || amount <= 0 || !paymentMethod || !paymentDate) {
+                showAlert('Complete todos los campos requeridos', 'warning');
+                return;
+            }
+
+            $.ajax({
+                url: '/api/customer-payments/apply-to-credit',
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify({
+                    tenantId: 1,
+                    customerId: customer.id,
+                    groupPurchaseParticipantId: parseInt(participantId),
+                    amount: amount,
+                    paymentMethod: paymentMethod,
+                    paymentDate: paymentDate,
+                    notes: notes
+                }),
+                success: function() {
+                    showAlert('Pago registrado exitosamente. El administrador verificará el pago.', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
+                    loadGroupPurchases();
+                    // Also reload credits page if open
+                    if (window.parent && window.parent.loadCredits) {
+                        window.parent.loadCredits();
+                    }
+                },
+                error: function(xhr) {
+                    if (xhr.status === 401) {
+                        window.location.href = '/customer/login';
+                        return;
+                    }
+                    const error = xhr.responseJSON?.error || 'Error al registrar pago';
+                    showAlert(error, 'danger');
+                }
+            });
+        }
+
+        function updateCartBadge() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            $('#cartBadge').text(cart.length);
+        }
+
+        function logout() {
+            localStorage.removeItem('customerToken');
+            localStorage.removeItem('customer');
+            window.location.href = '/customer/login';
+        }
+
+        function showAlert(message, type) {
+            const alert = $(`
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `);
+            $('.container').prepend(alert);
+            setTimeout(() => alert.fadeOut(), 5000);
+        }
+    </script>
+</body>
+</html>

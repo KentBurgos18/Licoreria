@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciando sesión... - LOCOBAR</title>
+    <style>
+        body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
+        .box { text-align: center; padding: 2rem; }
+        .spinner { width: 40px; height: 40px; border: 3px solid #ddd; border-top-color: #667eea; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="spinner"></div>
+        <p>Iniciando sesión...</p>
+    </div>
+    <script>
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            var token = params.get('token');
+            var name = params.get('name') || '';
+            var email = params.get('email') || '';
+            if (token) {
+                localStorage.setItem('customerToken', token);
+                localStorage.setItem('customer', JSON.stringify({ name: name, email: email }));
+            }
+            window.location.replace('/customer/catalog');
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Combo - Licorería</title>
+    <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/libs/css/select2.min.css" rel="stylesheet">
+    <style>
+        .component-item {
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        
+        .remove-component {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        
+        .component-limiting {
+            background-color: #fff3cd;
+            border-color: #ffc107;
+        }
+        
+        .component-ok {
+            background-color: #d1e7dd;
+            border-color: #198754;
+        }
+        
+        .combo-stock-info {
+            background-color: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .combo-cost-info {
+            background-color: #f3e5f5;
+            border: 1px solid #9c27b0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stock-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .stock-high { background-color: #28a745; }
+        .stock-medium { background-color: #ffc107; }
+        .stock-low { background-color: #dc3545; }
+        .stock-zero { background-color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-10 offset-md-1">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">Editar Combo: <span id="comboName"></span></h3>
+                        <div>
+                            <span class="badge bg-info" id="comboStockBadge">
+                                <span class="stock-indicator" id="stockIndicator"></span>
+                                <span id="availableStock">0</span> combos disponibles
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Combo Stock Info -->
+                        <div class="combo-stock-info" id="comboStockInfo">
+                            <h5>📊 Disponibilidad Actual</h5>
+                            <div id="stockDetails">
+                                <!-- Stock details will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Combo Cost Info -->
+                        <div class="combo-cost-info" id="comboCostInfo">
+                            <h5>💰 Información de Costo y Margen</h5>
+                            <div id="costDetails">
+                                <!-- Cost details will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Components Management -->
+                        <div class="mb-4">
+                            <h4>Componentes del Combo</h4>
+                            
+                            <div class="mb-3">
+                                <label for="componentSearch" class="form-label">Agregar Nuevo Componente</label>
+                                <select class="form-select" id="componentSearch" style="width: 100%;">
+                                    <option value="">Seleccione un producto simple...</option>
+                                </select>
+                            </div>
+
+                            <button type="button" class="btn btn-outline-primary mb-3" id="addComponent">
+                                <i class="bi bi-plus"></i> Agregar Componente
+                            </button>
+
+                            <div id="componentsList">
+                                <!-- Components will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="/products" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Volver
+                            </a>
+                            <div>
+                                <button type="button" class="btn btn-warning me-2" id="recalculateBtn">
+                                    <i class="bi bi-arrow-clockwise"></i> Recalcular Stock
+                                </button>
+                                <button type="button" class="btn btn-primary" id="saveComponents">
+                                    <i class="bi bi-check"></i> Guardar Cambios
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2 mb-0">Procesando...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/libs/js/jquery.min.js"></script>
+    <script src="/libs/js/bootstrap.bundle.min.js"></script>
+    <script src="/libs/js/select2.min.js"></script>
+    <script>
+        let comboId = null;
+        let components = [];
+        let comboData = null;
+
+        $(document).ready(function() {
+            // Get combo ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            comboId = urlParams.get('id');
+            
+            if (!comboId) {
+                showAlert('ID de combo no proporcionado', 'danger');
+                return;
+            }
+
+            loadComboData();
+            initializeComponentSearch();
+        });
+
+        function loadComboData() {
+            showLoading(true);
+            
+            $.ajax({
+                url: `/api/products/${comboId}/availability`,
+                method: 'GET',
+                data: { tenantId: getCurrentTenantId() },
+                success: function(response) {
+                    comboData = response;
+                    displayComboInfo();
+                    loadComponents();
+                },
+                error: function(xhr) {
+                    showLoading(false);
+                    const error = xhr.responseJSON?.error || 'Error al cargar datos del combo';
+                    showAlert(error, 'danger');
+                }
+            });
+        }
+
+        function displayComboInfo() {
+            $('#comboName').text(comboData.comboName);
+            $('#availableStock').text(comboData.availableStock);
+            
+            // Update stock indicator
+            const stockIndicator = $('#stockIndicator');
+            stockIndicator.removeClass('stock-high stock-medium stock-low stock-zero');
+            
+            if (comboData.availableStock === 0) {
+                stockIndicator.addClass('stock-zero');
+            } else if (comboData.availableStock < 5) {
+                stockIndicator.addClass('stock-low');
+            } else if (comboData.availableStock < 20) {
+                stockIndicator.addClass('stock-medium');
+            } else {
+                stockIndicator.addClass('stock-high');
+            }
+
+            // Display stock details
+            let stockHtml = '<div class="row">';
+            comboData.components.forEach(component => {
+                const statusClass = component.isLimiting ? 'component-limiting' : 'component-ok';
+                const limitingText = component.isLimiting ? ' (Limitante)' : '';
+                
+                stockHtml += `
+                    <div class="col-md-6 mb-2">
+                        <div class="p-2 border rounded ${statusClass}">
+                            <strong>${component.componentName}</strong>${limitingText}<br>
+                            <small>Stock: ${component.currentStock} | Requerido: ${component.requiredQty} | 
+                            Máximo combos: ${component.maxCombosFromComponent}</small>
+                        </div>
+                    </div>
+                `;
+            });
+            stockHtml += '</div>';
+            $('#stockDetails').html(stockHtml);
+
+            // Load cost information
+            loadCostInfo();
+        }
+
+        function loadCostInfo() {
+            $.ajax({
+                url: `/api/services/combo-cost/${comboId}`,
+                method: 'GET',
+                data: { tenantId: getCurrentTenantId() },
+                success: function(costData) {
+                    let costHtml = `
+                        <div class="row">
+                            <div class="col-md-3">
+                                <strong>Precio Venta:</strong><br>
+                                $${costData.comboSalePrice.toFixed(2)}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Costo Combo:</strong><br>
+                                $${costData.comboCost.toFixed(2)}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Margen:</strong><br>
+                                $${costData.comboMargin.toFixed(2)} (${costData.marginPercentage.toFixed(1)}%)
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Descuento Implícito:</strong><br>
+                                $${costData.impliedDiscount.toFixed(2)}
+                            </div>
+                        </div>
+                    `;
+                    $('#costDetails').html(costHtml);
+                },
+                error: function(xhr) {
+                    console.error('Error loading cost info:', xhr);
+                    $('#costDetails').html('<p class="text-muted">No se pudo cargar la información de costo</p>');
+                }
+            });
+        }
+
+        function loadComponents() {
+            $.ajax({
+                url: `/api/products/${comboId}/components`,
+                method: 'GET',
+                data: { tenantId: getCurrentTenantId() },
+                success: function(response) {
+                    components = response.components.map(comp => ({
+                        id: comp.id,
+                        componentProductId: comp.componentProductId,
+                        qty: comp.qty,
+                        component: comp.component
+                    }));
+                    
+                    displayComponents();
+                    showLoading(false);
+                },
+                error: function(xhr) {
+                    showLoading(false);
+                    const error = xhr.responseJSON?.error || 'Error al cargar componentes';
+                    showAlert(error, 'danger');
+                }
+            });
+        }
+
+        function displayComponents() {
+            const componentsList = $('#componentsList');
+            componentsList.empty();
+
+            components.forEach(component => {
+                const componentHtml = createComponentItem(component);
+                componentsList.append(componentHtml);
+            });
+        }
+
+        function createComponentItem(component) {
+            const statusClass = component.maxCombosFromStock === 0 ? 'component-limiting' : 'component-ok';
+            
+            return `
+                <div class="component-item ${statusClass}" data-component-id="${component.id}">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-component" 
+                            onclick="removeComponent(${component.id})">
+                        <i class="bi bi-x"></i>
+                    </button>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Componente</label>
+                            <input type="text" class="form-control" 
+                                   value="${component.component.name} (${component.component.sku})" readonly>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Cantidad</label>
+                            <input type="number" class="form-control component-qty" value="${component.qty}" 
+                                   min="0.001" step="0.001" required
+                                   onchange="updateComponentQty(${component.id}, this.value)">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Stock Actual</label>
+                            <input type="text" class="form-control" value="${component.currentStock || 'N/A'}" readonly>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Máx. Combos</label>
+                            <input type="text" class="form-control" value="${component.maxCombosFromStock || 'N/A'}" readonly>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Precio Unit.</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="text" class="form-control" value="${component.component.salePrice.toFixed(2)}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function initializeComponentSearch() {
+            $('#componentSearch').select2({
+                ajax: {
+                    url: '/api/products',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            tenantId: getCurrentTenantId(),
+                            productType: 'SIMPLE',
+                            search: params.term,
+                            page: params.page || 1
+                        };
+                    },
+                    processResults: function(data) {
+                        // Filter out already added components
+                        const existingComponentIds = components.map(c => c.componentProductId);
+                        const availableProducts = data.products.filter(p => !existingComponentIds.includes(p.id));
+                        
+                        return {
+                            results: availableProducts.map(product => ({
+                                id: product.id,
+                                text: `${product.name} (${product.sku})`,
+                                product: product
+                            }))
+                        };
+                    }
+                },
+                minimumInputLength: 2,
+                placeholder: 'Buscar producto simple...',
+                allowClear: true
+            });
+        }
+
+        $('#addComponent').click(function() {
+            const selected = $('#componentSearch').select2('data');
+            if (selected.length === 0) {
+                showAlert('Por favor seleccione un componente', 'warning');
+                return;
+            }
+
+            const product = selected[0].product;
+            
+            // Add to components array
+            const newComponent = {
+                id: null, // New component, will be assigned on save
+                componentProductId: product.id,
+                qty: 1,
+                component: product
+            };
+            
+            components.push(newComponent);
+            
+            // Add to display
+            const componentHtml = createComponentItem(newComponent);
+            $('#componentsList').append(componentHtml);
+            
+            // Clear search
+            $('#componentSearch').val(null).trigger('change');
+            
+            showAlert('Componente agregado exitosamente', 'success');
+        });
+
+        function removeComponent(componentId) {
+            if (confirm('¿Está seguro de eliminar este componente del combo?')) {
+                components = components.filter(c => c.id !== componentId);
+                $(`[data-component-id="${componentId}"]`).remove();
+                
+                // Refresh component search options
+                $('#componentSearch').val(null).trigger('change');
+                
+                showAlert('Componente eliminado', 'info');
+            }
+        }
+
+        function updateComponentQty(componentId, qty) {
+            const component = components.find(c => c.id === componentId);
+            if (component) {
+                component.qty = parseFloat(qty);
+            }
+        }
+
+        $('#saveComponents').click(function() {
+            if (components.length === 0) {
+                showAlert('El combo debe tener al menos un componente', 'warning');
+                return;
+            }
+
+            // Validate quantities
+            for (const component of components) {
+                if (!component.qty || component.qty <= 0) {
+                    showAlert(`La cantidad del componente ${component.component.name} debe ser mayor a 0`, 'warning');
+                    return;
+                }
+            }
+
+            const componentsData = components.map(comp => ({
+                componentProductId: comp.componentProductId,
+                qty: comp.qty
+            }));
+
+            showLoading(true);
+
+            $.ajax({
+                url: `/api/products/${comboId}/components`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    tenantId: getCurrentTenantId(),
+                    components: componentsData
+                }),
+                success: function(response) {
+                    showLoading(false);
+                    showAlert('Componentes actualizados exitosamente', 'success');
+                    // Reload data to show updated stock
+                    setTimeout(() => {
+                        loadComboData();
+                    }, 1000);
+                },
+                error: function(xhr) {
+                    showLoading(false);
+                    const error = xhr.responseJSON?.error || 'Error al actualizar componentes';
+                    showAlert(error, 'danger');
+                }
+            });
+        });
+
+        $('#recalculateBtn').click(function() {
+            loadComboData();
+            showAlert('Stock recalculado', 'info');
+        });
+
+        function getCurrentTenantId() {
+            // This should get the current tenant ID from session or context
+            return 1; // Placeholder
+        }
+
+        function showLoading(show) {
+            if (show) {
+                $('#loadingModal').modal('show');
+            } else {
+                $('#loadingModal').modal('hide');
+            }
+        }
+
+        function showAlert(message, type) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            $('.card-body').prepend(alertHtml);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                $('.alert').alert('close');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

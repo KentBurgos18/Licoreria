@@ -1,0 +1,92 @@
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: licoreria-db
+    environment:
+      POSTGRES_DB: licoreria
+      POSTGRES_USER: licoreria_user
+      POSTGRES_PASSWORD: licoreria_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/10-seed.sql
+    networks:
+      - licoreria-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U licoreria_user -d licoreria"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+
+  # Aplicación Node.js
+  app:
+    build: .
+    container_name: licoreria-app
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: licoreria
+      DB_USER: licoreria_user
+      DB_PASSWORD: licoreria_password
+      PORT: 3000
+      NODE_ENV: production
+      JWT_SECRET: tu_secreto_jwt_aqui
+      SESSION_SECRET: tu_secreto_session_aqui
+      DEFAULT_TENANT_ID: 1
+      BASE_URL: http://localhost:3000
+      # PayPhone - Cajita de Pagos (pago con tarjeta)
+      PAYPHONE_TOKEN: ${PAYPHONE_TOKEN:-}
+      PAYPHONE_STORE_ID: ${PAYPHONE_STORE_ID:-}
+      # OAuth - Google (obtener en https://console.cloud.google.com)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # OAuth - Microsoft (obtener en https://portal.azure.com)
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      # OAuth - Apple (requiere Apple Developer account)
+      APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
+      APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+      APPLE_KEY_ID: ${APPLE_KEY_ID:-}
+      APPLE_PRIVATE_KEY: ${APPLE_PRIVATE_KEY:-}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - licoreria-network
+    volumes:
+      - app_logs:/app/logs
+      - app_uploads:/app/uploads
+      - ./views:/app/views
+      - ./public:/app/public
+      - ./models:/app/models
+      - ./routes:/app/routes
+      - ./services:/app/services
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  app_logs:
+    driver: local
+  app_uploads:
+    driver: local
+
+networks:
+  licoreria-network:
+    driver: bridge

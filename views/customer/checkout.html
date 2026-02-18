@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
+    <title>Checkout - LOCOBAR</title>
+    <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.css">
+    <script type="module" src="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js"></script>
+    <style>
+        .navbar-custom {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        #userMenu .user-name-text {
+            display: none;
+        }
+        @media (min-width: 576px) {
+            #userMenu .user-name-text {
+                display: inline;
+            }
+        }
+        .payment-methods-scroll {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+        .payment-methods-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+        .payment-methods-scroll::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+        .payment-method-card {
+            flex: 0 0 auto;
+            width: 140px;
+            min-height: 100px;
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            text-align: center;
+            transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+            scroll-snap-align: start;
+        }
+        .payment-method-card:hover {
+            border-color: #0d6efd;
+            background-color: #f8f9fa;
+        }
+        .payment-method-card.active {
+            border-color: #0d6efd;
+            background-color: #e7f1ff;
+            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+        }
+        .payment-method-card .bi {
+            font-size: 1.75rem;
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #0d6efd;
+        }
+        .payment-method-card.active .bi {
+            color: #0a58ca;
+        }
+        .payment-method-card small {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark navbar-custom">
+        <div class="container-fluid">
+            <a class="navbar-brand spa-link" href="/customer/catalog">
+                <i class="bi bi-shop"></i> LOCOBAR
+            </a>
+            <div class="d-flex align-items-center">
+                <div class="dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false" title="Mi cuenta">
+                        <i class="bi bi-person-circle fs-4"></i>
+                        <span class="user-name-text ms-1" id="userName">Usuario</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item spa-link" href="/customer/orders"><i class="bi bi-receipt"></i> Mis Pedidos</a></li>
+                        <li><a class="dropdown-item spa-link" href="/customer/credits"><i class="bi bi-credit-card"></i> Crédito que está debiendo</a></li>
+                        <li><a class="dropdown-item spa-link" href="/customer/group-purchases"><i class="bi bi-people"></i> Compras Grupales</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="spa-view-content">
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <h2 class="mb-4"><i class="bi bi-credit-card"></i> Finalizar Compra</h2>
+        <div id="alertContainer"></div>
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Método de Pago</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label d-block mb-2">Seleccione método de pago</label>
+                            <input type="hidden" id="paymentMethod" value="" required>
+                            <div class="payment-methods-scroll" id="paymentMethodsScroll">
+                                <div class="payment-method-card" data-method="CASH" title="Efectivo">
+                                    <i class="bi bi-cash-stack"></i>
+                                    <strong>Efectivo</strong>
+                                    <small class="d-block">Pago al recibir</small>
+                                </div>
+                                <div class="payment-method-card" data-method="CARD" title="Tarjeta">
+                                    <i class="bi bi-credit-card-2-front"></i>
+                                    <strong>Tarjeta</strong>
+                                    <small class="d-block">Visa, Mastercard</small>
+                                </div>
+                                <div class="payment-method-card" data-method="TRANSFER" title="Transferencia">
+                                    <i class="bi bi-bank"></i>
+                                    <strong>Transferencia</strong>
+                                    <small class="d-block">Transferencia bancaria</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="payphone-inline-section" class="mb-3 d-none">
+                            <label class="form-label">Datos de pago con tarjeta</label>
+                            <p class="text-muted small">Complete los datos y use el botón de pago de PayPhone.</p>
+                            <div id="pp-button-inline"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notas adicionales (opcional)</label>
+                            <textarea class="form-control" id="notes" rows="3" placeholder="Instrucciones especiales, dirección de entrega, etc."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Resumen del Pedido</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="orderSummary">
+                            <!-- Order items will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card sticky-top" style="top: 20px;">
+                    <div class="card-body">
+                        <h5 class="card-title">Total</h5>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal:</span>
+                            <span id="subtotal">$0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span id="taxLabel">IVA:</span>
+                            <span id="tax">$0.00</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-3">
+                            <strong>Total:</strong>
+                            <strong id="total" class="text-primary">$0.00</strong>
+                        </div>
+                        <p id="payphoneConfirmNote" class="small text-muted d-none mb-2">Complete el formulario de pago con tarjeta en la columna izquierda y use el botón de PayPhone para pagar.</p>
+                        <button class="btn btn-success w-100 btn-lg" onclick="processOrder()" id="processBtn">
+                            <i class="bi bi-check-circle"></i> Confirmar Pedido
+                        </button>
+                        <a href="/customer/cart" class="btn btn-outline-secondary w-100 mt-2 spa-link">
+                            <i class="bi bi-arrow-left"></i> Volver al Carrito
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Pago con tarjeta (Cajita PayPhone) -->
+    <div class="modal fade" id="payphoneModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-credit-card"></i> Pagar con tarjeta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="pp-button-modal"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Esperando confirmación de pago en efectivo -->
+    <div class="modal fade" id="waitingCashModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-hourglass-split"></i> Esperando confirmación</h5>
+                </div>
+                <div class="modal-body text-center">
+                    <p>Esperando que un empleado o administrador confirme el pago en efectivo.</p>
+                    <p class="text-muted small">Tiempo máximo de espera sugerido: 10 minutos.</p>
+                    <div class="spinner-border text-primary my-3" role="status"></div>
+                    <p id="waitingTenMinMsg" class="text-muted small mt-2 d-none">Puede seguir esperando o cerrar esta ventana. Puede ver el estado del pedido en <a href="/customer/orders" class="spa-link">Mis Pedidos</a>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Gracias por su compra -->
+    <div class="modal fade" id="thankYouModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center py-5">
+                    <h4 class="text-success mb-3">¡Gracias por su compra!</h4>
+                    <p class="text-muted mb-0" id="thankYouSlogan">Sistema de Licorería</p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="thankYouCloseBtn">Aceptar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/libs/js/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/libs/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let cart = JSON.parse(localStorage.getItem('customerCart')) || [];
+        let customer = JSON.parse(localStorage.getItem('customer')) || null;
+        let currentTaxRate = null; // Solo desde Configuración (api/public/tax-rate)
+
+        $(document).ready(function() {
+            $.get('/api/public/brand-slogan', function(r) { if (r && r.pageTitleCheckout) document.title = r.pageTitleCheckout; });
+            // Check authentication
+            const token = localStorage.getItem('customerToken');
+            if (!token) {
+                window.location.href = '/customer/login';
+                return;
+            }
+
+            if (customer) {
+                $('#userName').text(customer.name);
+            }
+
+            if (cart.length === 0) {
+                if (window.spaNavigate) window.spaNavigate('/customer/cart'); else window.location.href = '/customer/cart';
+                return;
+            }
+
+            loadTaxRate();
+            loadPayphoneAssets();
+            $('#paymentMethod').on('change', onPaymentMethodChange);
+            $(document).on('click', '.payment-method-card', function() {
+                var method = $(this).data('method');
+                $('.payment-method-card').removeClass('active');
+                $(this).addClass('active');
+                $('#paymentMethod').val(method).trigger('change');
+            });
+        });
+
+        function loadPayphoneAssets() {
+            if (document.querySelector('script[data-payphone-sdk]')) return;
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.css';
+            link.setAttribute('data-payphone-sdk', '1');
+            document.head.appendChild(link);
+            var script = document.createElement('script');
+            script.src = 'https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js';
+            script.type = 'module';
+            script.setAttribute('data-payphone-sdk', '1');
+            document.head.appendChild(script);
+        }
+
+        function onPaymentMethodChange() {
+            var method = $('#paymentMethod').val();
+            if (method === 'CARD') {
+                $('#payphone-inline-section').removeClass('d-none');
+                $('#processBtn').addClass('d-none');
+                $('#payphoneConfirmNote').removeClass('d-none');
+                showPayphoneInline();
+            } else {
+                $('#payphone-inline-section').addClass('d-none');
+                $('#pp-button-inline').empty();
+                $('#processBtn').removeClass('d-none');
+                $('#payphoneConfirmNote').addClass('d-none');
+                payphonePPB = null;
+            }
+        }
+
+        function showPayphoneInline() {
+            var container = document.getElementById('pp-button-inline');
+            if (!container) return;
+            container.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary"></div><p class="mt-2 small text-muted">Cargando formulario de pago...</p></div>';
+            var items = cart.map(function(item) { return { productId: item.productId, quantity: item.quantity }; });
+            if (items.length === 0) {
+                container.innerHTML = '<p class="text-warning">Añada productos al carrito.</p>';
+                return;
+            }
+            $.ajax({
+                url: '/api/customer/checkout/prepare-payphone',
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('customerToken') },
+                contentType: 'application/json',
+                data: JSON.stringify({ items: items, notes: $('#notes').val() || null }),
+                success: function(config) {
+                    container.innerHTML = '';
+                    loadPayphoneScript(function() {
+                        initPayphoneCajitaInline(config);
+                    });
+                },
+                error: function(xhr) {
+                    var msg = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : 'Error al preparar el pago con tarjeta';
+                    container.innerHTML = '<p class="text-danger">' + msg + '</p>';
+                }
+            });
+        }
+
+        function logout() {
+            localStorage.removeItem('customerToken');
+            localStorage.removeItem('customer');
+            localStorage.removeItem('customerCart');
+            window.location.href = '/customer/login';
+        }
+
+        function loadTaxRate() {
+            $.ajax({
+                url: '/api/public/tax-rate',
+                method: 'GET',
+                data: { tenantId: 1 },
+                success: function(response) {
+                    currentTaxRate = response.configured && response.value != null ? parseFloat(response.value) : null;
+                    updateTaxLabel();
+                    displayOrderSummary();
+                },
+                error: function() {
+                    currentTaxRate = null;
+                    updateTaxLabel();
+                    displayOrderSummary();
+                }
+            });
+        }
+
+        function updateTaxLabel() {
+            if (currentTaxRate == null) {
+                $('#taxLabel').text('IVA: No configurado');
+                $('#processBtn').prop('disabled', true);
+            } else {
+                $('#taxLabel').text(`IVA (${currentTaxRate.toFixed(0)}%):`);
+                $('#processBtn').prop('disabled', false);
+            }
+        }
+
+        function displayOrderSummary() {
+            const summary = $('#orderSummary');
+            let html = '';
+
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                html += `
+                    <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
+                        <div>
+                            <strong>${item.productName}</strong>
+                            <div class="text-muted small">Cantidad: ${item.quantity} x $${item.price.toFixed(2)}</div>
+                        </div>
+                        <div class="text-end">
+                            <strong>$${itemTotal.toFixed(2)}</strong>
+                        </div>
+                    </div>
+                `;
+            });
+
+            summary.html(html);
+            updateTotals();
+        }
+
+        function updateTotals() {
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const tax = currentTaxRate != null ? subtotal * (currentTaxRate / 100) : 0;
+            const total = subtotal + tax;
+
+            $('#subtotal').text(`$${subtotal.toFixed(2)}`);
+            $('#tax').text(`$${tax.toFixed(2)}`);
+            $('#total').text(`$${total.toFixed(2)}`);
+        }
+
+        function processOrder() {
+            const paymentMethod = $('#paymentMethod').val();
+
+            if (currentTaxRate == null) {
+                showAlert('El IVA no está configurado. No es posible completar la compra. Contacte al administrador.', 'warning');
+                return;
+            }
+            if (!paymentMethod) {
+                showAlert('Por favor seleccione un método de pago', 'warning');
+                return;
+            }
+
+            if (cart.length === 0) {
+                showAlert('El carrito está vacío', 'warning');
+                return;
+            }
+
+            const items = cart.map(item => ({
+                productId: item.productId,
+                quantity: item.quantity
+            }));
+
+            if (paymentMethod === 'CARD') {
+                showAlert('Complete el pago con el formulario de tarjeta que se muestra arriba y use el botón de PayPhone para pagar.', 'info');
+                return;
+            }
+
+            $.ajax({
+                url: '/api/customer/cart/validate',
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('customerToken')
+                },
+                contentType: 'application/json',
+                data: JSON.stringify({ items }),
+                success: function(response) {
+                    if (!response.valid) {
+                        const invalidItems = response.validations.filter(v => !v.valid);
+                        let errorMsg = 'Algunos productos ya no están disponibles:\n';
+                        invalidItems.forEach(item => {
+                            errorMsg += `- ${item.productName}: Disponible ${item.availableStock}, solicitado ${item.requestedQty}\n`;
+                        });
+                        showAlert(errorMsg, 'danger');
+                        return;
+                    }
+
+                    const orderData = {
+                        items,
+                        paymentMethod,
+                        notes: $('#notes').val() || null
+                    };
+
+                    $.ajax({
+                        url: '/api/customer/checkout',
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + localStorage.getItem('customerToken')
+                        },
+                        contentType: 'application/json',
+                        data: JSON.stringify(orderData),
+                        success: function(response) {
+                            if (response.status === 'PENDING' && response.saleId) {
+                                showWaitingCashAndListen(response.saleId);
+                                return;
+                            }
+                            showAlert('¡Pedido realizado exitosamente!', 'success');
+                            localStorage.removeItem('customerCart');
+                            cart = [];
+                            setTimeout(function() { if (window.spaNavigate) window.spaNavigate('/customer/orders'); else window.location.href = '/customer/orders'; }, 2000);
+                        },
+                        error: function(xhr) {
+                            if (xhr.status === 401) {
+                                window.location.href = '/customer/login';
+                            } else {
+                                const error = xhr.responseJSON?.error || 'Error al procesar el pedido';
+                                showAlert(error, 'danger');
+                            }
+                        }
+                    });
+                },
+                error: function(xhr) {
+                    if (xhr.status === 401) {
+                        window.location.href = '/customer/login';
+                    } else {
+                        showAlert('Error al validar el carrito', 'danger');
+                    }
+                }
+            });
+        }
+
+        var payphonePPB = null;
+
+        function initPayphoneCajitaInline(config) {
+            try {
+                if (typeof window.PPaymentButtonBox === 'undefined') {
+                    document.getElementById('pp-button-inline').innerHTML = '<p class="text-danger">No se pudo cargar el formulario de pago. Recarga la página e intenta de nuevo.</p>';
+                    return;
+                }
+                if (payphonePPB) payphonePPB = null;
+                payphonePPB = new window.PPaymentButtonBox({
+                    token: config.token,
+                    storeId: config.storeId,
+                    clientTransactionId: config.clientTransactionId,
+                    amount: config.amount,
+                    amountWithoutTax: config.amountWithoutTax,
+                    amountWithTax: config.amountWithTax,
+                    tax: config.tax,
+                    currency: config.currency || 'USD',
+                    reference: config.reference || 'Venta LOCOBAR',
+                    lang: 'es',
+                    defaultMethod: 'card'
+                });
+                payphonePPB.render('pp-button-inline');
+            } catch (e) {
+                console.error('PayPhone init error:', e);
+                document.getElementById('pp-button-inline').innerHTML = '<p class="text-danger">Error al cargar el formulario de pago. Intente de nuevo.</p>';
+            }
+        }
+
+        function initPayphoneCajita(config, modal) {
+            try {
+                if (typeof window.PPaymentButtonBox === 'undefined') {
+                    showAlert('No se pudo cargar el formulario de pago. Recarga la página e intenta de nuevo.', 'danger');
+                    if (modal && modal.hide) modal.hide();
+                    return;
+                }
+                if (payphonePPB) payphonePPB = null;
+                payphonePPB = new window.PPaymentButtonBox({
+                    token: config.token,
+                    storeId: config.storeId,
+                    clientTransactionId: config.clientTransactionId,
+                    amount: config.amount,
+                    amountWithoutTax: config.amountWithoutTax,
+                    amountWithTax: config.amountWithTax,
+                    tax: config.tax,
+                    currency: config.currency || 'USD',
+                    reference: config.reference || 'Venta LOCOBAR',
+                    lang: 'es',
+                    defaultMethod: 'card'
+                });
+                payphonePPB.render('pp-button-modal');
+            } catch (e) {
+                console.error('PayPhone init error:', e);
+                showAlert('Error al cargar el formulario de pago. Intente de nuevo.', 'danger');
+                if (modal && modal.hide) modal.hide();
+            }
+        }
+
+        function loadPayphoneScript(callback) {
+            if (typeof window.PPaymentButtonBox !== 'undefined') {
+                callback();
+                return;
+            }
+            loadPayphoneAssets();
+            var attempts = 0;
+            var maxAttempts = 50;
+            var interval = setInterval(function() {
+                attempts++;
+                if (typeof window.PPaymentButtonBox !== 'undefined') {
+                    clearInterval(interval);
+                    callback();
+                    return;
+                }
+                if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                    import('https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js').then(function(m) {
+                        window.PPaymentButtonBox = m.PPaymentButtonBox || m.default || m;
+                        callback();
+                    }).catch(function() {
+                        callback();
+                    });
+                }
+            }, 300);
+        }
+
+        function startPayphoneFlow(items) {
+            $.ajax({
+                url: '/api/customer/checkout/prepare-payphone',
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('customerToken') },
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    items,
+                    notes: $('#notes').val() || null
+                }),
+                success: function(config) {
+                    var modalEl = document.getElementById('payphoneModal');
+                    var modal = new bootstrap.Modal(modalEl);
+                    document.getElementById('pp-button-modal').innerHTML = '';
+
+                    // Primero mostrar el modal, y DESPUÉS de que sea visible,
+                    // inicializar la cajita de Payphone (necesita el div visible para renderizar)
+                    modalEl.addEventListener('shown.bs.modal', function onShown() {
+                        modalEl.removeEventListener('shown.bs.modal', onShown);
+                        loadPayphoneScript(function() {
+                            initPayphoneCajita(config, modal);
+                        });
+                    }, { once: true });
+                    modal.show();
+                },
+                error: function(xhr) {
+                    if (xhr.status === 401) {
+                        window.location.href = '/customer/login';
+                    } else {
+                        const msg = xhr.responseJSON?.error || 'Error al preparar el pago con tarjeta';
+                        showAlert(msg, 'danger');
+                    }
+                }
+            });
+        }
+
+        function showAlert(message, type) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message.replace(/\n/g, '<br>')}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            $('#alertContainer').html(alertHtml);
+        }
+
+        var waitingCashModalShown = false;
+        var saleStatusPollInterval = null;
+
+        function showWaitingCashAndListen(saleId) {
+            const token = localStorage.getItem('customerToken');
+            const waitModal = new bootstrap.Modal(document.getElementById('waitingCashModal'));
+            waitModal.show();
+            waitingCashModalShown = true;
+
+            const onConfirmed = function() {
+                if (!waitingCashModalShown) return;
+                waitingCashModalShown = false;
+                if (saleStatusPollInterval) clearInterval(saleStatusPollInterval);
+                waitModal.hide();
+                localStorage.removeItem('customerCart');
+                cart = [];
+                $.get('/api/public/brand-slogan', function(r) {
+                    const slogan = (r && r.brandSlogan) ? r.brandSlogan : 'Sistema de Licorería';
+                    $('#thankYouSlogan').text(slogan);
+                });
+                const thankYouModal = new bootstrap.Modal(document.getElementById('thankYouModal'));
+                thankYouModal.show();
+                document.getElementById('thankYouCloseBtn').onclick = function() {
+                    thankYouModal.hide();
+                    if (window.spaNavigate) window.spaNavigate('/customer/catalog'); else window.location.href = '/customer/catalog';
+                };
+            };
+
+            const socket = io({
+                auth: { token: token },
+                query: { saleId: saleId }
+            });
+            socket.on('sale-confirmed', onConfirmed);
+            socket.on('connect_error', function() {
+                // Fallback: poll status
+                saleStatusPollInterval = setInterval(function() {
+                    $.ajax({
+                        url: '/api/customer/sales/' + saleId + '/status',
+                        method: 'GET',
+                        headers: { 'Authorization': 'Bearer ' + token },
+                        success: function(data) {
+                            if (data.status === 'COMPLETED') {
+                                onConfirmed();
+                            }
+                        }
+                    });
+                }, 3000);
+            });
+
+            setTimeout(function() {
+                if (waitingCashModalShown) {
+                    document.getElementById('waitingTenMinMsg').classList.remove('d-none');
+                }
+            }, 10 * 60 * 1000);
+        }
+    </script>
+    </div><!-- #spa-view-content -->
+</body>
+</html>

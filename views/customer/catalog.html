@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
+    <title>Catálogo - LOCOBAR</title>
+    <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .navbar-custom {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        /* Tarjeta de producto horizontal: imagen izquierda, contenido derecha */
+        .product-card {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 10px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+            height: 100%;
+        }
+        .product-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .product-card-image-wrap {
+            flex-shrink: 0;
+            width: 70px;
+            height: 70px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f8f8f8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .product-card-image-wrap img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .product-card-image-wrap .product-image-placeholder {
+            width: 100%;
+            height: 100%;
+        }
+        .product-card-image-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ccc;
+            font-size: 1.8em;
+        }
+        .product-card-body {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .product-card-body h5 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            cursor: pointer;
+        }
+        .product-card-body h5.expanded {
+            -webkit-line-clamp: unset;
+            overflow: visible;
+        }
+        /* Barra de búsqueda: simple, lupa a la derecha */
+        .search-input-wrap .form-control {
+            border-right: 0;
+        }
+        .search-input-wrap .input-group-text {
+            border-left: 0;
+        }
+        .search-input-wrap .form-control:focus {
+            border-color: #ced4da;
+            box-shadow: none;
+        }
+        .search-input-wrap .form-control:focus + .input-group-text,
+        .search-input-wrap:focus-within .input-group-text {
+            border-color: #86b7fe;
+        }
+        .combo-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #ffc107;
+            color: #000;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+        .stock-badge {
+            display: inline;
+            padding: 2px 8px;
+            border-radius: 2px 12px 12px 2px;
+            font-size: 0.65em;
+            white-space: nowrap;
+            align-self: flex-start;
+        }
+        .stock-available {
+            background: #d4edda;
+            color: #155724;
+        }
+        .stock-low {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .stock-out {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        /* Barra inferior del carrito: sale de abajo */
+        #cartBottomBar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1050;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #fff;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        #cartBottomBar.cart-bar-visible {
+            transform: translateY(0);
+        }
+        #cartBottomBar .cart-bar-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        #cartBottomBar .cart-bar-items {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        #cartBottomBar .cart-bar-total {
+            font-size: 0.9rem;
+            opacity: 0.95;
+        }
+        #cartBottomBar .btn-ver-carrito {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #fff;
+            color: #0f3460;
+            font-weight: 600;
+            padding: 10px 18px;
+            border-radius: 8px;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        #cartBottomBar .btn-ver-carrito:hover {
+            background: #f0f0f0;
+            color: #16213e;
+        }
+        /* Botón perfil: solo icono en móvil */
+        #userMenu .user-name-text {
+            display: none;
+        }
+        @media (min-width: 576px) {
+            #userMenu .user-name-text {
+                display: inline;
+            }
+        }
+        body.cart-bar-visible { padding-bottom: 80px; }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark navbar-custom">
+        <div class="container-fluid">
+            <a class="navbar-brand spa-link" href="/customer/catalog">
+                <i class="bi bi-shop"></i> LOCOBAR
+            </a>
+            <div class="d-flex align-items-center">
+                <div class="dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false" title="Mi cuenta">
+                        <i class="bi bi-person-circle fs-4"></i>
+                        <span class="user-name-text ms-1" id="userName">Usuario</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item spa-link" href="/customer/orders"><i class="bi bi-receipt"></i> Mis Pedidos</a></li>
+                        <li><a class="dropdown-item spa-link" href="/customer/credits"><i class="bi bi-credit-card"></i> Crédito que está debiendo</a></li>
+                        <li><a class="dropdown-item spa-link" href="/customer/group-purchases"><i class="bi bi-people"></i> Compras Grupales</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="spa-view-content">
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <!-- Barra de búsqueda y filtro -->
+        <div class="search-section mb-4">
+            <div class="input-group input-group-lg search-input-wrap">
+                <input type="text" class="form-control" id="searchInput" placeholder="Buscar productos...">
+                <span class="input-group-text bg-white border-start-0"><i class="bi bi-search text-muted"></i></span>
+            </div>
+            <div class="mt-2">
+                <select class="form-select form-select-sm" id="typeFilter" aria-label="Filtro de tipo de producto">
+                    <option value="">Todos los tipos</option>
+                    <option value="SIMPLE">Productos Simples</option>
+                    <option value="COMBO">Combos</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div id="productsGrid" class="row g-3">
+            <div class="col-12 text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra inferior del carrito (aparece al agregar ítems) -->
+    <div id="cartBottomBar" aria-hidden="true">
+        <div class="cart-bar-left">
+            <span class="cart-bar-items" id="cartBarItems">0 items</span>
+            <span class="cart-bar-total" id="cartBarTotal">Total: $0.00</span>
+        </div>
+        <a href="/customer/cart" class="btn-ver-carrito spa-link" id="cartBarBtn">
+            <i class="bi bi-cart3"></i> Ver mi carrito
+        </a>
+    </div>
+
+    <script src="/libs/js/jquery.min.js"></script>
+    <script src="/libs/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let cart = JSON.parse(localStorage.getItem('customerCart')) || [];
+        let customer = JSON.parse(localStorage.getItem('customer')) || null;
+
+        $(document).ready(function() {
+            $.get('/api/public/brand-slogan', function(r) { if (r && r.pageTitleCatalog) document.title = r.pageTitleCatalog; });
+            // Check authentication
+            const token = localStorage.getItem('customerToken');
+            if (!token) {
+                window.location.href = '/customer/login';
+                return;
+            }
+
+            // Load customer info
+            if (customer) {
+                $('#userName').text(customer.name);
+            }
+
+            updateCartBar();
+            loadProducts();
+
+            // Búsqueda en tiempo real (con debounce)
+            let searchTimeout;
+            $('#searchInput').on('input keyup', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(loadProducts, 300);
+            });
+            $('#searchInput').on('keypress', function(e) {
+                if (e.which === 13) loadProducts();
+            });
+            $('#typeFilter').on('change', loadProducts);
+        });
+
+        function loadProducts() {
+            const search = $('#searchInput').val();
+            const productType = $('#typeFilter').val();
+
+            $.ajax({
+                url: '/api/customer/products',
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('customerToken')
+                },
+                data: { search, productType },
+                success: function(response) {
+                    displayProducts(response.products);
+                },
+                error: function(xhr) {
+                    if (xhr.status === 401) {
+                        window.location.href = '/customer/login';
+                    } else {
+                        showAlert('Error al cargar productos', 'danger');
+                    }
+                }
+            });
+        }
+
+        function displayProducts(products) {
+            const grid = $('#productsGrid');
+            grid.empty();
+
+            if (products.length === 0) {
+                grid.html(`
+                    <div class="col-12 text-center text-muted py-5">
+                        <i class="bi bi-inbox" style="font-size: 3em;"></i>
+                        <p class="mt-3">No se encontraron productos disponibles</p>
+                    </div>
+                `);
+                return;
+            }
+
+            products.forEach(product => {
+                const stockClass = product.currentStock > 10 ? 'stock-available' :
+                                 product.currentStock > 0 ? 'stock-low' : 'stock-out';
+                const stockText = product.currentStock > 0 ?
+                    `Stock disponibles: ${product.currentStock}` : 'Sin stock';
+                const nameEscaped = (product.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+                const productCard = `
+                    <div class="col-12 col-sm-6 col-lg-3 mb-3">
+                        <div class="product-card position-relative">
+                            ${product.productType === 'COMBO' ? '<div class="combo-badge">COMBO</div>' : ''}
+                            <div class="product-card-image-wrap">
+                                ${product.imageUrl ?
+                                    `<img src="${product.imageUrl}" alt="${nameEscaped}">` :
+                                    `<div class="product-image-placeholder product-card-image-placeholder"><i class="bi bi-image"></i></div>`
+                                }
+                            </div>
+                            <div class="product-card-body">
+                                <h5 class="mb-0" onclick="this.classList.toggle('expanded')">${product.name}</h5>
+                                <span class="stock-badge ${stockClass}">${stockText}</span>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <strong class="text-primary">$${product.salePrice.toFixed(2)}</strong>
+                                    <button class="btn btn-primary btn-sm"
+                                            onclick="addToCart(${product.id}, '${nameEscaped}', ${product.salePrice}, ${product.currentStock}, '${product.imageUrl || ''}')"
+                                            ${product.currentStock === 0 ? 'disabled' : ''}>
+                                        <i class="bi bi-cart-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.append(productCard);
+            });
+        }
+
+        function addToCart(productId, productName, price, maxStock, imageUrl) {
+            const existingItem = cart.find(item => item.productId === productId);
+            
+            if (existingItem) {
+                if (existingItem.quantity >= maxStock) {
+                    showAlert('No hay más stock disponible', 'warning');
+                    return;
+                }
+                existingItem.quantity += 1;
+            } else {
+                cart.push({
+                    productId,
+                    productName,
+                    price,
+                    quantity: 1,
+                    maxStock,
+                    imageUrl: imageUrl || null
+                });
+            }
+
+            localStorage.setItem('customerCart', JSON.stringify(cart));
+            updateCartBar();
+            showAlert((productName || '').replace(/\\'/g, "'") + ' agregado al carrito', 'success');
+        }
+
+        function updateCartBar() {
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const bar = document.getElementById('cartBottomBar');
+            if (!bar) return;
+            if (totalItems > 0) {
+                bar.classList.add('cart-bar-visible');
+                bar.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('cart-bar-visible');
+                document.getElementById('cartBarItems').textContent = totalItems === 1 ? '1 item' : totalItems + ' items';
+                document.getElementById('cartBarTotal').textContent = 'Total: $' + totalAmount.toFixed(2);
+            } else {
+                bar.classList.remove('cart-bar-visible');
+                bar.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('cart-bar-visible');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('customerToken');
+            localStorage.removeItem('customer');
+            localStorage.removeItem('customerCart');
+            window.location.href = '/customer/login';
+        }
+
+        function showAlert(message, type) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show position-fixed" 
+                     style="top: 80px; right: 20px; z-index: 9999; min-width: 300px;" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            $('body').append(alertHtml);
+            setTimeout(() => {
+                $('.alert').alert('close');
+            }, 3000);
+        }
+    </script>
+    </div><!-- #spa-view-content -->
+</body>
+</html>
