@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "jest"
+    "test": "jest",
+    "seed:first-deploy": "node scripts/seed-first-deploy.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
