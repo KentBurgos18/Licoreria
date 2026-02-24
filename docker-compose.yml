@@ -1,12 +1,13 @@
 services:
   # Base de datos PostgreSQL
   postgres:
-    image: postgres:15-alpine
+    image: postgres:17-alpine
     container_name: licoreria-db
     environment:
       POSTGRES_DB: licoreria
       POSTGRES_USER: licoreria_user
       POSTGRES_PASSWORD: licoreria_password
+      TZ: America/Guayaquil
     ports:
       - "5432:5432"
     volumes:
@@ -39,10 +40,14 @@ services:
       DB_PASSWORD: licoreria_password
       PORT: 3000
       NODE_ENV: production
+      TZ: America/Guayaquil
       JWT_SECRET: tu_secreto_jwt_aqui
       SESSION_SECRET: tu_secreto_session_aqui
       DEFAULT_TENANT_ID: 1
       BASE_URL: http://localhost:3000
+      # Web Push (VAPID keys)
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       # PayPhone - Cajita de Pagos (pago con tarjeta)
       PAYPHONE_TOKEN: ${PAYPHONE_TOKEN:-}
       PAYPHONE_STORE_ID: ${PAYPHONE_STORE_ID:-}

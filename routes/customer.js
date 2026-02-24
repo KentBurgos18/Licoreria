@@ -1,7 +1,8 @@
 const express = require('express');
-const { Product, InventoryMovement, Sale, SaleItem, Customer, GroupPurchase, GroupPurchaseParticipant, Setting, User, Notification, PayphonePendingPayment } = require('../models');
+const { Product, ProductCategory, ProductPresentation, InventoryMovement, Sale, SaleItem, Customer, GroupPurchase, GroupPurchaseParticipant, Setting, User, Notification, PayphonePendingPayment } = require('../models');
 const ComboService = require('../services/ComboService');
 const WebPushService = require('../services/WebPushService');
+const { getSimpleProductAvailability, validateSimpleSaleQuantity, resolveMovement } = require('../services/InventoryPoolHelper');
 const { sequelize } = require('../models');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
@@ -45,7 +46,7 @@ const router = express.Router();
 // GET /customer/products - Get available products for customers
 router.get('/products', async (req, res) => {
   try {
-    const { tenantId = 1, search, productType } = req.query;
+    const { tenantId = 1, search, productType, categoryId, presentationId } = req.query;
 
     const whereClause = {
       tenantId,
@@ -63,6 +64,14 @@ router.get('/products', async (req, res) => {
       whereClause.productType = productType;
     }
 
+    if (categoryId) {
+      whereClause.categoryId = categoryId;
+    }
+
+    if (presentationId) {
+      whereClause.presentationId = presentationId;
+    }
+
     const products = await Product.findAll({
       where: whereClause,
       include: [
@@ -71,6 +80,14 @@ router.get('/products', async (req, res) => {
           include: [{
             association: 'component'
           }],
+          required: false
+        },
+        {
+          association: 'category',
+          required: false
+        },
+        {
+          association: 'presentation',
           required: false
         }
       ],
@@ -85,11 +102,11 @@ router.get('/products', async (req, res) => {
     if (productIds.length > 0) {
       const availabilityPromises = products.map(async (product) => {
         if (product.productType === 'SIMPLE') {
-          const currentStock = await InventoryMovement.getCurrentStock(tenantId, product.id);
+          const av = await getSimpleProductAvailability(tenantId, product);
           return {
             productId: product.id,
-            currentStock: currentStock || 0,
-            availableForSale: currentStock > 0
+            currentStock: av.currentStock,
+            availableForSale: av.availableForSale
           };
         } else {
           const availability = await ComboService.getComboAvailability(tenantId, product.id);
@@ -115,13 +132,18 @@ router.get('/products', async (req, res) => {
         name: product.name,
         sku: product.sku,
         productType: product.productType,
-        salePrice: parseFloat(product.salePrice),
+        salePrice: parseFloat(product.salePrice) || 0,
         imageUrl: product.imageUrl,
+        categoryId: product.categoryId || null,
+        categoryName: product.category ? product.category.name : null,
+        presentationId: product.presentationId || null,
+        presentationName: product.presentation ? product.presentation.name : null,
+        taxApplies: product.taxApplies !== false,
         currentStock: availability?.currentStock || 0,
         availableForSale: availability?.availableForSale || false,
         components: product.components || []
       };
-    }).filter(p => p.availableForSale); // Only show available products
+    }).filter(p => p.availableForSale);
 
     res.json({ products: productsWithStock });
   } catch (error) {
@@ -162,10 +184,10 @@ router.get('/products/:id', async (req, res) => {
     // Get availability
     let availability;
     if (product.productType === 'SIMPLE') {
-      const currentStock = await InventoryMovement.getCurrentStock(tenantId, id);
+      const av = await getSimpleProductAvailability(tenantId, product);
       availability = {
-        currentStock: currentStock || 0,
-        availableForSale: currentStock > 0
+        currentStock: av.currentStock,
+        availableForSale: av.availableForSale
       };
     } else {
       const comboAvailability = await ComboService.getComboAvailability(tenantId, id);
@@ -235,7 +257,8 @@ router.post('/cart/validate', authenticateCustomer, async (req, res) => {
 
       let availableStock = 0;
       if (product.productType === 'SIMPLE') {
-        availableStock = await InventoryMovement.getCurrentStock(tenantId, item.productId);
+        const av = await getSimpleProductAvailability(tenantId, product);
+        availableStock = av.currentStock;
       } else {
         const availability = await ComboService.getComboAvailability(tenantId, item.productId);
         availableStock = availability.availableStock || 0;
@@ -300,18 +323,25 @@ router.post('/checkout/prepare-payphone', authenticateCustomer, async (req, res)
       });
     }
 
-    const productIds = items.map(item => item.productId);
+    const validItems = items.filter(item => item.productId && !isNaN(parseInt(item.productId, 10)));
+    if (validItems.length === 0) {
+      return res.status(400).json({
+        error: 'Carrito inválido. Vuelva al catálogo y agregue los productos nuevamente.',
+        code: 'INVALID_ORDER'
+      });
+    }
+    const uniqueProductIds = [...new Set(validItems.map(item => parseInt(item.productId, 10)))];
     const products = await Product.findAll({
       where: {
-        id: { [Op.in]: productIds },
+        id: { [Op.in]: uniqueProductIds },
         tenantId,
         isActive: true
       }
     });
 
-    if (products.length !== productIds.length) {
+    if (products.length !== uniqueProductIds.length) {
       return res.status(400).json({
-        error: 'One or more products not found',
+        error: 'Uno o más productos ya no están disponibles. Actualice el carrito.',
         code: 'PRODUCT_NOT_FOUND'
       });
     }
@@ -321,14 +351,15 @@ router.post('/checkout/prepare-payphone', authenticateCustomer, async (req, res)
       return map;
     }, {});
 
-    const validationPromises = items.map(async (item) => {
+    const validationPromises = validItems.map(async (item) => {
       const product = productMap[item.productId];
       if (product.productType === 'SIMPLE') {
-        const currentStock = await InventoryMovement.getCurrentStock(tenantId, item.productId);
+        const v = await validateSimpleSaleQuantity(tenantId, product, item.quantity);
+        const unitsPerSale = parseFloat(product.unitsPerSale) || 1;
         return {
           productId: item.productId,
-          canSell: currentStock >= item.quantity,
-          currentStock,
+          canSell: v.canSell,
+          currentStock: Math.floor(v.currentStock / unitsPerSale),
           requestedQty: item.quantity
         };
       } else {
@@ -340,32 +371,42 @@ router.post('/checkout/prepare-payphone', authenticateCustomer, async (req, res)
     const failedValidations = validations.filter(v => !v.canSell);
     if (failedValidations.length > 0) {
       return res.status(400).json({
-        error: 'Insufficient stock for one or more items',
+        error: 'Stock insuficiente para uno o más productos.',
         code: 'INSUFFICIENT_STOCK',
         details: failedValidations
       });
     }
 
     let subtotal = 0;
-    items.forEach(item => {
+    let taxableSubtotal = 0;
+    validItems.forEach(item => {
       const product = productMap[item.productId];
-      subtotal += parseFloat(product.salePrice) * item.quantity;
+      const lineTotal = parseFloat(product.salePrice) * item.quantity;
+      subtotal += lineTotal;
+      if (product.taxApplies !== false) taxableSubtotal += lineTotal;
     });
 
-    const taxRateRaw = await Setting.getSetting(tenantId, 'tax_rate');
-    const taxRate = taxRateRaw != null ? parseFloat(taxRateRaw) : NaN;
-    if (isNaN(taxRate) || taxRate < 0 || taxRate > 100) {
-      return res.status(400).json({
-        error: 'El IVA no está configurado. El administrador debe configurarlo en Configuración.',
-        code: 'TAX_RATE_NOT_CONFIGURED'
-      });
+    const taxEnabledRaw = await Setting.getSetting(tenantId, 'tax_enabled', 'true');
+    const isTaxEnabled = taxEnabledRaw === 'true' || taxEnabledRaw === true;
+    let taxRate = 0;
+    let taxAmount = 0;
+
+    if (isTaxEnabled) {
+      const taxRateRaw = await Setting.getSetting(tenantId, 'tax_rate');
+      taxRate = taxRateRaw != null ? parseFloat(taxRateRaw) : NaN;
+      if (isNaN(taxRate) || taxRate < 0 || taxRate > 100) {
+        return res.status(400).json({
+          error: 'El IVA no está configurado. El administrador debe configurarlo en Configuración.',
+          code: 'TAX_RATE_NOT_CONFIGURED'
+        });
+      }
+      taxAmount = taxableSubtotal * (taxRate / 100);
     }
 
-    const taxAmount = subtotal * (taxRate / 100);
     const totalAmount = subtotal + taxAmount;
 
     const clientTransactionId = `sale-${Date.now()}-${customerId}`;
-    const itemsWithProductInfo = items.map(item => {
+    const itemsWithProductInfo = validItems.map(item => {
       const product = productMap[item.productId];
       return {
         productId: item.productId,
@@ -508,11 +549,36 @@ router.post('/checkout/confirm-payphone', authenticateCustomer, async (req, res)
     const transaction = await sequelize.transaction();
     try {
       const items = pending.itemsJson;
-      const productIds = items.map(i => i.productId);
+      const uniqueProductIds = [...new Set(items.map(i => parseInt(i.productId, 10)).filter(id => !isNaN(id)))];
+
+      // Lock product rows (SELECT FOR UPDATE) to serialize concurrent card payments
       const products = await Product.findAll({
-        where: { id: { [Op.in]: productIds }, tenantId }
-      }, { transaction });
+        where: { id: { [Op.in]: uniqueProductIds }, tenantId },
+        lock: true,
+        transaction
+      });
       const productMap = products.reduce((map, p) => { map[p.id] = p; return map; }, {});
+
+      // Validate stock before creating inventory movements
+      const stockChecks = await Promise.all(items.map(async (item) => {
+        const product = productMap[item.productId];
+        if (!product) return { productId: item.productId, productName: 'Desconocido', canSell: false };
+        if (product.productType === 'SIMPLE') {
+          const v = await validateSimpleSaleQuantity(tenantId, product, item.quantity);
+          return { productId: item.productId, productName: product.name, canSell: v.canSell };
+        } else {
+          return await ComboService.validateComboSale(tenantId, item.productId, item.quantity);
+        }
+      }));
+      const failedStock = stockChecks.filter(s => !s.canSell);
+      if (failedStock.length > 0) {
+        await transaction.rollback();
+        const names = failedStock.map(s => s.productName || `#${s.productId}`).join(', ');
+        return res.status(400).json({
+          error: `Stock insuficiente para: ${names}. No se pudo completar el pago.`,
+          code: 'INSUFFICIENT_STOCK'
+        });
+      }
 
       const sale = await Sale.create({
         tenantId,
@@ -541,13 +607,14 @@ router.post('/checkout/confirm-payphone', authenticateCustomer, async (req, res)
         }, { transaction });
 
         if (product.productType === 'SIMPLE') {
+          const { productId: mvProductId, qty: mvQty } = resolveMovement(product, item.quantity);
           await InventoryMovement.create({
             tenantId,
-            productId: item.productId,
+            productId: mvProductId,
             movementType: 'OUT',
             reason: 'SALE',
-            qty: item.quantity,
-            unitCost: await InventoryMovement.getUnitCost(tenantId, item.productId, item.quantity, transaction),
+            qty: mvQty,
+            unitCost: await InventoryMovement.getUnitCost(tenantId, mvProductId, mvQty, transaction),
             refType: 'SALE',
             refId: sale.id
           }, { transaction });
@@ -557,8 +624,9 @@ router.post('/checkout/confirm-payphone', authenticateCustomer, async (req, res)
       }
 
       await PayphonePendingPayment.destroy({
-        where: { id: pending.id }
-      }, { transaction });
+        where: { id: pending.id },
+        transaction
+      });
       await transaction.commit();
 
       res.json({
@@ -603,20 +671,32 @@ router.post('/checkout', authenticateCustomer, async (req, res) => {
       });
     }
 
-    // Get all products and validate availability
-    const productIds = items.map(item => item.productId);
-    const products = await Product.findAll({
-      where: {
-        id: { [Op.in]: productIds },
-        tenantId,
-        isActive: true
-      }
-    }, { transaction });
-
-    if (products.length !== productIds.length) {
+    // Filter and deduplicate product IDs
+    const validItems = items.filter(item => item.productId && !isNaN(parseInt(item.productId, 10)));
+    if (validItems.length === 0) {
       await transaction.rollback();
       return res.status(400).json({
-        error: 'One or more products not found',
+        error: 'Carrito inválido. Vuelva al catálogo y agregue los productos nuevamente.',
+        code: 'INVALID_ORDER'
+      });
+    }
+    const uniqueProductIds = [...new Set(validItems.map(item => parseInt(item.productId, 10)))];
+
+    // Lock product rows (SELECT FOR UPDATE) to serialize concurrent orders
+    const products = await Product.findAll({
+      where: {
+        id: { [Op.in]: uniqueProductIds },
+        tenantId,
+        isActive: true
+      },
+      lock: true,
+      transaction
+    });
+
+    if (products.length !== uniqueProductIds.length) {
+      await transaction.rollback();
+      return res.status(400).json({
+        error: 'Uno o más productos no están disponibles. Actualice el carrito.',
         code: 'PRODUCT_NOT_FOUND'
       });
     }
@@ -626,16 +706,17 @@ router.post('/checkout', authenticateCustomer, async (req, res) => {
       return map;
     }, {});
 
-    // Validate stock availability
-    const validationPromises = items.map(async (item) => {
+    // Validate stock availability (reads committed data after acquiring lock)
+    const validationPromises = validItems.map(async (item) => {
       const product = productMap[item.productId];
-      
       if (product.productType === 'SIMPLE') {
-        const currentStock = await InventoryMovement.getCurrentStock(tenantId, item.productId);
+        const v = await validateSimpleSaleQuantity(tenantId, product, item.quantity);
+        const unitsPerSale = parseFloat(product.unitsPerSale) || 1;
         return {
           productId: item.productId,
-          canSell: currentStock >= item.quantity,
-          currentStock,
+          productName: product.name,
+          canSell: v.canSell,
+          currentStock: Math.floor(v.currentStock / unitsPerSale),
           requestedQty: item.quantity
         };
       } else {
@@ -648,30 +729,41 @@ router.post('/checkout', authenticateCustomer, async (req, res) => {
 
     if (failedValidations.length > 0) {
       await transaction.rollback();
+      const names = failedValidations.map(v => v.productName || `#${v.productId}`).join(', ');
       return res.status(400).json({
-        error: 'Insufficient stock for one or more items',
+        error: `Stock insuficiente para: ${names}. Ajuste las cantidades en el carrito.`,
         code: 'INSUFFICIENT_STOCK',
         details: failedValidations
       });
     }
 
-    // Calculate subtotal
     let subtotal = 0;
-    items.forEach(item => {
+    let taxableSubtotal = 0;
+    validItems.forEach(item => {
       const product = productMap[item.productId];
-      subtotal += parseFloat(product.salePrice) * item.quantity;
+      const lineTotal = parseFloat(product.salePrice) * item.quantity;
+      subtotal += lineTotal;
+      if (product.taxApplies !== false) taxableSubtotal += lineTotal;
     });
 
-    const taxRateRaw = await Setting.getSetting(tenantId, 'tax_rate');
-    const taxRate = taxRateRaw != null ? parseFloat(taxRateRaw) : NaN;
-    if (isNaN(taxRate) || taxRate < 0 || taxRate > 100) {
-      await transaction.rollback();
-      return res.status(400).json({
-        error: 'El IVA no está configurado. El administrador debe configurarlo en Configuración.',
-        code: 'TAX_RATE_NOT_CONFIGURED'
-      });
+    const taxEnabledRaw2 = await Setting.getSetting(tenantId, 'tax_enabled', 'true');
+    const isTaxEnabled2 = taxEnabledRaw2 === 'true' || taxEnabledRaw2 === true;
+    let taxRate = 0;
+    let taxAmount = 0;
+
+    if (isTaxEnabled2) {
+      const taxRateRaw = await Setting.getSetting(tenantId, 'tax_rate');
+      taxRate = taxRateRaw != null ? parseFloat(taxRateRaw) : NaN;
+      if (isNaN(taxRate) || taxRate < 0 || taxRate > 100) {
+        await transaction.rollback();
+        return res.status(400).json({
+          error: 'El IVA no está configurado. El administrador debe configurarlo en Configuración.',
+          code: 'TAX_RATE_NOT_CONFIGURED'
+        });
+      }
+      taxAmount = taxableSubtotal * (taxRate / 100);
     }
-    const taxAmount = subtotal * (taxRate / 100);
+
     const totalAmount = subtotal + taxAmount;
 
     if (paymentMethod === 'CASH') {
@@ -688,7 +780,7 @@ router.post('/checkout', authenticateCustomer, async (req, res) => {
         createdAt: new Date()
       }, { transaction });
 
-      for (const item of items) {
+      for (const item of validItems) {
         const product = productMap[item.productId];
         const unitPrice = product.salePrice;
         const totalPrice = unitPrice * item.quantity;
@@ -756,7 +848,88 @@ router.post('/checkout', authenticateCustomer, async (req, res) => {
       });
     }
 
-    // Non-cash: create COMPLETED sale and inventory movements
+    if (paymentMethod === 'TRANSFER') {
+      // Transfer from customer web: create PENDING sale, no inventory movements, notify staff
+      const sale = await Sale.create({
+        tenantId,
+        customerId,
+        status: 'PENDING',
+        totalAmount,
+        taxRate: taxRate,
+        taxAmount: taxAmount,
+        paymentMethod: 'TRANSFER',
+        notes,
+        createdAt: new Date()
+      }, { transaction });
+
+      for (const item of validItems) {
+        const product = productMap[item.productId];
+        const unitPrice = product.salePrice;
+        const totalPrice = unitPrice * item.quantity;
+        await SaleItem.create({
+          saleId: sale.id,
+          tenantId,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice,
+          totalPrice,
+          productType: product.productType
+        }, { transaction });
+      }
+
+      await transaction.commit();
+
+      let customerName = null;
+      try {
+        const customerRow = await Customer.findByPk(customerId, { attributes: ['name'] });
+        customerName = customerRow ? customerRow.name : null;
+        const staffUsers = await User.findAll({
+          where: {
+            tenantId,
+            isActive: true,
+            role: { [Op.in]: ['ADMIN', 'MANAGER', 'CASHIER'] }
+          },
+          attributes: ['id']
+        });
+        const title = 'Cliente espera confirmación de transferencia';
+        const body = `Venta #${sale.id} - $${parseFloat(totalAmount).toFixed(2)}${customerName ? ` - ${customerName}` : ''}`;
+        for (const u of staffUsers) {
+          await Notification.create({
+            tenantId,
+            userId: u.id,
+            type: 'TRANSFER_CONFIRMATION',
+            saleId: sale.id,
+            title,
+            body
+          });
+        }
+        const io = req.app.get('io');
+        if (io) {
+          io.to('staff').emit('cash-pending', {
+            saleId: sale.id,
+            customerName,
+            totalAmount: parseFloat(totalAmount)
+          });
+        }
+        const staffIds = staffUsers.map(u => u.id);
+        WebPushService.sendToUsers(
+          staffIds,
+          title,
+          body,
+          { saleId: sale.id, url: '/dashboard', tag: 'transfer-pending-' + sale.id }
+        ).catch(err => console.warn('Web Push:', err.message));
+      } catch (notifErr) {
+        console.error('Checkout TRANSFER: error creating notifications (sale already saved):', notifErr.message);
+      }
+
+      return res.status(201).json({
+        saleId: sale.id,
+        status: 'PENDING',
+        message: 'Esperando confirmación de transferencia'
+      });
+    }
+
+    // Non-cash (CARD, etc.): create COMPLETED sale and inventory movements
     const sale = await Sale.create({
       tenantId,
       customerId,
@@ -769,7 +942,7 @@ router.post('/checkout', authenticateCustomer, async (req, res) => {
       createdAt: new Date()
     }, { transaction });
 
-    const saleItemsPromises = items.map(async (item) => {
+    const saleItemsPromises = validItems.map(async (item) => {
       const product = productMap[item.productId];
       const unitPrice = product.salePrice;
       const totalPrice = unitPrice * item.quantity;
@@ -785,16 +958,17 @@ router.post('/checkout', authenticateCustomer, async (req, res) => {
       }, { transaction });
 
       if (product.productType === 'SIMPLE') {
+        const { productId: mvProductId, qty: mvQty } = resolveMovement(product, item.quantity);
         await InventoryMovement.create({
           tenantId,
-          productId: item.productId,
+          productId: mvProductId,
           movementType: 'OUT',
           reason: 'SALE',
-          qty: item.quantity,
+          qty: mvQty,
           unitCost: await InventoryMovement.getUnitCost(
             tenantId,
-            item.productId,
-            item.quantity,
+            mvProductId,
+            mvQty,
             transaction
           ),
           refType: 'SALE',

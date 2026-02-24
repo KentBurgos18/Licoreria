@@ -1,6 +1,7 @@
 const express = require('express');
-const { Product, InventoryMovement } = require('../models');
+const { Product } = require('../models');
 const ComboService = require('../services/ComboService');
+const { getSimpleProductAvailability, validateSimpleSaleQuantity } = require('../services/InventoryPoolHelper');
 
 const router = express.Router();
 
@@ -25,21 +26,21 @@ router.get('/:id/availability', async (req, res) => {
     let availability;
 
     if (product.productType === 'SIMPLE') {
-      // For simple products, get current stock
-      const currentStock = await InventoryMovement.getCurrentStock(tenantId, id);
-      
+      const av = await getSimpleProductAvailability(tenantId, product);
       availability = {
         productId: id,
         productType: 'SIMPLE',
         productName: product.name,
         productSku: product.sku,
-        currentStock,
-        stockMin: product.stockMin,
-        isBelowMin: product.stockMin !== null && currentStock < product.stockMin,
-        availableForSale: currentStock > 0
+        currentStock: av.currentStock,
+        baseStock: av.baseStock,
+        unitsPerSale: av.unitsPerSale,
+        baseProductId: av.baseProductId,
+        stockMin: av.stockMin,
+        isBelowMin: av.isBelowMin,
+        availableForSale: av.availableForSale
       };
     } else {
-      // For combo products, calculate availability based on components
       availability = await ComboService.getComboAvailability(tenantId, id);
       availability.availableForSale = availability.availableStock > 0;
     }
@@ -82,17 +83,18 @@ router.post('/:id/validate', async (req, res) => {
     let validation;
 
     if (product.productType === 'SIMPLE') {
-      // For simple products, check stock
-      const currentStock = await InventoryMovement.getCurrentStock(tenantId, id);
-      
+      const v = await validateSimpleSaleQuantity(tenantId, product, quantity);
+      const unitsPerSale = parseFloat(product.unitsPerSale) || 1;
+      const currentStockPresentation = Math.floor(v.currentStock / unitsPerSale);
       validation = {
         productId: id,
         productType: 'SIMPLE',
         productName: product.name,
         requestedQty: quantity,
-        currentStock,
-        canSell: currentStock >= quantity,
-        missingQty: Math.max(0, quantity - currentStock)
+        currentStock: currentStockPresentation,
+        unitsPerSale,
+        canSell: v.canSell,
+        missingQty: Math.max(0, quantity - currentStockPresentation)
       };
     } else {
       // For combo products, validate component availability
@@ -132,17 +134,19 @@ router.post('/availability/bulk', async (req, res) => {
 
     const availabilityPromises = dbProducts.map(async (product) => {
       if (product.productType === 'SIMPLE') {
-        const currentStock = await InventoryMovement.getCurrentStock(tenantId, product.id);
-        
+        const av = await getSimpleProductAvailability(tenantId, product);
         return {
           productId: product.id,
           productType: 'SIMPLE',
           productName: product.name,
           productSku: product.sku,
-          currentStock,
-          stockMin: product.stockMin,
-          isBelowMin: product.stockMin !== null && currentStock < product.stockMin,
-          availableForSale: currentStock > 0
+          currentStock: av.currentStock,
+          baseStock: av.baseStock,
+          unitsPerSale: av.unitsPerSale,
+          baseProductId: av.baseProductId,
+          stockMin: av.stockMin,
+          isBelowMin: av.isBelowMin,
+          availableForSale: av.availableForSale
         };
       } else {
         const comboAvailability = await ComboService.getComboAvailability(tenantId, product.id);

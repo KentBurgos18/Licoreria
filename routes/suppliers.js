@@ -1,5 +1,5 @@
 const express = require('express');
-const { Supplier, SupplierPrice, Product } = require('../models');
+const { Supplier, SupplierPrice, PurchaseOrder, Product } = require('../models');
 const { Op } = require('sequelize');
 const { requireRole } = require('./adminAuth');
 
@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
     } = req.query;
 
     const whereClause = { tenantId };
-    
+
     if (isActive !== undefined) {
       whereClause.isActive = isActive === 'true';
     }
@@ -26,7 +26,9 @@ router.get('/', async (req, res) => {
       whereClause[Op.or] = [
         { name: { [Op.iLike]: `%${search}%` } },
         { contactName: { [Op.iLike]: `%${search}%` } },
-        { email: { [Op.iLike]: `%${search}%` } }
+        { email: { [Op.iLike]: `%${search}%` } },
+        { ruc: { [Op.iLike]: `%${search}%` } },
+        { supplierCode: { [Op.iLike]: `%${search}%` } }
       ];
     }
 
@@ -98,10 +100,13 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
     const {
       tenantId = 1,
       name,
+      ruc,
+      creditDays = 0,
       contactName,
       email,
       phone,
       address,
+      notes,
       isActive = true
     } = req.body;
 
@@ -112,19 +117,32 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
       });
     }
 
+    // Auto-generate supplier code from RUC
+    const supplierCode = ruc ? `P${ruc.trim()}` : null;
+
     const supplier = await Supplier.create({
       tenantId,
       name,
+      ruc: ruc || null,
+      supplierCode,
+      creditDays: parseInt(creditDays) || 0,
       contactName,
       email,
       phone,
       address,
+      notes,
       isActive
     });
 
     res.status(201).json(supplier);
   } catch (error) {
     console.error('Error creating supplier:', error);
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({
+        error: 'Ya existe un proveedor con ese RUC en este tenant',
+        code: 'DUPLICATE_SUPPLIER_CODE'
+      });
+    }
     res.status(500).json({
       error: 'Internal server error',
       code: 'INTERNAL_ERROR'
@@ -139,10 +157,13 @@ router.put('/:id', requireRole('ADMIN'), async (req, res) => {
     const {
       tenantId = 1,
       name,
+      ruc,
+      creditDays,
       contactName,
       email,
       phone,
       address,
+      notes,
       isActive
     } = req.body;
 
@@ -159,10 +180,16 @@ router.put('/:id', requireRole('ADMIN'), async (req, res) => {
 
     const updates = {};
     if (name !== undefined) updates.name = name;
+    if (ruc !== undefined) {
+      updates.ruc = ruc || null;
+      updates.supplierCode = ruc ? `P${ruc.trim()}` : null;
+    }
+    if (creditDays !== undefined) updates.creditDays = parseInt(creditDays) || 0;
     if (contactName !== undefined) updates.contactName = contactName;
     if (email !== undefined) updates.email = email;
     if (phone !== undefined) updates.phone = phone;
     if (address !== undefined) updates.address = address;
+    if (notes !== undefined) updates.notes = notes;
     if (isActive !== undefined) updates.isActive = isActive;
 
     await supplier.update(updates);
@@ -170,6 +197,12 @@ router.put('/:id', requireRole('ADMIN'), async (req, res) => {
     res.json(supplier);
   } catch (error) {
     console.error('Error updating supplier:', error);
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({
+        error: 'Ya existe un proveedor con ese RUC en este tenant',
+        code: 'DUPLICATE_SUPPLIER_CODE'
+      });
+    }
     res.status(500).json({
       error: 'Internal server error',
       code: 'INTERNAL_ERROR'

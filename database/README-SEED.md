@@ -9,6 +9,8 @@
    - Los settings usan `ON CONFLICT DO NOTHING`, así que se pueden ejecutar varias veces sin duplicar.
 
 2. **Datos de ejemplo** (opcional)  
+   - 6 categorías de producto (Whisky, Vodka, Tequila, Ron, Cerveza, Accesorios)  
+   - 5 presentaciones de producto (Individual, Six Pack, Caja 24, Cajetilla, Media Cajetilla)  
    - 7 productos simples (whisky, vodka, tequila, ron, cerveza, hielos, vasos)  
    - Movimientos de inventario iniciales  
    - 3 combos y sus componentes  
@@ -43,7 +45,7 @@
    ```bash
    npm run seed:first-deploy
    ```
-   Eso aplica las migraciones 001–015, el `seed.sql` y crea el usuario administrador.
+   Eso aplica las migraciones 001–018, el `seed.sql` y crea el usuario administrador.
 
 ### Solo el seed (sin migraciones ni admin)
 

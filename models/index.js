@@ -11,11 +11,15 @@ const CustomerPayment = require('./CustomerPayment');
 const CustomerCredit = require('./CustomerCredit');
 const Supplier = require('./Supplier');
 const SupplierPrice = require('./SupplierPrice');
+const PurchaseOrder = require('./PurchaseOrder');
+const PurchaseOrderItem = require('./PurchaseOrderItem');
 const Setting = require('./Setting');
 const User = require('./User');
 const Notification = require('./Notification');
 const PushSubscription = require('./PushSubscription');
 const PayphonePendingPayment = require('./PayphonePendingPayment');
+const ProductCategory = require('./ProductCategory');
+const ProductPresentation = require('./ProductPresentation');
 
 // Initialize models
 const models = {
@@ -31,11 +35,15 @@ const models = {
   CustomerCredit: CustomerCredit(sequelize),
   Supplier: Supplier(sequelize),
   SupplierPrice: SupplierPrice(sequelize),
+  PurchaseOrder: PurchaseOrder(sequelize),
+  PurchaseOrderItem: PurchaseOrderItem(sequelize),
   Setting: Setting(sequelize),
   User: User(sequelize),
   Notification: Notification(sequelize),
   PushSubscription: PushSubscription(sequelize),
-  PayphonePendingPayment: PayphonePendingPayment(sequelize)
+  PayphonePendingPayment: PayphonePendingPayment(sequelize),
+  ProductCategory: ProductCategory(sequelize),
+  ProductPresentation: ProductPresentation(sequelize)
 };
 
 // Setup associations

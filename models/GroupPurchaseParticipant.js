@@ -56,6 +56,12 @@ module.exports = (sequelize) => {
       defaultValue: DataTypes.NOW,
       field: 'created_at'
     },
+    paymentMethod: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      defaultValue: 'CREDIT',
+      field: 'payment_method'
+    },
     paidAt: {
       type: DataTypes.DATE,
       allowNull: true,

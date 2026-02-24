@@ -7,6 +7,7 @@
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/select2.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <link href="/public/css/theme.css" rel="stylesheet">
     <style>
         .pos-container {
             display: flex;
@@ -21,14 +22,14 @@
         }
         
         
-        /* Burbuja flotante del carrito */
+        /* Burbuja flotante del carrito - tema LOCOBAR */
         .cart-bubble {
             position: fixed;
             bottom: 30px;
             right: 30px;
             width: 70px;
             height: 70px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--lb-primary-mid, #16213e) 0%, var(--lb-primary-dark, #0f3460) 100%);
             border-radius: 50%;
             display: none;
             align-items: center;
@@ -341,6 +342,10 @@
                                     <div class="col" id="cartModalTaxLabel">IVA:</div>
                                     <div class="col text-end" id="cartModalTax">$0.00</div>
                                 </div>
+                                <div class="row mb-2 d-none" id="cartModalDiscountRow">
+                                    <div class="col text-success">Descuento:</div>
+                                    <div class="col text-end text-success" id="cartModalDiscount">-$0.00</div>
+                                </div>
                                 <div class="row mb-3">
                                     <div class="col fw-bold">Total:</div>
                                     <div class="col text-end fw-bold" id="cartModalTotal">$0.00</div>
@@ -349,7 +354,7 @@
                         </div>
                         
                         <!-- Payment Method -->
-                        <div class="mb-3">
+                        <div class="mb-3" id="normalPaymentMethodDiv">
                             <label class="form-label">Método de Pago</label>
                             <select class="form-select" id="cartModalPaymentMethod">
                                 <option value="CASH">Efectivo</option>
@@ -357,14 +362,52 @@
                                 <option value="TRANSFER">Transferencia</option>
                             </select>
                         </div>
-                        
+
+                        <!-- Toggle Venta Grupal -->
+                        <div class="mb-2 border-top pt-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="toggleGrupal" role="switch" onchange="toggleModoGrupal()">
+                                <label class="form-check-label fw-semibold" for="toggleGrupal">
+                                    <i class="bi bi-people"></i> Venta Grupal
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Sección Grupal (oculta por defecto) -->
+                        <div id="grupalSection" class="d-none mb-3">
+                            <!-- Buscador de clientes -->
+                            <div style="position:relative">
+                                <div class="input-group mb-1">
+                                    <input type="text" class="form-control form-control-sm" id="grupalClienteSearch"
+                                           placeholder="Buscar cliente por nombre o cédula..."
+                                           oninput="grupalBuscarCliente(this.value)" autocomplete="off">
+                                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="grupalAgregarDesdeInput()">
+                                        <i class="bi bi-person-plus"></i>
+                                    </button>
+                                </div>
+                                <div id="grupalClienteDropdown" class="list-group list-group-flush"
+                                     style="position:absolute;top:100%;left:0;right:0;z-index:1100;max-height:150px;overflow-y:auto;border:1px solid #dee2e6;border-radius:4px;background:#fff;display:none"></div>
+                            </div>
+
+                            <!-- Lista de participantes (scrollable) -->
+                            <div id="grupalParticipantes" class="mb-2 mt-2" style="max-height:220px;overflow-y:auto"></div>
+
+                            <!-- Dividir + Validación -->
+                            <div class="d-flex gap-2 mb-1">
+                                <button class="btn btn-outline-secondary btn-sm flex-fill" type="button" onclick="grupalDividirIgualmente()">
+                                    <i class="bi bi-distribute-vertical"></i> Dividir igualmente
+                                </button>
+                            </div>
+                            <div id="grupalValidacion" class="small mt-1"></div>
+                        </div>
+
                         <!-- Action Buttons -->
                         <div class="d-flex gap-2">
                             <button type="button" class="btn btn-outline-danger flex-fill" id="cartModalClear">
                                 <i class="bi bi-trash"></i> Vaciar Carrito
                             </button>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                            <button type="button" class="btn btn-success flex-fill" id="cartModalPay" disabled>
+                            <button type="button" class="btn btn-lb-accent flex-fill" id="cartModalPay" disabled>
                                 <i class="bi bi-credit-card"></i> Pagar
                             </button>
                         </div>
@@ -387,7 +430,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-success" id="confirmSale">Confirmar Venta</button>
+                    <button type="button" class="btn btn-lb-primary" id="confirmSale">Confirmar Venta</button>
                 </div>
             </div>
         </div>
@@ -402,7 +445,7 @@
                     <p class="text-muted small mb-0" id="saleSuccessTotal"></p>
                 </div>
                 <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="saleSuccessCloseBtn">Aceptar</button>
+                    <button type="button" class="btn btn-lb-primary" data-bs-dismiss="modal" id="saleSuccessCloseBtn">Aceptar</button>
                 </div>
             </div>
         </div>
@@ -417,9 +460,11 @@
         let products = [];
         let currentFilter = 'all';
         let currentTaxRate = null; // Solo desde Configuración
+        let currentDiscountRate = 0; // % descuento efectivo/transferencia
 
         $(document).ready(function() {
             loadTaxRate();
+            loadDiscountRate();
             loadProducts();
             initializeEventHandlers();
             loadPosNotifications();
@@ -803,10 +848,19 @@
             // Actualizar totales en el modal
             const subtotal = cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
             const tax = currentTaxRate != null ? subtotal * (currentTaxRate / 100) : 0;
-            const total = subtotal + tax;
-            
+            const payMethod = $('#cartModalPaymentMethod').val();
+            const applyDiscount = (payMethod === 'CASH' || payMethod === 'TRANSFER') && currentDiscountRate > 0;
+            const discountAmt = applyDiscount ? Math.round((subtotal + tax) * (currentDiscountRate / 100) * 100) / 100 : 0;
+            const total = subtotal + tax - discountAmt;
+
             $('#cartModalSubtotal').text(`$${subtotal.toFixed(2)}`);
             $('#cartModalTax').text(`$${tax.toFixed(2)}`);
+            if (applyDiscount) {
+                $('#cartModalDiscountRow').removeClass('d-none');
+                $('#cartModalDiscount').text(`-$${discountAmt.toFixed(2)}`);
+            } else {
+                $('#cartModalDiscountRow').addClass('d-none');
+            }
             $('#cartModalTotal').text(`$${total.toFixed(2)}`);
             if (currentTaxRate == null) {
                 $('#cartModalTaxLabel').text('IVA: No configurado');
@@ -880,6 +934,11 @@
                 applyFilter();
             });
 
+            // Actualizar descuento al cambiar método de pago
+            $('#cartModalPaymentMethod').on('change', function() {
+                updateCartModal();
+            });
+
             // Cart modal clear button
             $('#cartModalClear').click(function() {
                 if (confirm('¿Está seguro de vaciar el carrito?')) {
@@ -887,13 +946,26 @@
                     updateCart();
                     updateCartModal();
                     $('#cartModalWarnings').empty();
+                    resetGrupal();
                 }
             });
-            
+
+            $('#cartModal').on('hidden.bs.modal', function() {
+                // Only reset grupal state if the toggle is off or we're not mid-processing
+                if (!window._grupalProcessing) {
+                    resetGrupal();
+                }
+                window._grupalProcessing = false;
+            });
+
             // Pay button (modal)
             $('#cartModalPay').click(function() {
-                $('#cartModal').modal('hide');
-                showSaleConfirmation();
+                if ($('#toggleGrupal').is(':checked')) {
+                    processGroupSale();
+                } else {
+                    $('#cartModal').modal('hide');
+                    showSaleConfirmation();
+                }
             });
 
             // Confirm sale
@@ -928,11 +1000,12 @@
             }
             const subtotal = cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
             const tax = subtotal * (currentTaxRate / 100);
-            const total = subtotal + tax;
-            
-            // Usar método de pago del modal
+            const paymentMethod = $('#cartModalPaymentMethod').val();
             const paymentMethodText = $('#cartModalPaymentMethod option:selected').text();
-            
+            const applyDiscount = (paymentMethod === 'CASH' || paymentMethod === 'TRANSFER') && currentDiscountRate > 0;
+            const discountAmt = applyDiscount ? Math.round((subtotal + tax) * (currentDiscountRate / 100) * 100) / 100 : 0;
+            const total = subtotal + tax - discountAmt;
+
             let itemsHtml = '';
             cart.forEach(item => {
                 itemsHtml += `
@@ -944,7 +1017,13 @@
                     </tr>
                 `;
             });
-            
+
+            const discountRow = applyDiscount ? `
+                <tr class="text-success">
+                    <td colspan="3">Descuento (${currentDiscountRate}%):</td>
+                    <td class="text-end">-$${discountAmt.toFixed(2)}</td>
+                </tr>` : '';
+
             const confirmationHtml = `
                 <table class="table">
                     <thead>
@@ -964,9 +1043,10 @@
                             <td class="text-end fw-bold">$${subtotal.toFixed(2)}</td>
                         </tr>
                         <tr>
-                            <td colspan="3" class="fw-bold">${currentTaxRate != null ? `IVA (${currentTaxRate.toFixed(0)}%):` : 'IVA: No configurado'}</td>
+                            <td colspan="3" class="fw-bold">${`IVA (${currentTaxRate.toFixed(0)}%):`}</td>
                             <td class="text-end fw-bold">$${tax.toFixed(2)}</td>
                         </tr>
+                        ${discountRow}
                         <tr>
                             <td colspan="3" class="fw-bold">Total:</td>
                             <td class="text-end fw-bold">$${total.toFixed(2)}</td>
@@ -977,7 +1057,7 @@
                     <strong>Método de pago:</strong> ${paymentMethodText}
                 </div>
             `;
-            
+
             $('#saleConfirmation').html(confirmationHtml);
             $('#saleModal').modal('show');
         }
@@ -989,11 +1069,11 @@
             }
             const subtotal = cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
             const tax = subtotal * (currentTaxRate / 100);
-            const total = subtotal + tax;
-            
-            // Usar método de pago del modal
             const paymentMethod = $('#cartModalPaymentMethod').val();
-            
+            const applyDiscount = (paymentMethod === 'CASH' || paymentMethod === 'TRANSFER') && currentDiscountRate > 0;
+            const discountAmt = applyDiscount ? Math.round((subtotal + tax) * (currentDiscountRate / 100) * 100) / 100 : 0;
+            const total = subtotal + tax - discountAmt;
+
             const saleData = {
                 tenantId: getCurrentTenantId(),
                 items: cart.map(item => ({
@@ -1075,6 +1155,19 @@
             });
         }
 
+        function loadDiscountRate() {
+            $.ajax({
+                url: '/api/public/discount-rate',
+                method: 'GET',
+                data: { tenantId: getCurrentTenantId() },
+                success: function(response) {
+                    currentDiscountRate = response.value || 0;
+                    updateCartModal();
+                },
+                error: function() { currentDiscountRate = 0; }
+            });
+        }
+
         function updateTaxLabel() {
             if (currentTaxRate == null) {
                 $('#cartModalTaxLabel').text('IVA: No configurado');
@@ -1087,6 +1180,305 @@
             // This should get the current tenant ID from session or context
             return 1; // Placeholder
         }
+
+        // ─── Venta Grupal ────────────────────────────────────────────────────────
+
+        var grupalParticipantes = []; // [{customerId, customerName, amountDue, paymentMethod, productIndexes:[]}]
+        var grupalSearchTimer = null;
+        var grupalSelectedCustomer = null; // {id, name}
+
+        function toggleModoGrupal() {
+            var on = $('#toggleGrupal').is(':checked');
+            if (on) {
+                $('#grupalSection').removeClass('d-none');
+                $('#normalPaymentMethodDiv').addClass('d-none');
+            } else {
+                $('#grupalSection').addClass('d-none');
+                $('#normalPaymentMethodDiv').removeClass('d-none');
+                resetGrupal();
+            }
+        }
+
+        function resetGrupal() {
+            grupalParticipantes = [];
+            grupalSelectedCustomer = null;
+            $('#toggleGrupal').prop('checked', false);
+            $('#grupalSection').addClass('d-none');
+            $('#normalPaymentMethodDiv').removeClass('d-none');
+            $('#grupalClienteSearch').val('');
+            $('#grupalClienteDropdown').hide().empty();
+            $('#grupalParticipantes').empty();
+            $('#grupalValidacion').empty();
+        }
+
+        function grupalBuscarCliente(query) {
+            clearTimeout(grupalSearchTimer);
+            var q = (query || '').trim();
+            if (q.length < 2) {
+                $('#grupalClienteDropdown').hide().empty();
+                return;
+            }
+            grupalSearchTimer = setTimeout(function() {
+                var token = localStorage.getItem('adminToken');
+                $.ajax({
+                    url: '/api/customers',
+                    method: 'GET',
+                    headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+                    data: { search: q, tenantId: getCurrentTenantId() },
+                    success: function(res) {
+                        var customers = res.customers || [];
+                        var $drop = $('#grupalClienteDropdown');
+                        $drop.empty();
+                        if (customers.length === 0) {
+                            $drop.append('<div class="list-group-item list-group-item-action disabled small">Sin resultados</div>');
+                        } else {
+                            customers.slice(0, 8).forEach(function(c) {
+                                var already = grupalParticipantes.some(function(p) { return p.customerId === c.id; });
+                                var $item = $('<button type="button" class="list-group-item list-group-item-action py-1 small"></button>')
+                                    .text(c.name + (c.cedula ? ' · ' + c.cedula : ''))
+                                    .prop('disabled', already);
+                                if (!already) {
+                                    $item.click(function() {
+                                        grupalAgregarParticipante(c.id, c.name);
+                                        $('#grupalClienteSearch').val('');
+                                        $drop.hide().empty();
+                                    });
+                                }
+                                $drop.append($item);
+                            });
+                        }
+                        $drop.show();
+                    }
+                });
+            }, 300);
+        }
+
+        function grupalAgregarDesdeInput() {
+            var q = $('#grupalClienteSearch').val().trim();
+            if (q.length < 2) return;
+            grupalBuscarCliente(q);
+        }
+
+        function grupalAgregarParticipante(customerId, customerName) {
+            if (grupalParticipantes.some(function(p) { return p.customerId === customerId; })) return;
+            grupalParticipantes.push({
+                customerId: customerId,
+                customerName: customerName,
+                amountDue: 0,
+                paymentMethod: 'CASH',
+                productIndexes: cart.map(function(_, i) { return i; }) // select all by default
+            });
+            grupalRenderParticipantes();
+            grupalRecalcAmounts();
+            grupalValidar();
+        }
+
+        function grupalEliminarParticipante(customerId) {
+            grupalParticipantes = grupalParticipantes.filter(function(p) { return p.customerId !== customerId; });
+            grupalRenderParticipantes();
+            grupalValidar();
+        }
+
+        function grupalRenderParticipantes() {
+            var $cont = $('#grupalParticipantes').empty();
+            if (grupalParticipantes.length === 0) {
+                $cont.html('<p class="text-muted small mb-0">Agrega participantes usando el buscador.</p>');
+                return;
+            }
+            grupalParticipantes.forEach(function(p, pi) {
+                var itemsHtml = '';
+                cart.forEach(function(item, ci) {
+                    var checked = p.productIndexes.indexOf(ci) !== -1 ? 'checked' : '';
+                    var lineTotal = (item.unitPrice * item.quantity).toFixed(2);
+                    itemsHtml += '<div class="form-check form-check-sm">' +
+                        '<input class="form-check-input" type="checkbox" ' + checked +
+                        ' id="gpp_' + pi + '_' + ci + '"' +
+                        ' onchange="grupalToggleProducto(' + pi + ',' + ci + ',this.checked)">' +
+                        '<label class="form-check-label small" for="gpp_' + pi + '_' + ci + '">' +
+                            escapeHtml(item.productName) + ' ×' + item.quantity +
+                            ' <span class="text-muted">($' + lineTotal + ')</span>' +
+                        '</label></div>';
+                });
+
+                var methodOptions = [
+                    { val: 'CASH', label: 'Efectivo' },
+                    { val: 'TRANSFER', label: 'Transferencia' },
+                    { val: 'CREDIT', label: 'Crédito' }
+                ].map(function(o) {
+                    return '<option value="' + o.val + '"' + (p.paymentMethod === o.val ? ' selected' : '') + '>' + o.label + '</option>';
+                }).join('');
+
+                var card = '<div class="card card-body py-2 px-3 mb-2">' +
+                    '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                        '<strong class="small"><i class="bi bi-person-fill me-1"></i>' + escapeHtml(p.customerName) + '</strong>' +
+                        '<button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="grupalEliminarParticipante(' + p.customerId + ')">' +
+                            '<i class="bi bi-x-circle"></i></button>' +
+                    '</div>' +
+                    '<div class="mb-1">' + itemsHtml + '</div>' +
+                    '<div class="d-flex gap-2 align-items-center">' +
+                        '<select class="form-select form-select-sm" style="width:auto" onchange="grupalCambiarMetodo(' + pi + ',this.value)">' +
+                            methodOptions +
+                        '</select>' +
+                        '<div class="input-group input-group-sm flex-fill">' +
+                            '<span class="input-group-text">$</span>' +
+                            '<input type="number" class="form-control" step="0.01" min="0" value="' + p.amountDue.toFixed(2) + '"' +
+                            ' onchange="grupalCambiarMonto(' + pi + ',this.value)" oninput="grupalValidar()">' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+                $cont.append(card);
+            });
+        }
+
+        function grupalToggleProducto(pi, ci, checked) {
+            var p = grupalParticipantes[pi];
+            if (!p) return;
+            if (checked) {
+                if (p.productIndexes.indexOf(ci) === -1) p.productIndexes.push(ci);
+            } else {
+                p.productIndexes = p.productIndexes.filter(function(x) { return x !== ci; });
+            }
+            // Recalc amount for this participant based on selected products
+            var amount = 0;
+            p.productIndexes.forEach(function(idx) {
+                var item = cart[idx];
+                if (item) amount += item.unitPrice * item.quantity;
+            });
+            if (currentTaxRate) amount = amount * (1 + currentTaxRate / 100);
+            p.amountDue = Math.round(amount * 100) / 100;
+            grupalRenderParticipantes();
+            grupalValidar();
+        }
+
+        function grupalCambiarMetodo(pi, method) {
+            if (grupalParticipantes[pi]) grupalParticipantes[pi].paymentMethod = method;
+        }
+
+        function grupalCambiarMonto(pi, val) {
+            if (grupalParticipantes[pi]) grupalParticipantes[pi].amountDue = parseFloat(val) || 0;
+            grupalValidar();
+        }
+
+        function grupalRecalcAmounts() {
+            if (grupalParticipantes.length === 0) return;
+            var subtotal = cart.reduce(function(s, item) { return s + item.unitPrice * item.quantity; }, 0);
+            var total = currentTaxRate ? subtotal * (1 + currentTaxRate / 100) : subtotal;
+            var perPerson = Math.round((total / grupalParticipantes.length) * 100) / 100;
+            grupalParticipantes.forEach(function(p) { p.amountDue = perPerson; });
+        }
+
+        function grupalDividirIgualmente() {
+            if (grupalParticipantes.length === 0) {
+                showAlert('Agrega al menos un participante primero.', 'warning');
+                return;
+            }
+            var subtotal = cart.reduce(function(s, item) { return s + item.unitPrice * item.quantity; }, 0);
+            var total = currentTaxRate ? subtotal * (1 + currentTaxRate / 100) : subtotal;
+            var n = grupalParticipantes.length;
+            var each = Math.floor((total / n) * 100) / 100;
+            var remainder = Math.round((total - each * n) * 100) / 100;
+            grupalParticipantes.forEach(function(p, i) {
+                p.productIndexes = cart.map(function(_, ci) { return ci; });
+                p.amountDue = each + (i === 0 ? remainder : 0); // give remainder to first participant
+            });
+            grupalRenderParticipantes();
+            grupalValidar();
+        }
+
+        function grupalValidar() {
+            var subtotal = cart.reduce(function(s, item) { return s + item.unitPrice * item.quantity; }, 0);
+            var total = currentTaxRate ? subtotal * (1 + currentTaxRate / 100) : subtotal;
+            var suma = grupalParticipantes.reduce(function(s, p) { return s + (parseFloat(p.amountDue) || 0); }, 0);
+            var diff = Math.abs(suma - total);
+            var $val = $('#grupalValidacion');
+            if (grupalParticipantes.length === 0) {
+                $val.html('<span class="text-muted">Sin participantes aún.</span>');
+                return false;
+            }
+            if (diff <= 0.02) {
+                $val.html('<span class="text-success"><i class="bi bi-check-circle"></i> Montos correctos ($' + suma.toFixed(2) + ' / $' + total.toFixed(2) + ')</span>');
+                return true;
+            } else {
+                $val.html('<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Suma $' + suma.toFixed(2) + ' ≠ Total $' + total.toFixed(2) + '</span>');
+                return false;
+            }
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function processGroupSale() {
+            if (!grupalValidar()) {
+                showAlert('La suma de montos no coincide con el total del carrito.', 'warning');
+                return;
+            }
+            if (grupalParticipantes.length === 0) {
+                showAlert('Agrega al menos un participante.', 'warning');
+                return;
+            }
+            var subtotal = cart.reduce(function(s, item) { return s + item.unitPrice * item.quantity; }, 0);
+            var total = currentTaxRate ? subtotal * (1 + currentTaxRate / 100) : subtotal;
+
+            var payload = {
+                tenantId: getCurrentTenantId(),
+                items: cart.map(function(item) {
+                    return { productId: item.productId, quantity: item.quantity, unitPrice: item.unitPrice };
+                }),
+                participants: grupalParticipantes.map(function(p) {
+                    var obj = { customerId: p.customerId, amountDue: parseFloat(p.amountDue) || 0, paymentMethod: p.paymentMethod };
+                    return obj;
+                }),
+                notes: 'Venta grupal desde POS'
+            };
+
+            var token = localStorage.getItem('adminToken');
+            if (!token) {
+                showAlert('Debe iniciar sesión para procesar ventas.', 'warning');
+                return;
+            }
+
+            window._grupalProcessing = true;
+            $('#cartModal').modal('hide');
+
+            $.ajax({
+                url: '/api/group-purchases/from-cart',
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function(response) {
+                    showAlert('Venta grupal procesada exitosamente', 'success');
+                    cart = [];
+                    updateCart();
+                    updateCartModal();
+                    $('#cartModalWarnings').empty();
+                    resetGrupal();
+                    var totalText = response.totalAmount != null ? 'Total: $' + parseFloat(response.totalAmount).toFixed(2) : '';
+                    $('#saleSuccessTotal').text(totalText);
+                    var successModal = new bootstrap.Modal(document.getElementById('saleSuccessModal'));
+                    successModal.show();
+                    document.getElementById('saleSuccessCloseBtn').onclick = function() {
+                        successModal.hide();
+                    };
+                },
+                error: function(xhr) {
+                    if (xhr.status === 401) {
+                        showAlert('Sesión expirada. Inicie sesión nuevamente.', 'warning');
+                        setTimeout(function() { window.location.href = '/login'; }, 2000);
+                        return;
+                    }
+                    var err = xhr.responseJSON;
+                    var msg = (err && err.error) ? err.error : 'Error al procesar la venta grupal';
+                    if (err && err.details) msg += ': ' + err.details;
+                    showAlert(msg, 'danger');
+                    window._grupalProcessing = false;
+                    $('#cartModal').modal('show');
+                }
+            });
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
 
         function showAlert(message, type) {
             const alertHtml = `

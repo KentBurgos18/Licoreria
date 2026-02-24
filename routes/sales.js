@@ -1,7 +1,9 @@
 const express = require('express');
 const { Sale, SaleItem, Product, InventoryMovement, Setting, CustomerCredit, Customer, Notification } = require('../models');
 const ComboService = require('../services/ComboService');
+const { resolveMovement, validateSimpleSaleQuantity } = require('../services/InventoryPoolHelper');
 const { sequelize } = require('../models');
+const { Op } = require('sequelize');
 
 const router = express.Router();
 
@@ -67,20 +69,15 @@ router.post('/', async (req, res) => {
     // Validate stock availability for all items
     const validationPromises = items.map(async (item) => {
       const product = productMap[item.productId];
-      
       if (product.productType === 'SIMPLE') {
-        const currentStock = await InventoryMovement.getCurrentStock(tenantId, item.productId);
+        const v = await validateSimpleSaleQuantity(tenantId, product, item.quantity);
         return {
           productId: item.productId,
           productType: 'SIMPLE',
-          canSell: currentStock >= item.quantity,
-          currentStock,
-          requestedQty: item.quantity,
-          missingQty: Math.max(0, item.quantity - currentStock)
+          ...v
         };
-      } else {
-        return await ComboService.validateComboSale(tenantId, item.productId, item.quantity);
       }
+      return await ComboService.validateComboSale(tenantId, item.productId, item.quantity);
     });
 
     const validations = await Promise.all(validationPromises);
@@ -95,23 +92,36 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Calculate subtotal from items
-    const subtotal = items.reduce((sum, item) => {
+    // Calculate subtotal, separating taxable and non-taxable
+    let subtotal = 0;
+    let taxableSubtotal = 0;
+    items.forEach(item => {
       const product = productMap[item.productId];
       const unitPrice = item.unitPrice || product.salePrice;
-      return sum + (unitPrice * item.quantity);
-    }, 0);
+      const lineTotal = unitPrice * item.quantity;
+      subtotal += lineTotal;
+      if (product.taxApplies !== false) taxableSubtotal += lineTotal;
+    });
 
-    const taxRateRaw = await Setting.getSetting(tenantId, 'tax_rate');
-    const taxRate = taxRateRaw != null ? parseFloat(taxRateRaw) : NaN;
-    if (isNaN(taxRate) || taxRate < 0 || taxRate > 100) {
-      await transaction.rollback();
-      return res.status(400).json({
-        error: 'El IVA no está configurado. Configure el IVA en Configuración.',
-        code: 'TAX_RATE_NOT_CONFIGURED'
-      });
+    const taxEnabledRaw = await Setting.getSetting(tenantId, 'tax_enabled', 'true');
+    const isTaxEnabled = taxEnabledRaw === 'true' || taxEnabledRaw === true;
+
+    let taxRate = 0;
+    let taxAmount = 0;
+
+    if (isTaxEnabled) {
+      const taxRateRaw = await Setting.getSetting(tenantId, 'tax_rate');
+      taxRate = taxRateRaw != null ? parseFloat(taxRateRaw) : NaN;
+      if (isNaN(taxRate) || taxRate < 0 || taxRate > 100) {
+        await transaction.rollback();
+        return res.status(400).json({
+          error: 'El IVA no está configurado. Configure el IVA en Configuración.',
+          code: 'TAX_RATE_NOT_CONFIGURED'
+        });
+      }
+      taxAmount = taxableSubtotal * (taxRate / 100);
     }
-    const taxAmount = subtotal * (taxRate / 100);
+
     const calculatedTotal = subtotal + taxAmount;
 
     // Use provided totalAmount or calculated total
@@ -198,35 +208,6 @@ router.post('/', async (req, res) => {
         productType: product.productType
       }, { transaction });
 
-      // Create inventory movements
-      if (product.productType === 'SIMPLE') {
-        // Simple product: single OUT movement
-        await InventoryMovement.create({
-          tenantId,
-          productId: item.productId,
-          movementType: 'OUT',
-          reason: 'SALE',
-          qty: item.quantity,
-          unitCost: await InventoryMovement.getUnitCost(
-            tenantId,
-            item.productId,
-            item.quantity,
-            transaction
-          ),
-          refType: 'SALE',
-          refId: sale.id
-        }, { transaction });
-      } else {
-        // Combo product: OUT movements for each component
-        await ComboService.createComboSaleMovements(
-          tenantId,
-          item.productId,
-          item.quantity,
-          sale.id,
-          transaction
-        );
-      }
-
       return saleItem;
     });
 
@@ -238,24 +219,23 @@ router.post('/', async (req, res) => {
         const product = productMap[item.productId];
         
         if (product.productType === 'SIMPLE') {
-          // Simple product: single OUT movement
+          const { productId: mvProductId, qty: mvQty } = resolveMovement(product, item.quantity);
           await InventoryMovement.create({
             tenantId,
-            productId: item.productId,
+            productId: mvProductId,
             movementType: 'OUT',
             reason: 'SALE',
-            qty: item.quantity,
+            qty: mvQty,
             unitCost: await InventoryMovement.getUnitCost(
               tenantId,
-              item.productId,
-              item.quantity,
+              mvProductId,
+              mvQty,
               transaction
             ),
             refType: 'SALE',
             refId: sale.id
           }, { transaction });
         } else {
-          // Combo product: OUT movements for each component
           await ComboService.createComboSaleMovements(
             tenantId,
             item.productId,
@@ -462,25 +442,20 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// PATCH /sales/:id/confirm-transfer - Confirm transfer payment
+// PATCH /sales/:id/confirm-transfer - Confirm transfer payment (same logic as confirm-cash)
 router.patch('/:id/confirm-transfer', async (req, res) => {
   const transaction = await sequelize.transaction();
-  
+
   try {
     const { id } = req.params;
-    const { tenantId } = req.body;
-
-    if (!tenantId) {
+    const saleId = parseInt(id, 10);
+    if (isNaN(saleId)) {
       await transaction.rollback();
-      return res.status(400).json({
-        error: 'tenantId is required',
-        code: 'MISSING_TENANT_ID'
-      });
+      return res.status(400).json({ error: 'Invalid sale id', code: 'INVALID_ID' });
     }
 
-    // Find the sale
     const sale = await Sale.findOne({
-      where: { id, tenantId, status: 'PENDING', paymentMethod: 'TRANSFER' },
+      where: { id: saleId },
       include: [
         {
           association: 'items',
@@ -493,38 +468,51 @@ router.patch('/:id/confirm-transfer', async (req, res) => {
     if (!sale) {
       await transaction.rollback();
       return res.status(404).json({
-        error: 'Pending transfer sale not found',
+        error: 'Venta no encontrada con ese ID',
         code: 'SALE_NOT_FOUND'
       });
     }
+    if (sale.status !== 'PENDING') {
+      await transaction.rollback();
+      return res.status(400).json({
+        error: `La venta no está pendiente (estado actual: ${sale.status})`,
+        code: 'SALE_NOT_PENDING'
+      });
+    }
+    const method = (sale.paymentMethod || '').toUpperCase();
+    if (method !== 'TRANSFER') {
+      await transaction.rollback();
+      return res.status(400).json({
+        error: `La venta no es por transferencia (método: ${sale.paymentMethod}). Use "Confirmar pago" si es efectivo.`,
+        code: 'SALE_NOT_TRANSFER'
+      });
+    }
 
-    // Update sale status to COMPLETED
+    const tenantId = Number(sale.tenantId);
+
     sale.status = 'COMPLETED';
     await sale.save({ transaction });
 
-    // Create inventory movements now that payment is confirmed
     const inventoryMovementsPromises = sale.items.map(async (item) => {
       const product = item.product;
-      
       if (product.productType === 'SIMPLE') {
-        // Simple product: single OUT movement
+        const { productId: mvProductId, qty: mvQty } = resolveMovement(product, item.quantity);
         await InventoryMovement.create({
           tenantId,
-          productId: item.productId,
+          productId: mvProductId,
           movementType: 'OUT',
           reason: 'SALE',
-          qty: item.quantity,
+          qty: mvQty,
           unitCost: await InventoryMovement.getUnitCost(
             tenantId,
-            item.productId,
-            item.quantity,
+            mvProductId,
+            mvQty,
             transaction
           ),
           refType: 'SALE',
           refId: sale.id
         }, { transaction });
       } else {
-        // Combo product: OUT movements for each component
         await ComboService.createComboSaleMovements(
           tenantId,
           item.productId,
@@ -537,7 +525,17 @@ router.patch('/:id/confirm-transfer', async (req, res) => {
 
     await Promise.all(inventoryMovementsPromises);
 
+    await Notification.destroy({
+      where: { saleId: sale.id },
+      transaction
+    });
+
     await transaction.commit();
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`sale:${sale.id}`).emit('sale-confirmed', { saleId: sale.id });
+    }
 
     // Fetch complete sale with associations
     const completeSale = await Sale.findByPk(sale.id, {
@@ -568,18 +566,15 @@ router.post('/:id/confirm-cash', async (req, res) => {
 
   try {
     const { id } = req.params;
-    const tenantId = req.tenantId || req.body.tenantId;
-
-    if (!tenantId) {
+    const saleId = parseInt(id, 10);
+    if (isNaN(saleId)) {
       await transaction.rollback();
-      return res.status(400).json({
-        error: 'tenantId is required',
-        code: 'MISSING_TENANT_ID'
-      });
+      return res.status(400).json({ error: 'Invalid sale id', code: 'INVALID_ID' });
     }
 
+    // Find by id first to give a clear error if sale exists but is not confirmable
     const sale = await Sale.findOne({
-      where: { id: parseInt(id, 10), tenantId, status: 'PENDING', paymentMethod: 'CASH' },
+      where: { id: saleId },
       include: [
         {
           association: 'items',
@@ -592,10 +587,27 @@ router.post('/:id/confirm-cash', async (req, res) => {
     if (!sale) {
       await transaction.rollback();
       return res.status(404).json({
-        error: 'Pending cash sale not found',
+        error: 'Venta no encontrada con ese ID',
         code: 'SALE_NOT_FOUND'
       });
     }
+    if (sale.status !== 'PENDING') {
+      await transaction.rollback();
+      return res.status(400).json({
+        error: `La venta no está pendiente (estado actual: ${sale.status})`,
+        code: 'SALE_NOT_PENDING'
+      });
+    }
+    const method = (sale.paymentMethod || '').toUpperCase();
+    if (method !== 'CASH') {
+      await transaction.rollback();
+      return res.status(400).json({
+        error: `La venta no es de pago en efectivo (método: ${sale.paymentMethod}). Use "Confirmar transferencia" si es transferencia.`,
+        code: 'SALE_NOT_CASH'
+      });
+    }
+
+    const tenantId = Number(sale.tenantId);
 
     sale.status = 'COMPLETED';
     await sale.save({ transaction });
@@ -603,16 +615,17 @@ router.post('/:id/confirm-cash', async (req, res) => {
     const inventoryMovementsPromises = sale.items.map(async (item) => {
       const product = item.product;
       if (product.productType === 'SIMPLE') {
+        const { productId: mvProductId, qty: mvQty } = resolveMovement(product, item.quantity);
         await InventoryMovement.create({
           tenantId,
-          productId: item.productId,
+          productId: mvProductId,
           movementType: 'OUT',
           reason: 'SALE',
-          qty: item.quantity,
+          qty: mvQty,
           unitCost: await InventoryMovement.getUnitCost(
             tenantId,
-            item.productId,
-            item.quantity,
+            mvProductId,
+            mvQty,
             transaction
           ),
           refType: 'SALE',
@@ -657,6 +670,69 @@ router.post('/:id/confirm-cash', async (req, res) => {
   } catch (error) {
     await transaction.rollback();
     console.error('Error confirming cash:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      code: 'INTERNAL_ERROR'
+    });
+  }
+});
+
+// PATCH /sales/:id/reject-pending - Reject a pending order (cash or transfer) when client never showed / never paid
+router.patch('/:id/reject-pending', async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { id } = req.params;
+    const saleId = parseInt(id, 10);
+    if (isNaN(saleId)) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Invalid sale id', code: 'INVALID_ID' });
+    }
+    const voidReason = (req.body.voidReason && String(req.body.voidReason).trim()) || 'Orden rechazada (cliente no llegó o no pagó)';
+
+    const sale = await Sale.findOne({
+      where: {
+        id: saleId,
+        status: 'PENDING',
+        paymentMethod: { [Op.in]: ['CASH', 'TRANSFER'] }
+      },
+      transaction
+    });
+
+    if (!sale) {
+      await transaction.rollback();
+      return res.status(404).json({
+        error: 'Venta pendiente no encontrada (solo se pueden rechazar órdenes en efectivo o transferencia pendientes)',
+        code: 'SALE_NOT_FOUND'
+      });
+    }
+
+    sale.status = 'VOIDED';
+    sale.voidReason = voidReason;
+    sale.voidedAt = new Date();
+    await sale.save({ transaction });
+
+    await Notification.destroy({
+      where: { saleId: sale.id },
+      transaction
+    });
+
+    await transaction.commit();
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`sale:${sale.id}`).emit('sale-voided', { saleId: sale.id });
+    }
+
+    const updated = await Sale.findByPk(sale.id, {
+      include: [
+        { association: 'items', include: [{ association: 'product' }] },
+        { association: 'customer', attributes: ['id', 'name'] }
+      ]
+    });
+    res.json(updated);
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error rejecting pending sale:', error);
     res.status(500).json({
       error: 'Internal server error',
       code: 'INTERNAL_ERROR'

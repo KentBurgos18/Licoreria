@@ -73,6 +73,10 @@
                 code = code.replace(/\bconst\s+cart\b/g, 'var cart');
                 code = code.replace(/\blet\s+currentTaxRate\b/g, 'var currentTaxRate');
                 code = code.replace(/\bconst\s+currentTaxRate\b/g, 'var currentTaxRate');
+                code = code.replace(/\blet\s+taxEnabled\b/g, 'var taxEnabled');
+                code = code.replace(/\bconst\s+taxEnabled\b/g, 'var taxEnabled');
+                code = code.replace(/\blet\s+currentDiscountRate\b/g, 'var currentDiscountRate');
+                code = code.replace(/\bconst\s+currentDiscountRate\b/g, 'var currentDiscountRate');
                 newScript.textContent = code;
             }
             if (oldScript.type) newScript.type = oldScript.type;
@@ -159,6 +163,17 @@
                 }
 
                 runScriptsInContainer(appContent);
+
+                // Reinicializar vista al entrar por logo o botón atrás
+                setTimeout(function() {
+                    if (viewName === 'catalog' && typeof window.initCatalogView === 'function') {
+                        window.initCatalogView();
+                    } else if (viewName === 'cart' && typeof window.initCartView === 'function') {
+                        window.initCartView();
+                    } else if (viewName === 'checkout' && typeof window.initCheckoutView === 'function') {
+                        window.initCheckoutView();
+                    }
+                }, 0);
 
                 if (pushState && window.history && window.history.pushState) {
                     window.history.pushState({ spaView: viewName }, '', pathname);

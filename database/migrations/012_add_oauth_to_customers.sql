@@ -11,7 +11,7 @@ ADD COLUMN IF NOT EXISTS profile_picture VARCHAR(500) DEFAULT NULL;
 CREATE INDEX IF NOT EXISTS idx_customers_oauth ON customers(oauth_provider, oauth_id);
 
 -- Make password nullable for OAuth users (they don't need a password)
-ALTER TABLE customers ALTER COLUMN password DROP NOT NULL;
+ALTER TABLE customers ALTER COLUMN password_hash DROP NOT NULL;
 
 -- Add comment to explain the columns
 COMMENT ON COLUMN customers.oauth_provider IS 'OAuth provider: google, microsoft, apple, or null for traditional auth';

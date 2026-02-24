@@ -32,7 +32,17 @@ const MIGRATION_ORDER = [
   '012_create_users.sql',
   '013_create_notifications.sql',
   '014_create_push_subscriptions.sql',
-  '015_create_payphone_pending_payments.sql'
+  '015_create_payphone_pending_payments.sql',
+  '016_create_payphone_pending_payments.sql',
+  '017_create_product_categories.sql',
+  '018_inventory_pool_and_presentations.sql',
+  '019_add_tax_applies_to_products.sql',
+  '020_add_payment_method_group_purchase_participants.sql',
+  '021_allow_null_product_id_group_purchases.sql',
+  '022_add_ruc_creditdays_to_suppliers.sql',
+  '023_create_purchase_orders.sql',
+  '024_add_purchase_order_id_to_movements.sql',
+  '025_create_purchase_order_items.sql'
 ];
 
 async function runSqlFile(filePath) {

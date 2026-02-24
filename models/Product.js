@@ -53,6 +53,33 @@ module.exports = (sequelize) => {
       allowNull: true,
       field: 'image_url'
     },
+    categoryId: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      field: 'category_id'
+    },
+    baseProductId: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      field: 'base_product_id'
+    },
+    presentationId: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      field: 'presentation_id'
+    },
+    unitsPerSale: {
+      type: DataTypes.DECIMAL(12, 3),
+      allowNull: false,
+      defaultValue: 1,
+      field: 'units_per_sale'
+    },
+    taxApplies: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+      field: 'tax_applies'
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -94,6 +121,32 @@ module.exports = (sequelize) => {
       foreignKey: 'productId',
       as: 'groupPurchases'
     });
+
+    // Category
+    if (models.ProductCategory) {
+      Product.belongsTo(models.ProductCategory, {
+        foreignKey: 'categoryId',
+        as: 'category'
+      });
+    }
+
+    // Inventory pool: base product
+    Product.belongsTo(models.Product, {
+      foreignKey: 'baseProductId',
+      as: 'baseProduct'
+    });
+    Product.hasMany(models.Product, {
+      foreignKey: 'baseProductId',
+      as: 'poolProducts'
+    });
+
+    // Presentation
+    if (models.ProductPresentation) {
+      Product.belongsTo(models.ProductPresentation, {
+        foreignKey: 'presentationId',
+        as: 'presentation'
+      });
+    }
   };
 
   // Instance methods

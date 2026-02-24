@@ -67,7 +67,7 @@ router.get('/', async (req, res) => {
     for (const credit of rows) {
       if (credit.status === 'ACTIVE') {
         await CreditService.updateCreditBalance(credit.id);
-        await credit.reload({ include: credit.constructor.associations });
+        await credit.reload({ include: [{ association: 'customer' }, { association: 'groupPurchaseParticipant' }] });
       }
     }
 

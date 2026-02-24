@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const { Product, ProductComponent, InventoryMovement, sequelize } = require('../models');
+const { Product, ProductComponent, InventoryMovement, SaleItem, GroupPurchase, ProductCategory, ProductPresentation, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
@@ -48,6 +48,11 @@ router.post('/', requireRole('ADMIN'), upload.single('image'), async (req, res) 
     const costMode = req.body.costMode || 'AVERAGE';
     const isActive = req.body.isActive === 'true' || req.body.isActive === true;
     const stockMin = req.body.stockMin !== undefined && req.body.stockMin !== '' ? parseFloat(req.body.stockMin) : undefined;
+    const categoryId = req.body.categoryId && req.body.categoryId !== '' && req.body.categoryId !== 'null' ? parseInt(req.body.categoryId) : null;
+    const baseProductId = req.body.baseProductId && req.body.baseProductId !== '' && req.body.baseProductId !== 'null' ? parseInt(req.body.baseProductId) : null;
+    const presentationId = req.body.presentationId && req.body.presentationId !== '' && req.body.presentationId !== 'null' ? parseInt(req.body.presentationId) : null;
+    const unitsPerSale = req.body.unitsPerSale !== undefined && req.body.unitsPerSale !== '' ? parseFloat(req.body.unitsPerSale) : 1;
+    const taxApplies = req.body.taxApplies !== 'false' && req.body.taxApplies !== false;
 
     // Parse components if it's a string (from FormData)
     let components = req.body.components;
@@ -147,6 +152,11 @@ router.post('/', requireRole('ADMIN'), upload.single('image'), async (req, res) 
       costMode,
       isActive,
       imageUrl,
+      categoryId,
+      baseProductId,
+      presentationId,
+      unitsPerSale,
+      taxApplies,
       stockMin: productType === 'SIMPLE' ? stockMin : null,
       createdAt: new Date()
     }, { transaction });
@@ -182,14 +192,11 @@ router.post('/', requireRole('ADMIN'), upload.single('image'), async (req, res) 
     await transaction.commit();
 
     // Fetch complete product with associations
-    const createdProduct = await Product.findByPk(product.id, {
-      include: productType === 'COMBO' ? [{
-        association: 'components',
-        include: [{
-          association: 'component'
-        }]
-      }] : []
-    });
+    const includeList = [{ association: 'category', required: false }];
+    if (productType === 'COMBO') {
+      includeList.push({ association: 'components', include: [{ association: 'component' }] });
+    }
+    const createdProduct = await Product.findByPk(product.id, { include: includeList });
 
     res.status(201).json(createdProduct);
   } catch (error) {
@@ -209,6 +216,8 @@ router.get('/', async (req, res) => {
       tenantId,
       productType,
       isActive,
+      categoryId,
+      presentationId,
       page = 1,
       limit = 50
     } = req.query;
@@ -217,6 +226,8 @@ router.get('/', async (req, res) => {
     if (tenantId) whereClause.tenantId = tenantId;
     if (productType) whereClause.productType = productType;
     if (isActive !== undefined) whereClause.isActive = isActive === 'true';
+    if (categoryId) whereClause.categoryId = categoryId;
+    if (presentationId) whereClause.presentationId = presentationId;
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -228,6 +239,19 @@ router.get('/', async (req, res) => {
           include: [{
             association: 'component'
           }],
+          required: false
+        },
+        {
+          association: 'category',
+          required: false
+        },
+        {
+          association: 'presentation',
+          required: false
+        },
+        {
+          association: 'baseProduct',
+          attributes: ['id', 'name', 'sku'],
           required: false
         }
       ],
@@ -286,6 +310,19 @@ router.get('/:id', async (req, res) => {
             association: 'component'
           }],
           required: false
+        },
+        {
+          association: 'category',
+          required: false
+        },
+        {
+          association: 'presentation',
+          required: false
+        },
+        {
+          association: 'baseProduct',
+          attributes: ['id', 'name', 'sku'],
+          required: false
         }
       ]
     });
@@ -328,7 +365,12 @@ router.put('/:id', requireRole('ADMIN'), upload.single('image'), async (req, res
       salePrice,
       costMode,
       isActive,
-      stockMin
+      stockMin,
+      categoryId,
+      baseProductId,
+      presentationId,
+      unitsPerSale,
+      taxApplies
     } = req.body;
 
     const product = await Product.findOne({
@@ -352,11 +394,16 @@ router.put('/:id', requireRole('ADMIN'), upload.single('image'), async (req, res
 
     // Update fields
     const updates = {};
-    if (name !== undefined) updates.name = name;
-    if (salePrice !== undefined) updates.salePrice = salePrice;
-    if (costMode !== undefined) updates.costMode = costMode;
-    if (isActive !== undefined) updates.isActive = isActive;
+    if (name !== undefined && name !== null && name !== '') updates.name = name;
+    if (salePrice !== undefined && salePrice !== null && salePrice !== '' && !isNaN(salePrice)) updates.salePrice = parseFloat(salePrice);
+    if (costMode !== undefined && costMode !== null && costMode !== '') updates.costMode = costMode;
+    if (isActive !== undefined) updates.isActive = isActive === 'true' || isActive === true;
     if (imageUrl !== undefined) updates.imageUrl = imageUrl;
+    if (categoryId !== undefined) updates.categoryId = categoryId === '' || categoryId === 'null' || categoryId === null ? null : parseInt(categoryId);
+    if (baseProductId !== undefined) updates.baseProductId = baseProductId === '' || baseProductId === 'null' || baseProductId === null ? null : parseInt(baseProductId);
+    if (presentationId !== undefined) updates.presentationId = presentationId === '' || presentationId === 'null' || presentationId === null ? null : parseInt(presentationId);
+    if (unitsPerSale !== undefined) updates.unitsPerSale = parseFloat(unitsPerSale) || 1;
+    if (taxApplies !== undefined) updates.taxApplies = taxApplies === 'true' || taxApplies === true;
     
     // Only update stockMin for SIMPLE products
     if (stockMin !== undefined && product.productType === 'SIMPLE') {
@@ -372,14 +419,15 @@ router.put('/:id', requireRole('ADMIN'), upload.single('image'), async (req, res
     await product.update(updates);
 
     // Fetch updated product
-    const updatedProduct = await Product.findByPk(id, {
-      include: product.productType === 'COMBO' ? [{
-        association: 'components',
-        include: [{
-          association: 'component'
-        }]
-      }] : []
-    });
+    const updateInclude = [
+      { association: 'category', required: false },
+      { association: 'presentation', required: false },
+      { association: 'baseProduct', attributes: ['id', 'name', 'sku'], required: false }
+    ];
+    if (product.productType === 'COMBO') {
+      updateInclude.push({ association: 'components', include: [{ association: 'component' }] });
+    }
+    const updatedProduct = await Product.findByPk(id, { include: updateInclude });
 
     res.json(updatedProduct);
   } catch (error) {
@@ -459,45 +507,90 @@ router.post('/:id/add-stock', requireRole('ADMIN'), async (req, res) => {
   }
 });
 
-// DELETE /products/:id - Delete product (soft delete by setting isActive=false) - ADMIN only
+// DELETE /products/:id - Eliminar producto de la base de datos (solo si no tiene dependencias) - ADMIN only
 router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { tenantId } = req.query;
+    const rawTenant = req.query.tenantId ?? req.body?.tenantId ?? 1;
+    const tenantId = parseInt(String(rawTenant), 10) || 1;
+    const productId = parseInt(id, 10);
+    if (isNaN(productId)) {
+      return res.status(400).json({ error: 'ID de producto inválido', code: 'INVALID_ID' });
+    }
 
     const product = await Product.findOne({
-      where: { id, tenantId }
+      where: { id: productId, tenantId }
     });
 
     if (!product) {
       return res.status(404).json({
-        error: 'Product not found',
+        error: 'Producto no encontrado',
         code: 'PRODUCT_NOT_FOUND'
       });
     }
 
-    // Check if product is used in any active combo
-    if (product.productType === 'SIMPLE') {
-      const usedInCombos = await ProductComponent.findAll({
-        where: { componentProductId: id },
-        include: [{
-          association: 'combo',
-          where: { isActive: true }
-        }]
+    // No eliminar si es producto base de otros (pool)
+    if (product.productType === 'SIMPLE' && !product.baseProductId) {
+      const poolProducts = await Product.findAll({
+        where: { baseProductId: productId }
       });
-
-      if (usedInCombos.length > 0) {
+      if (poolProducts.length > 0) {
         return res.status(400).json({
-          error: 'Cannot delete product: it is used in active combos',
-          code: 'PRODUCT_USED_IN_COMBOS',
-          combos: usedInCombos.map(pc => pc.combo.name)
+          error: 'No se puede eliminar: es producto base de ' + poolProducts.map(p => p.name).join(', '),
+          code: 'PRODUCT_IS_POOL_BASE'
         });
       }
     }
 
-    await product.update({ isActive: false });
+    // No eliminar si es componente de algún combo
+    if (product.productType === 'SIMPLE') {
+      const usedInCombos = await ProductComponent.findAll({
+        where: { componentProductId: productId },
+        include: [{ association: 'combo', attributes: ['name'] }]
+      });
+      if (usedInCombos.length > 0) {
+        return res.status(400).json({
+          error: 'No se puede eliminar: está en combos (' + usedInCombos.map(pc => pc.combo?.name || 'Combo').join(', ') + ')',
+          code: 'PRODUCT_USED_IN_COMBOS'
+        });
+      }
+    }
 
-    res.json({ message: 'Product deactivated successfully' });
+    // No eliminar si tiene ítems en ventas
+    const saleItemsCount = await SaleItem.count({ where: { productId } });
+    if (saleItemsCount > 0) {
+      return res.status(400).json({
+        error: 'No se puede eliminar: el producto tiene ventas registradas.',
+        code: 'PRODUCT_HAS_SALES'
+      });
+    }
+
+    // Eliminar movimientos de inventario asociados (ya verificamos que no tiene ventas)
+    await InventoryMovement.destroy({ where: { productId } });
+
+    // No eliminar si tiene compras grupales
+    const groupPurchasesCount = await GroupPurchase.count({ where: { productId } });
+    if (groupPurchasesCount > 0) {
+      return res.status(400).json({
+        error: 'No se puede eliminar: el producto tiene compras grupales asociadas.',
+        code: 'PRODUCT_HAS_GROUP_PURCHASES'
+      });
+    }
+
+    // Borrar en la base de datos con SQL directo para garantizar que se elimine
+    if (product.productType === 'COMBO') {
+      await sequelize.query(
+        'DELETE FROM product_components WHERE combo_product_id = :productId',
+        { replacements: { productId } }
+      );
+    }
+
+    await sequelize.query(
+      'DELETE FROM products WHERE id = :productId AND tenant_id = :tenantId',
+      { replacements: { productId, tenantId } }
+    );
+
+    res.json({ message: 'Producto eliminado correctamente' });
   } catch (error) {
     console.error('Error deleting product:', error);
     res.status(500).json({

@@ -19,7 +19,7 @@ module.exports = (sequelize) => {
     },
     productId: {
       type: DataTypes.BIGINT,
-      allowNull: false,
+      allowNull: true,
       field: 'product_id'
     },
     quantity: {

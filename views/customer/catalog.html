@@ -7,6 +7,7 @@
     <title>Catálogo - LOCOBAR</title>
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <link href="/public/css/theme.css" rel="stylesheet">
     <style>
         .navbar-custom {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -184,7 +185,7 @@
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-dark navbar-custom">
+    <nav class="navbar navbar-dark navbar-custom navbar-lb">
         <div class="container-fluid">
             <a class="navbar-brand spa-link" href="/customer/catalog">
                 <i class="bi bi-shop"></i> LOCOBAR
@@ -216,10 +217,16 @@
                 <input type="text" class="form-control" id="searchInput" placeholder="Buscar productos...">
                 <span class="input-group-text bg-white border-start-0"><i class="bi bi-search text-muted"></i></span>
             </div>
-            <div class="mt-2">
-                <select class="form-select form-select-sm" id="typeFilter" aria-label="Filtro de tipo de producto">
-                    <option value="">Todos los tipos</option>
-                    <option value="SIMPLE">Productos Simples</option>
+            <div class="mt-2 d-flex gap-2">
+                <select class="form-select form-select-sm" id="categoryFilter" aria-label="Filtro de categoría">
+                    <option value="">Todas las categorías</option>
+                </select>
+                <select class="form-select form-select-sm" id="presentationFilter" aria-label="Filtro de presentación">
+                    <option value="">Todas las presentaciones</option>
+                </select>
+                <select class="form-select form-select-sm" id="typeFilter" aria-label="Filtro de tipo de producto" style="max-width:160px">
+                    <option value="">Todos</option>
+                    <option value="SIMPLE">Simples</option>
                     <option value="COMBO">Combos</option>
                 </select>
             </div>
@@ -240,6 +247,7 @@
         <div class="cart-bar-left">
             <span class="cart-bar-items" id="cartBarItems">0 items</span>
             <span class="cart-bar-total" id="cartBarTotal">Total: $0.00</span>
+            <span id="cartBarExpiry" style="font-size:0.75rem;color:rgba(255,255,255,0.8)"></span>
         </div>
         <a href="/customer/cart" class="btn-ver-carrito spa-link" id="cartBarBtn">
             <i class="bi bi-cart3"></i> Ver mi carrito
@@ -251,39 +259,80 @@
     <script>
         let cart = JSON.parse(localStorage.getItem('customerCart')) || [];
         let customer = JSON.parse(localStorage.getItem('customer')) || null;
+        let lastProducts = [];
+        let searchTimeout;
+
+        function bindCatalogEvents() {
+            $('#searchInput').off('input keyup keypress').on('input keyup', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(loadProducts, 300);
+            }).on('keypress', function(e) {
+                if (e.which === 13) loadProducts();
+            });
+            $('#typeFilter').off('change').on('change', loadProducts);
+            $('#categoryFilter').off('change').on('change', loadProducts);
+            $('#presentationFilter').off('change').on('change', loadProducts);
+        }
 
         $(document).ready(function() {
             $.get('/api/public/brand-slogan', function(r) { if (r && r.pageTitleCatalog) document.title = r.pageTitleCatalog; });
-            // Check authentication
-            const token = localStorage.getItem('customerToken');
+            var token = localStorage.getItem('customerToken');
             if (!token) {
                 window.location.href = '/customer/login';
                 return;
             }
-
-            // Load customer info
-            if (customer) {
-                $('#userName').text(customer.name);
-            }
-
+            if (customer) $('#userName').text(customer.name);
             updateCartBar();
+            startCartExpiryTimer();
+            loadCategoryFilter();
+            loadPresentationFilter();
             loadProducts();
-
-            // Búsqueda en tiempo real (con debounce)
-            let searchTimeout;
-            $('#searchInput').on('input keyup', function() {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(loadProducts, 300);
-            });
-            $('#searchInput').on('keypress', function(e) {
-                if (e.which === 13) loadProducts();
-            });
-            $('#typeFilter').on('change', loadProducts);
+            bindCatalogEvents();
         });
+
+        function loadCategoryFilter() {
+            $.ajax({
+                url: '/api/public/product-categories',
+                method: 'GET',
+                data: { tenantId: 1 },
+                success: function(data) {
+                    var cats = data.categories || [];
+                    var opts = '<option value="">Todas las categorías</option>';
+                    cats.forEach(function(c) {
+                        opts += '<option value="' + c.id + '">' + c.name + '</option>';
+                    });
+                    $('#categoryFilter').html(opts);
+                }
+            });
+        }
+
+        function loadPresentationFilter() {
+            $.ajax({
+                url: '/api/public/product-presentations',
+                method: 'GET',
+                data: { tenantId: 1 },
+                success: function(data) {
+                    var items = data.presentations || [];
+                    var opts = '<option value="">Todas las presentaciones</option>';
+                    items.forEach(function(p) {
+                        opts += '<option value="' + p.id + '">' + p.name + '</option>';
+                    });
+                    $('#presentationFilter').html(opts);
+                }
+            });
+        }
 
         function loadProducts() {
             const search = $('#searchInput').val();
             const productType = $('#typeFilter').val();
+            const categoryId = $('#categoryFilter').val();
+            const presentationId = $('#presentationFilter').val();
+
+            var params = {};
+            if (search) params.search = search;
+            if (productType) params.productType = productType;
+            if (categoryId) params.categoryId = categoryId;
+            if (presentationId) params.presentationId = presentationId;
 
             $.ajax({
                 url: '/api/customer/products',
@@ -291,9 +340,10 @@
                 headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('customerToken')
                 },
-                data: { search, productType },
+                data: params,
                 success: function(response) {
-                    displayProducts(response.products);
+                    lastProducts = response.products || [];
+                    displayProducts(lastProducts);
                 },
                 error: function(xhr) {
                     if (xhr.status === 401) {
@@ -320,15 +370,20 @@
             }
 
             products.forEach(product => {
-                const stockClass = product.currentStock > 10 ? 'stock-available' :
-                                 product.currentStock > 0 ? 'stock-low' : 'stock-out';
-                const stockText = product.currentStock > 0 ?
-                    `Stock disponibles: ${product.currentStock}` : 'Sin stock';
+                const cartItem = cart.find(item => item.productId === product.id);
+                const cartQty = cartItem ? cartItem.quantity : 0;
+                const effectiveStock = Math.max(0, (product.currentStock || 0) - cartQty);
+                const stockClass = effectiveStock > 10 ? 'stock-available' :
+                                 effectiveStock > 0 ? 'stock-low' : 'stock-out';
+                const stockText = effectiveStock > 0 ?
+                    `Disponibles: ${effectiveStock}` : 'Sin stock';
                 const nameEscaped = (product.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const imgEscaped = (product.imageUrl || '').replace(/'/g, "\\'");
+                const maxStock = product.currentStock || 0;
 
                 const productCard = `
                     <div class="col-12 col-sm-6 col-lg-3 mb-3">
-                        <div class="product-card position-relative">
+                        <div class="product-card card-lb position-relative">
                             ${product.productType === 'COMBO' ? '<div class="combo-badge">COMBO</div>' : ''}
                             <div class="product-card-image-wrap">
                                 ${product.imageUrl ?
@@ -340,10 +395,10 @@
                                 <h5 class="mb-0" onclick="this.classList.toggle('expanded')">${product.name}</h5>
                                 <span class="stock-badge ${stockClass}">${stockText}</span>
                                 <div class="d-flex justify-content-between align-items-center mt-1">
-                                    <strong class="text-primary">$${product.salePrice.toFixed(2)}</strong>
-                                    <button class="btn btn-primary btn-sm"
-                                            onclick="addToCart(${product.id}, '${nameEscaped}', ${product.salePrice}, ${product.currentStock}, '${product.imageUrl || ''}')"
-                                            ${product.currentStock === 0 ? 'disabled' : ''}>
+                                    <strong class="text-primary">$${(product.salePrice || 0).toFixed(2)}</strong>
+                                    <button class="btn btn-lb-accent btn-sm"
+                                            onclick="addToCart(${product.id}, '${nameEscaped}', ${product.salePrice || 0}, ${maxStock}, '${imgEscaped}')"
+                                            ${effectiveStock === 0 ? 'disabled' : ''}>
                                         <i class="bi bi-cart-plus"></i>
                                     </button>
                                 </div>
@@ -356,6 +411,7 @@
         }
 
         function addToCart(productId, productName, price, maxStock, imageUrl) {
+            const wasEmpty = cart.length === 0;
             const existingItem = cart.find(item => item.productId === productId);
             
             if (existingItem) {
@@ -375,9 +431,13 @@
                 });
             }
 
+            if (wasEmpty && !localStorage.getItem('cartExpiresAt')) {
+                localStorage.setItem('cartExpiresAt', String(Date.now() + 30 * 60 * 1000));
+            }
             localStorage.setItem('customerCart', JSON.stringify(cart));
             updateCartBar();
-            showAlert((productName || '').replace(/\\'/g, "'") + ' agregado al carrito', 'success');
+            if (lastProducts.length > 0) displayProducts(lastProducts);
+            showAlert('Producto agregado con éxito!', 'success');
         }
 
         function updateCartBar() {
@@ -402,6 +462,7 @@
             localStorage.removeItem('customerToken');
             localStorage.removeItem('customer');
             localStorage.removeItem('customerCart');
+            localStorage.removeItem('cartExpiresAt');
             window.location.href = '/customer/login';
         }
 
@@ -418,6 +479,58 @@
                 $('.alert').alert('close');
             }, 3000);
         }
+
+        function startCartExpiryTimer() {
+            if (window._cartTimerInterval) {
+                clearInterval(window._cartTimerInterval);
+                window._cartTimerInterval = null;
+            }
+            function tick() {
+                var currentCart = JSON.parse(localStorage.getItem('customerCart')) || [];
+                var expiryEl = document.getElementById('cartBarExpiry');
+                if (currentCart.length === 0) {
+                    if (expiryEl) expiryEl.textContent = '';
+                    clearInterval(window._cartTimerInterval);
+                    window._cartTimerInterval = null;
+                    return;
+                }
+                var expiresAt = parseInt(localStorage.getItem('cartExpiresAt'), 10);
+                if (!expiresAt) { if (expiryEl) expiryEl.textContent = ''; return; }
+                var remaining = expiresAt - Date.now();
+                if (remaining <= 0) {
+                    localStorage.removeItem('customerCart');
+                    localStorage.removeItem('cartExpiresAt');
+                    cart = [];
+                    clearInterval(window._cartTimerInterval);
+                    window._cartTimerInterval = null;
+                    if (expiryEl) expiryEl.textContent = '';
+                    updateCartBar();
+                    if (lastProducts.length > 0) displayProducts(lastProducts);
+                    showAlert('Tu carrito expiró (30 min). Agrega los productos nuevamente.', 'warning');
+                    return;
+                }
+                if (expiryEl) {
+                    var totalSeconds = Math.floor(remaining / 1000);
+                    var mins = Math.floor(totalSeconds / 60);
+                    var secs = totalSeconds % 60;
+                    expiryEl.textContent = (remaining < 5 * 60 * 1000 ? '⚠ ' : '') + 'Expira en: ' + mins + ':' + (secs < 10 ? '0' : '') + secs;
+                    expiryEl.style.color = remaining < 5 * 60 * 1000 ? '#ffcdd2' : 'rgba(255,255,255,0.8)';
+                }
+            }
+            tick();
+            window._cartTimerInterval = setInterval(tick, 1000);
+        }
+
+        // Reiniciar catálogo al volver (logo o atrás): datos, barra de carrito, filtros y eventos
+        window.initCatalogView = function() {
+            cart = JSON.parse(localStorage.getItem('customerCart')) || [];
+            updateCartBar();
+            startCartExpiryTimer();
+            loadCategoryFilter();
+            loadPresentationFilter();
+            loadProducts();
+            bindCatalogEvents();
+        };
     </script>
     </div><!-- #spa-view-content -->
 </body>

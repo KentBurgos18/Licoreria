@@ -14,6 +14,7 @@
     <title>Carrito - LOCOBAR</title>
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <link href="/public/css/theme.css" rel="stylesheet">
     <style>
         .navbar-custom {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -180,7 +181,7 @@
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-dark navbar-custom">
+    <nav class="navbar navbar-dark navbar-custom navbar-lb">
         <div class="container-fluid">
             <a class="navbar-brand spa-link" href="/customer/catalog">
                 <i class="bi bi-shop"></i> LOCOBAR
@@ -214,6 +215,11 @@
             <span class="page-header-spacer">Seguir Comprando</span>
         </div>
         
+        <div id="cartExpiryBanner" class="alert alert-info d-none py-2 mb-2" role="alert">
+            <i class="bi bi-clock-history"></i>
+            Los ítems del carrito se reservan por <strong>30 min</strong>.
+            Tiempo restante: <strong id="cartExpiryCountdown">--:--</strong>
+        </div>
         <div id="alertContainer"></div>
 
         <div id="cartContent">
@@ -223,14 +229,14 @@
         <div class="row mt-4">
             <div class="col-md-8"></div>
             <div class="col-md-4">
-                <div class="card">
+                <div class="card card-lb">
                     <div class="card-body">
                         <h5 class="card-title">Resumen del Pedido</h5>
                         <div class="d-flex justify-content-between mb-2">
                             <span>Subtotal:</span>
                             <span id="subtotal">$0.00</span>
                         </div>
-                        <div class="d-flex justify-content-between mb-2">
+                        <div class="justify-content-between mb-2 tax-row d-none">
                             <span id="taxLabel">IVA:</span>
                             <span id="tax">$0.00</span>
                         </div>
@@ -239,7 +245,7 @@
                             <strong>Total:</strong>
                             <strong id="total">$0.00</strong>
                         </div>
-                        <button class="btn btn-primary w-100" onclick="goToCheckout()" id="checkoutBtn" disabled>
+                        <button class="btn btn-lb-primary w-100" onclick="goToCheckout()" id="checkoutBtn" disabled>
                             <i class="bi bi-credit-card"></i> Proceder al Pago
                         </button>
                     </div>
@@ -253,7 +259,8 @@
     <script>
         let cart = JSON.parse(localStorage.getItem('customerCart')) || [];
         let customer = JSON.parse(localStorage.getItem('customer')) || null;
-        let currentTaxRate = null; // Solo desde Configuración (api/public/tax-rate)
+        let currentTaxRate = null;
+        let taxEnabled = true;
 
         $(document).ready(function() {
             $.get('/api/public/brand-slogan', function(r) { if (r && r.pageTitleCart) document.title = r.pageTitleCart; });
@@ -267,6 +274,20 @@
             if (customer) {
                 $('#userName').text(customer.name);
             }
+
+            // Check cart expiry
+            var expiresAt = parseInt(localStorage.getItem('cartExpiresAt'), 10);
+            if (expiresAt && Date.now() >= expiresAt) {
+                localStorage.removeItem('customerCart');
+                localStorage.removeItem('cartExpiresAt');
+                cart = [];
+            }
+
+            startCartExpiryTimer(function() {
+                cart = [];
+                displayCart();
+                showAlert('Tu carrito expiró (30 min). Agrega los productos nuevamente.', 'warning');
+            });
 
             // Sincronizar imágenes del carrito con el backend
             syncCartImages();
@@ -319,11 +340,13 @@
                 method: 'GET',
                 data: { tenantId: 1 },
                 success: function(response) {
+                    taxEnabled = response.enabled !== false;
                     currentTaxRate = response.configured && response.value != null ? parseFloat(response.value) : null;
                     updateTaxLabel();
                     displayCart();
                 },
                 error: function() {
+                    taxEnabled = true;
                     currentTaxRate = null;
                     updateTaxLabel();
                     displayCart();
@@ -332,9 +355,13 @@
         }
 
         function updateTaxLabel() {
-            if (currentTaxRate == null) {
+            if (!taxEnabled) {
+                $('.tax-row').removeClass('d-flex').addClass('d-none');
+            } else if (currentTaxRate == null) {
+                $('.tax-row').removeClass('d-none').addClass('d-flex');
                 $('#taxLabel').text('IVA: No configurado');
             } else {
+                $('.tax-row').removeClass('d-none').addClass('d-flex');
                 $('#taxLabel').text(`IVA (${currentTaxRate.toFixed(0)}%):`);
             }
         }
@@ -367,7 +394,7 @@
                     ? `<button class="btn btn-sm btn-danger" onclick="removeItem(${index})" title="Eliminar"><i class="bi bi-trash"></i></button>`
                     : `<button class="btn btn-sm" onclick="updateQuantity(${index}, ${item.quantity - 1})"><i class="bi bi-dash"></i></button>`;
                 
-                html += `<div class="cart-item">
+                html += `<div class="cart-item card-lb">
                     <div class="cart-item-image-wrap">${item.imageUrl ? `<img src="${item.imageUrl}" alt="${nameEscaped}">` : `<div class="cart-image-placeholder"><i class="bi bi-image"></i></div>`}</div>
                     <div class="cart-item-body">
                         <h5>${item.productName}</h5>
@@ -421,12 +448,15 @@
         function removeItem(index) {
             cart.splice(index, 1);
             localStorage.setItem('customerCart', JSON.stringify(cart));
+            if (cart.length === 0) {
+                localStorage.removeItem('cartExpiresAt');
+            }
             displayCart();
         }
 
         function updateTotals() {
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const tax = currentTaxRate != null ? subtotal * (currentTaxRate / 100) : 0;
+            const tax = (taxEnabled && currentTaxRate != null) ? subtotal * (currentTaxRate / 100) : 0;
             const total = subtotal + tax;
 
             $('#subtotal').text(`$${subtotal.toFixed(2)}`);
@@ -446,6 +476,7 @@
             localStorage.removeItem('customerToken');
             localStorage.removeItem('customer');
             localStorage.removeItem('customerCart');
+            localStorage.removeItem('cartExpiresAt');
             window.location.href = '/customer/login';
         }
 
@@ -462,6 +493,74 @@
                 $('.alert').alert('close');
             }, 3000);
         }
+
+        function startCartExpiryTimer(onExpired) {
+            if (window._cartTimerInterval) {
+                clearInterval(window._cartTimerInterval);
+                window._cartTimerInterval = null;
+            }
+            function tick() {
+                var currentCart = JSON.parse(localStorage.getItem('customerCart')) || [];
+                var banner = document.getElementById('cartExpiryBanner');
+                var countdownEl = document.getElementById('cartExpiryCountdown');
+                if (currentCart.length === 0) {
+                    if (banner) banner.classList.add('d-none');
+                    clearInterval(window._cartTimerInterval);
+                    window._cartTimerInterval = null;
+                    return;
+                }
+                var expiresAt = parseInt(localStorage.getItem('cartExpiresAt'), 10);
+                if (!expiresAt) { if (banner) banner.classList.add('d-none'); return; }
+                var remaining = expiresAt - Date.now();
+                if (remaining <= 0) {
+                    localStorage.removeItem('customerCart');
+                    localStorage.removeItem('cartExpiresAt');
+                    cart = [];
+                    clearInterval(window._cartTimerInterval);
+                    window._cartTimerInterval = null;
+                    if (banner) banner.classList.add('d-none');
+                    if (onExpired) onExpired();
+                    return;
+                }
+                if (banner) {
+                    banner.classList.remove('d-none');
+                    if (remaining < 5 * 60 * 1000) {
+                        banner.classList.remove('alert-info');
+                        banner.classList.add('alert-warning');
+                    } else {
+                        banner.classList.remove('alert-warning');
+                        banner.classList.add('alert-info');
+                    }
+                }
+                if (countdownEl) {
+                    var totalSeconds = Math.floor(remaining / 1000);
+                    var mins = Math.floor(totalSeconds / 60);
+                    var secs = totalSeconds % 60;
+                    countdownEl.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+                }
+            }
+            tick();
+            window._cartTimerInterval = setInterval(tick, 1000);
+        }
+
+        // Reinicializar carrito al entrar por SPA (volver atrás o desde catálogo) para que se vean los ítems
+        window.initCartView = function() {
+            var expiresAt = parseInt(localStorage.getItem('cartExpiresAt'), 10);
+            if (expiresAt && Date.now() >= expiresAt) {
+                localStorage.removeItem('customerCart');
+                localStorage.removeItem('cartExpiresAt');
+                cart = [];
+            } else {
+                cart = JSON.parse(localStorage.getItem('customerCart')) || [];
+            }
+            displayCart();
+            loadTaxRate();
+            startCartExpiryTimer(function() {
+                cart = [];
+                displayCart();
+                showAlert('Tu carrito expiró (30 min). Agrega los productos nuevamente.', 'warning');
+            });
+        };
     </script>
     </div><!-- #spa-view-content -->
 </body>

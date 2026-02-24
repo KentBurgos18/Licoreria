@@ -89,14 +89,6 @@ app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'login.html'));
 });
 
-app.get('/debug-emails', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'debug-emails.html'));
-});
-
-app.get('/cleanup', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'cleanup.html'));
-});
-
 // API pública: texto/eslogan y títulos de pestaña para login y páginas (sin auth)
 app.get('/api/public/brand-slogan', async (req, res) => {
   try {
@@ -136,6 +128,20 @@ app.get('/api/public/brand-slogan', async (req, res) => {
   }
 });
 
+// API pública: descuento por efectivo/transferencia
+app.get('/api/public/discount-rate', async (req, res) => {
+  try {
+    const tenantId = parseInt(req.query.tenantId, 10) || 1;
+    const value = await Setting.getSetting(tenantId, 'cash_transfer_discount_rate');
+    const num = value != null ? parseFloat(value) : NaN;
+    const configured = !isNaN(num) && num >= 0 && num <= 100;
+    res.json({ value: configured ? num : 0, configured });
+  } catch (err) {
+    console.error('Error getting discount-rate:', err);
+    res.json({ value: 0, configured: false });
+  }
+});
+
 // API pública: IVA (tax_rate) desde Configuración; sin valor por defecto
 app.get('/api/public/tax-rate', async (req, res) => {
   try {
@@ -143,10 +149,12 @@ app.get('/api/public/tax-rate', async (req, res) => {
     const value = await Setting.getSetting(tenantId, 'tax_rate');
     const num = value != null ? parseFloat(value) : NaN;
     const configured = !isNaN(num) && num >= 0 && num <= 100;
-    res.json({ value: configured ? num : null, configured });
+    const enabledRaw = await Setting.getSetting(tenantId, 'tax_enabled', 'true');
+    const enabled = enabledRaw === 'true' || enabledRaw === true;
+    res.json({ value: configured ? num : null, configured, enabled });
   } catch (err) {
     console.error('Error getting public tax-rate:', err);
-    res.json({ value: null, configured: false });
+    res.json({ value: null, configured: false, enabled: false });
   }
 });
 
@@ -157,6 +165,38 @@ app.get('/api/public/vapid-public-key', (req, res) => {
     return res.status(503).json({ error: 'Web Push no configurado' });
   }
   res.json({ publicKey: key });
+});
+
+// API pública: categorías de producto (sin auth, para catálogo de clientes)
+app.get('/api/public/product-categories', async (req, res) => {
+  try {
+    const tenantId = parseInt(req.query.tenantId, 10) || 1;
+    const { ProductCategory } = require('./models');
+    const categories = await ProductCategory.findAll({
+      where: { tenantId },
+      order: [['sortOrder', 'ASC'], ['name', 'ASC']]
+    });
+    res.json({ categories });
+  } catch (err) {
+    console.error('Error getting public categories:', err);
+    res.json({ categories: [] });
+  }
+});
+
+// API pública: presentaciones de producto (sin auth, para catálogo de clientes)
+app.get('/api/public/product-presentations', async (req, res) => {
+  try {
+    const tenantId = parseInt(req.query.tenantId, 10) || 1;
+    const { ProductPresentation } = require('./models');
+    const presentations = await ProductPresentation.findAll({
+      where: { tenantId },
+      order: [['sortOrder', 'ASC'], ['name', 'ASC']]
+    });
+    res.json({ presentations });
+  } catch (err) {
+    console.error('Error getting public presentations:', err);
+    res.json({ presentations: [] });
+  }
 });
 
 // Service Worker para Web Push (debe estar en raíz para scope correcto)
@@ -228,6 +268,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/products', authenticateAdmin, productsRouter);
 app.use('/api/products', authenticateAdmin, productComponentsRouter);
 app.use('/api/products', authenticateAdmin, productAvailabilityRouter);
+app.use('/api/product-categories', authenticateAdmin, require('./routes/productCategories'));
+app.use('/api/product-presentations', authenticateAdmin, require('./routes/productPresentations'));
 app.use('/api/sales', authenticateAdmin, salesRouter);
 app.use('/api/sales', authenticateAdmin, salesVoidRouter);
 app.use('/api/purchases', authenticateAdmin, require('./routes/purchases'));
@@ -245,6 +287,7 @@ app.use('/api/supplier-prices', authenticateAdmin, require('./routes/supplierPri
 app.use('/api/settings', authenticateAdmin, require('./routes/settings'));
 app.use('/api/notifications', authenticateAdmin, require('./routes/notifications'));
 app.use('/api/email', require('./routes/email'));
+app.use('/api/backup', authenticateAdmin, require('./routes/backup'));
 
 // View routes (continuación - rutas adicionales)
 app.get('/dashboard.html', (req, res) => res.redirect(302, '/dashboard'));
@@ -255,6 +298,10 @@ app.get('/dashboard', (req, res) => {
 });
 
 app.get('/dashboard/products', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
+});
+
+app.get('/dashboard/suppliers', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
 });
 
@@ -413,6 +460,130 @@ async function initializeApp() {
       }
     } catch (e) {
       console.warn('⚠️ No se pudo crear/verificar tabla payphone_pending_payments:', e.message);
+    }
+
+    // Asegurar que products tiene category_id (migración 017)
+    try {
+      const [col] = await sequelize.query(`
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'category_id'
+      `);
+      if (!col || col.length === 0) {
+        console.log('🔄 Aplicando migración 017 (product_categories)...');
+        await sequelize.query(`
+          CREATE TABLE IF NOT EXISTS product_categories (
+            id BIGSERIAL PRIMARY KEY,
+            tenant_id BIGINT NOT NULL DEFAULT 1,
+            name VARCHAR(100) NOT NULL,
+            sort_order INT NOT NULL DEFAULT 0,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_product_categories_tenant ON product_categories(tenant_id)`);
+        await sequelize.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_product_categories_tenant_name ON product_categories(tenant_id, LOWER(TRIM(name)))`);
+        await sequelize.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS category_id BIGINT REFERENCES product_categories(id) ON DELETE SET NULL`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id)`);
+        console.log('✅ Migración 017 aplicada');
+      }
+    } catch (e) {
+      console.warn('⚠️ Migración 017 (category_id):', e.message);
+    }
+
+    // Migración 018: product_presentations y columnas pool en products
+    try {
+      const [ppCol] = await sequelize.query(`
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'base_product_id'
+      `);
+      if (!ppCol || ppCol.length === 0) {
+        console.log('🔄 Aplicando migración 018 (inventory pool & presentations)...');
+        await sequelize.query(`
+          CREATE TABLE IF NOT EXISTS product_presentations (
+            id BIGSERIAL PRIMARY KEY,
+            tenant_id BIGINT NOT NULL DEFAULT 1,
+            name VARCHAR(100) NOT NULL,
+            units_per_sale DECIMAL(12, 3) NOT NULL DEFAULT 1,
+            sort_order INT NOT NULL DEFAULT 0,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_product_presentations_tenant ON product_presentations(tenant_id)`);
+        await sequelize.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_product_presentations_tenant_name ON product_presentations(tenant_id, LOWER(TRIM(name)))`);
+        await sequelize.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS base_product_id BIGINT REFERENCES products(id) ON DELETE SET NULL`);
+        await sequelize.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS presentation_id BIGINT REFERENCES product_presentations(id) ON DELETE SET NULL`);
+        await sequelize.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS units_per_sale DECIMAL(12,3) NOT NULL DEFAULT 1`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_products_base_product ON products(base_product_id)`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_products_presentation ON products(presentation_id)`);
+        console.log('✅ Migración 018 aplicada');
+      }
+    } catch (e) {
+      console.warn('⚠️ Migración 018 (inventory pool):', e.message);
+    }
+
+    // Migración 019: tax_applies en products + setting tax_enabled
+    try {
+      const [taxCol] = await sequelize.query(`
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'tax_applies'
+      `);
+      if (!taxCol || taxCol.length === 0) {
+        console.log('🔄 Aplicando migración 019 (tax_applies)...');
+        await sequelize.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS tax_applies BOOLEAN NOT NULL DEFAULT true`);
+        console.log('✅ Migración 019 aplicada');
+      }
+      // Asegurar que el setting tax_enabled exista
+      const [teSet] = await sequelize.query(`SELECT 1 FROM settings WHERE tenant_id = 1 AND setting_key = 'tax_enabled'`);
+      if (!teSet || teSet.length === 0) {
+        await sequelize.query(`INSERT INTO settings (tenant_id, setting_key, setting_value, setting_type, description, updated_at) VALUES (1, 'tax_enabled', 'true', 'string', 'IVA habilitado (true/false)', NOW())`);
+        console.log('✅ Setting tax_enabled creado');
+      }
+    } catch (e) {
+      console.warn('⚠️ Migración 019 (tax_applies):', e.message);
+    }
+
+    // Migración 020: payment_method en group_purchase_participants
+    try {
+      const [pmCol] = await sequelize.query(`
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'group_purchase_participants' AND column_name = 'payment_method'
+      `);
+      if (!pmCol || pmCol.length === 0) {
+        console.log('🔄 Aplicando migración 020 (payment_method en group_purchase_participants)...');
+        await sequelize.query(`
+          ALTER TABLE group_purchase_participants
+            ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20) NOT NULL DEFAULT 'CREDIT'
+              CONSTRAINT chk_gpp_payment_method CHECK (payment_method IN ('CASH', 'TRANSFER', 'CREDIT'))
+        `);
+        console.log('✅ Migración 020 aplicada');
+      }
+    } catch (e) {
+      console.warn('⚠️ Migración 020 (payment_method):', e.message);
+    }
+
+    // Migración 021: product_id nullable en group_purchases
+    try {
+      const [gpNullable] = await sequelize.query(`
+        SELECT is_nullable FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'group_purchases' AND column_name = 'product_id'
+      `);
+      if (gpNullable && gpNullable.length > 0 && gpNullable[0].is_nullable === 'NO') {
+        console.log('🔄 Aplicando migración 021 (product_id nullable en group_purchases)...');
+        await sequelize.query(`ALTER TABLE group_purchases ALTER COLUMN product_id DROP NOT NULL`);
+        console.log('✅ Migración 021 aplicada');
+      }
+    } catch (e) {
+      console.warn('⚠️ Migración 021 (product_id nullable):', e.message);
+    }
+
+    // Migración 026: setting cash_transfer_discount_rate
+    try {
+      const [discSet] = await sequelize.query(`SELECT 1 FROM settings WHERE tenant_id = 1 AND setting_key = 'cash_transfer_discount_rate'`);
+      if (!discSet || discSet.length === 0) {
+        await sequelize.query(`INSERT INTO settings (tenant_id, setting_key, setting_value, setting_type, description, updated_at) VALUES (1, 'cash_transfer_discount_rate', '5.75', 'number', 'Descuento (%) aplicado al pagar en efectivo o transferencia', NOW())`);
+        console.log('✅ Setting cash_transfer_discount_rate creado (default 5.75%)');
+      }
+    } catch (e) {
+      console.warn('⚠️ Migración 026 (discount_rate):', e.message);
     }
 
     // Sync models (create tables if they don't exist)

@@ -7,22 +7,23 @@
     <title>Resultado del Pago - LOCOBAR</title>
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <link href="/public/css/theme.css" rel="stylesheet">
 </head>
-<body>
+<body class="bg-light">
     <div class="container mt-5 text-center">
         <div id="loadingState">
             <div class="spinner-border text-primary mb-3" role="status"></div>
             <p>Confirmando su pago...</p>
         </div>
-        <div id="successState" class="d-none">
+        <div id="successState" class="d-none card card-lb shadow-sm d-inline-block p-4 text-start">
             <h4 class="text-success mb-3"><i class="bi bi-check-circle"></i> ¡Pago confirmado!</h4>
-            <p class="text-muted">Su pedido ha sido registrado correctamente.</p>
-            <p class="small">Redirigiendo a Mis Pedidos...</p>
+            <p class="text-muted mb-0">Su pedido ha sido registrado correctamente.</p>
+            <p class="small text-muted mt-2">Redirigiendo a Mis Pedidos...</p>
         </div>
-        <div id="errorState" class="d-none">
+        <div id="errorState" class="d-none card card-lb shadow-sm d-inline-block p-4 text-start">
             <h4 class="text-danger mb-3"><i class="bi bi-x-circle"></i> Pago no completado</h4>
             <p id="errorMsg" class="text-muted"></p>
-            <a href="/customer/checkout" class="btn btn-primary mt-3">Volver al Checkout</a>
+            <a href="/customer/checkout" class="btn btn-lb-primary mt-3">Volver al Checkout</a>
         </div>
     </div>
     <script src="/libs/js/jquery.min.js"></script>

@@ -7,6 +7,7 @@
     <title>Checkout - LOCOBAR</title>
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <link href="/public/css/theme.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.css">
     <script type="module" src="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js"></script>
     <style>
@@ -74,7 +75,7 @@
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-dark navbar-custom">
+    <nav class="navbar navbar-dark navbar-custom navbar-lb">
         <div class="container-fluid">
             <a class="navbar-brand spa-link" href="/customer/catalog">
                 <i class="bi bi-shop"></i> LOCOBAR
@@ -101,10 +102,15 @@
     <!-- Main Content -->
     <div class="container mt-4">
         <h2 class="mb-4"><i class="bi bi-credit-card"></i> Finalizar Compra</h2>
+        <div id="cartExpiryBanner" class="alert alert-info d-none py-2 mb-2" role="alert">
+            <i class="bi bi-clock-history"></i>
+            Los ítems del carrito se reservan por <strong>30 min</strong>.
+            Tiempo restante: <strong id="cartExpiryCountdown">--:--</strong>
+        </div>
         <div id="alertContainer"></div>
         <div class="row">
             <div class="col-md-8">
-                <div class="card mb-4">
+                <div class="card card-lb mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">Método de Pago</h5>
                     </div>
@@ -113,17 +119,17 @@
                             <label class="form-label d-block mb-2">Seleccione método de pago</label>
                             <input type="hidden" id="paymentMethod" value="" required>
                             <div class="payment-methods-scroll" id="paymentMethodsScroll">
-                                <div class="payment-method-card" data-method="CASH" title="Efectivo">
+                                <div class="payment-method-card" data-method="CASH" title="Efectivo" onclick="selectPaymentMethod('CASH', this)">
                                     <i class="bi bi-cash-stack"></i>
                                     <strong>Efectivo</strong>
                                     <small class="d-block">Pago al recibir</small>
                                 </div>
-                                <div class="payment-method-card" data-method="CARD" title="Tarjeta">
+                                <div class="payment-method-card" data-method="CARD" title="Tarjeta" onclick="selectPaymentMethod('CARD', this)">
                                     <i class="bi bi-credit-card-2-front"></i>
                                     <strong>Tarjeta</strong>
                                     <small class="d-block">Visa, Mastercard</small>
                                 </div>
-                                <div class="payment-method-card" data-method="TRANSFER" title="Transferencia">
+                                <div class="payment-method-card" data-method="TRANSFER" title="Transferencia" onclick="selectPaymentMethod('TRANSFER', this)">
                                     <i class="bi bi-bank"></i>
                                     <strong>Transferencia</strong>
                                     <small class="d-block">Transferencia bancaria</small>
@@ -142,7 +148,7 @@
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card card-lb">
                     <div class="card-header">
                         <h5 class="mb-0">Resumen del Pedido</h5>
                     </div>
@@ -155,16 +161,20 @@
             </div>
 
             <div class="col-md-4">
-                <div class="card sticky-top" style="top: 20px;">
+                <div class="card card-lb sticky-top" style="top: 20px;">
                     <div class="card-body">
                         <h5 class="card-title">Total</h5>
                         <div class="d-flex justify-content-between mb-2">
                             <span>Subtotal:</span>
                             <span id="subtotal">$0.00</span>
                         </div>
-                        <div class="d-flex justify-content-between mb-2">
+                        <div class="justify-content-between mb-2 tax-row d-none">
                             <span id="taxLabel">IVA:</span>
                             <span id="tax">$0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 discount-row d-none" id="discountRow">
+                            <span class="text-success">Descuento:</span>
+                            <span id="discount" class="text-success">-$0.00</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between mb-3">
@@ -172,7 +182,7 @@
                             <strong id="total" class="text-primary">$0.00</strong>
                         </div>
                         <p id="payphoneConfirmNote" class="small text-muted d-none mb-2">Complete el formulario de pago con tarjeta en la columna izquierda y use el botón de PayPhone para pagar.</p>
-                        <button class="btn btn-success w-100 btn-lg" onclick="processOrder()" id="processBtn">
+                        <button class="btn btn-lb-accent w-100 btn-lg" onclick="processOrder()" id="processBtn">
                             <i class="bi bi-check-circle"></i> Confirmar Pedido
                         </button>
                         <a href="/customer/cart" class="btn btn-outline-secondary w-100 mt-2 spa-link">
@@ -199,7 +209,7 @@
         </div>
     </div>
 
-    <!-- Modal: Esperando confirmación de pago en efectivo -->
+    <!-- Modal: Esperando confirmación de pago (efectivo o transferencia) -->
     <div class="modal fade" id="waitingCashModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -207,7 +217,7 @@
                     <h5 class="modal-title"><i class="bi bi-hourglass-split"></i> Esperando confirmación</h5>
                 </div>
                 <div class="modal-body text-center">
-                    <p>Esperando que un empleado o administrador confirme el pago en efectivo.</p>
+                    <p>Esperando que un empleado o administrador confirme su pago (efectivo o transferencia).</p>
                     <p class="text-muted small">Tiempo máximo de espera sugerido: 10 minutos.</p>
                     <div class="spinner-border text-primary my-3" role="status"></div>
                     <p id="waitingTenMinMsg" class="text-muted small mt-2 d-none">Puede seguir esperando o cerrar esta ventana. Puede ver el estado del pedido en <a href="/customer/orders" class="spa-link">Mis Pedidos</a>.</p>
@@ -225,7 +235,7 @@
                     <p class="text-muted mb-0" id="thankYouSlogan">Sistema de Licorería</p>
                 </div>
                 <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="thankYouCloseBtn">Aceptar</button>
+                    <button type="button" class="btn btn-lb-primary" data-bs-dismiss="modal" id="thankYouCloseBtn">Aceptar</button>
                 </div>
             </div>
         </div>
@@ -237,7 +247,9 @@
     <script>
         let cart = JSON.parse(localStorage.getItem('customerCart')) || [];
         let customer = JSON.parse(localStorage.getItem('customer')) || null;
-        let currentTaxRate = null; // Solo desde Configuración (api/public/tax-rate)
+        let currentTaxRate = null;
+        let taxEnabled = true;
+        let currentDiscountRate = 0;
 
         $(document).ready(function() {
             $.get('/api/public/brand-slogan', function(r) { if (r && r.pageTitleCheckout) document.title = r.pageTitleCheckout; });
@@ -252,6 +264,17 @@
                 $('#userName').text(customer.name);
             }
 
+            // Check cart expiry
+            var expiresAt = parseInt(localStorage.getItem('cartExpiresAt'), 10);
+            if (expiresAt && Date.now() >= expiresAt) {
+                localStorage.removeItem('customerCart');
+                localStorage.removeItem('cartExpiresAt');
+                cart = [];
+                if (window.spaNavigate) window.spaNavigate('/customer/catalog'); else window.location.href = '/customer/catalog';
+                return;
+            }
+            cart = JSON.parse(localStorage.getItem('customerCart')) || [];
+
             if (cart.length === 0) {
                 if (window.spaNavigate) window.spaNavigate('/customer/cart'); else window.location.href = '/customer/cart';
                 return;
@@ -259,12 +282,11 @@
 
             loadTaxRate();
             loadPayphoneAssets();
-            $('#paymentMethod').on('change', onPaymentMethodChange);
-            $(document).on('click', '.payment-method-card', function() {
-                var method = $(this).data('method');
-                $('.payment-method-card').removeClass('active');
-                $(this).addClass('active');
-                $('#paymentMethod').val(method).trigger('change');
+            startCartExpiryTimer(function() {
+                showAlert('Tu carrito expiró. Redirigiendo al catálogo...', 'warning');
+                setTimeout(function() {
+                    if (window.spaNavigate) window.spaNavigate('/customer/catalog'); else window.location.href = '/customer/catalog';
+                }, 2000);
             });
         });
 
@@ -282,6 +304,13 @@
             document.head.appendChild(script);
         }
 
+        function selectPaymentMethod(method, el) {
+            document.querySelectorAll('.payment-method-card').forEach(function(c) { c.classList.remove('active'); });
+            el.classList.add('active');
+            document.getElementById('paymentMethod').value = method;
+            onPaymentMethodChange();
+        }
+
         function onPaymentMethodChange() {
             var method = $('#paymentMethod').val();
             if (method === 'CARD') {
@@ -296,6 +325,7 @@
                 $('#payphoneConfirmNote').addClass('d-none');
                 payphonePPB = null;
             }
+            updateTotals();
         }
 
         function showPayphoneInline() {
@@ -330,6 +360,7 @@
             localStorage.removeItem('customerToken');
             localStorage.removeItem('customer');
             localStorage.removeItem('customerCart');
+            localStorage.removeItem('cartExpiresAt');
             window.location.href = '/customer/login';
         }
 
@@ -339,23 +370,39 @@
                 method: 'GET',
                 data: { tenantId: 1 },
                 success: function(response) {
+                    taxEnabled = response.enabled !== false;
                     currentTaxRate = response.configured && response.value != null ? parseFloat(response.value) : null;
                     updateTaxLabel();
                     displayOrderSummary();
                 },
                 error: function() {
+                    taxEnabled = true;
                     currentTaxRate = null;
                     updateTaxLabel();
                     displayOrderSummary();
                 }
             });
+            $.ajax({
+                url: '/api/public/discount-rate',
+                method: 'GET',
+                data: { tenantId: 1 },
+                success: function(r) {
+                    currentDiscountRate = r.value || 0;
+                    updateTotals();
+                }
+            });
         }
 
         function updateTaxLabel() {
-            if (currentTaxRate == null) {
+            if (!taxEnabled) {
+                $('.tax-row').removeClass('d-flex').addClass('d-none');
+                $('#processBtn').prop('disabled', false);
+            } else if (currentTaxRate == null) {
+                $('.tax-row').removeClass('d-none').addClass('d-flex');
                 $('#taxLabel').text('IVA: No configurado');
                 $('#processBtn').prop('disabled', true);
             } else {
+                $('.tax-row').removeClass('d-none').addClass('d-flex');
                 $('#taxLabel').text(`IVA (${currentTaxRate.toFixed(0)}%):`);
                 $('#processBtn').prop('disabled', false);
             }
@@ -386,18 +433,27 @@
 
         function updateTotals() {
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const tax = currentTaxRate != null ? subtotal * (currentTaxRate / 100) : 0;
-            const total = subtotal + tax;
+            const tax = (taxEnabled && currentTaxRate != null) ? subtotal * (currentTaxRate / 100) : 0;
+            const payMethod = $('#paymentMethod').val();
+            const applyDiscount = (payMethod === 'CASH' || payMethod === 'TRANSFER') && currentDiscountRate > 0;
+            const discountAmt = applyDiscount ? Math.round((subtotal + tax) * (currentDiscountRate / 100) * 100) / 100 : 0;
+            const total = subtotal + tax - discountAmt;
 
             $('#subtotal').text(`$${subtotal.toFixed(2)}`);
             $('#tax').text(`$${tax.toFixed(2)}`);
+            if (applyDiscount) {
+                $('#discountRow').removeClass('d-none');
+                $('#discount').text(`-$${discountAmt.toFixed(2)}`);
+            } else {
+                $('#discountRow').addClass('d-none');
+            }
             $('#total').text(`$${total.toFixed(2)}`);
         }
 
         function processOrder() {
             const paymentMethod = $('#paymentMethod').val();
 
-            if (currentTaxRate == null) {
+            if (taxEnabled && currentTaxRate == null) {
                 showAlert('El IVA no está configurado. No es posible completar la compra. Contacte al administrador.', 'warning');
                 return;
             }
@@ -461,6 +517,7 @@
                             }
                             showAlert('¡Pedido realizado exitosamente!', 'success');
                             localStorage.removeItem('customerCart');
+                            localStorage.removeItem('cartExpiresAt');
                             cart = [];
                             setTimeout(function() { if (window.spaNavigate) window.spaNavigate('/customer/orders'); else window.location.href = '/customer/orders'; }, 2000);
                         },
@@ -547,26 +604,12 @@
                 callback();
                 return;
             }
-            loadPayphoneAssets();
-            var attempts = 0;
-            var maxAttempts = 50;
-            var interval = setInterval(function() {
-                attempts++;
-                if (typeof window.PPaymentButtonBox !== 'undefined') {
-                    clearInterval(interval);
-                    callback();
-                    return;
-                }
-                if (attempts >= maxAttempts) {
-                    clearInterval(interval);
-                    import('https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js').then(function(m) {
-                        window.PPaymentButtonBox = m.PPaymentButtonBox || m.default || m;
-                        callback();
-                    }).catch(function() {
-                        callback();
-                    });
-                }
-            }, 300);
+            import('https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js').then(function(m) {
+                window.PPaymentButtonBox = m.PPaymentButtonBox || m.default || m;
+                callback();
+            }).catch(function() {
+                callback();
+            });
         }
 
         function startPayphoneFlow(items) {
@@ -630,6 +673,7 @@
                 if (saleStatusPollInterval) clearInterval(saleStatusPollInterval);
                 waitModal.hide();
                 localStorage.removeItem('customerCart');
+                localStorage.removeItem('cartExpiresAt');
                 cart = [];
                 $.get('/api/public/brand-slogan', function(r) {
                     const slogan = (r && r.brandSlogan) ? r.brandSlogan : 'Sistema de Licorería';
@@ -648,6 +692,16 @@
                 query: { saleId: saleId }
             });
             socket.on('sale-confirmed', onConfirmed);
+            socket.on('sale-voided', function(payload) {
+                if (payload && payload.saleId === parseInt(saleId, 10)) {
+                    if (waitingCashModalShown) {
+                        waitingCashModalShown = false;
+                        if (saleStatusPollInterval) clearInterval(saleStatusPollInterval);
+                        waitModal.hide();
+                        showAlert('Su pedido fue rechazado. Si tiene dudas, contacte al local.', 'warning');
+                    }
+                }
+            });
             socket.on('connect_error', function() {
                 // Fallback: poll status
                 saleStatusPollInterval = setInterval(function() {
@@ -658,6 +712,14 @@
                         success: function(data) {
                             if (data.status === 'COMPLETED') {
                                 onConfirmed();
+                            } else if (data.status === 'VOIDED') {
+                                if (waitingCashModalShown) {
+                                    waitingCashModalShown = false;
+                                    clearInterval(saleStatusPollInterval);
+                                    saleStatusPollInterval = null;
+                                    waitModal.hide();
+                                    showAlert('Su pedido fue rechazado. Si tiene dudas, contacte al local.', 'warning');
+                                }
                             }
                         }
                     });
@@ -670,6 +732,88 @@
                 }
             }, 10 * 60 * 1000);
         }
+        function startCartExpiryTimer(onExpired) {
+            if (window._cartTimerInterval) {
+                clearInterval(window._cartTimerInterval);
+                window._cartTimerInterval = null;
+            }
+            function tick() {
+                var currentCart = JSON.parse(localStorage.getItem('customerCart')) || [];
+                var banner = document.getElementById('cartExpiryBanner');
+                var countdownEl = document.getElementById('cartExpiryCountdown');
+                if (currentCart.length === 0) {
+                    if (banner) banner.classList.add('d-none');
+                    clearInterval(window._cartTimerInterval);
+                    window._cartTimerInterval = null;
+                    return;
+                }
+                var expiresAt = parseInt(localStorage.getItem('cartExpiresAt'), 10);
+                if (!expiresAt) { if (banner) banner.classList.add('d-none'); return; }
+                var remaining = expiresAt - Date.now();
+                if (remaining <= 0) {
+                    localStorage.removeItem('customerCart');
+                    localStorage.removeItem('cartExpiresAt');
+                    cart = [];
+                    clearInterval(window._cartTimerInterval);
+                    window._cartTimerInterval = null;
+                    if (banner) banner.classList.add('d-none');
+                    if (onExpired) onExpired();
+                    return;
+                }
+                if (banner) {
+                    banner.classList.remove('d-none');
+                    if (remaining < 5 * 60 * 1000) {
+                        banner.classList.remove('alert-info');
+                        banner.classList.add('alert-warning');
+                    } else {
+                        banner.classList.remove('alert-warning');
+                        banner.classList.add('alert-info');
+                    }
+                }
+                if (countdownEl) {
+                    var totalSeconds = Math.floor(remaining / 1000);
+                    var mins = Math.floor(totalSeconds / 60);
+                    var secs = totalSeconds % 60;
+                    countdownEl.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+                }
+            }
+            tick();
+            window._cartTimerInterval = setInterval(tick, 1000);
+        }
+
+        // Reinicializar checkout al navegar por SPA
+        window.initCheckoutView = function() {
+            var expiresAt = parseInt(localStorage.getItem('cartExpiresAt'), 10);
+            if (expiresAt && Date.now() >= expiresAt) {
+                localStorage.removeItem('customerCart');
+                localStorage.removeItem('cartExpiresAt');
+                cart = [];
+                if (window.spaNavigate) window.spaNavigate('/customer/catalog'); else window.location.href = '/customer/catalog';
+                return;
+            }
+            cart = JSON.parse(localStorage.getItem('customerCart')) || [];
+            if (cart.length === 0) {
+                if (window.spaNavigate) window.spaNavigate('/customer/cart'); else window.location.href = '/customer/cart';
+                return;
+            }
+            // Resetear selección de método de pago
+            document.querySelectorAll('.payment-method-card').forEach(function(c) { c.classList.remove('active'); });
+            document.getElementById('paymentMethod').value = '';
+            document.getElementById('payphone-inline-section').classList.add('d-none');
+            document.getElementById('processBtn').classList.remove('d-none');
+            // Mostrar productos y totales inmediatamente, sin esperar AJAX
+            currentDiscountRate = 0;
+            displayOrderSummary();
+            // Cargar IVA y descuento de forma asíncrona y actualizar totales al llegar
+            loadTaxRate();
+            loadPayphoneAssets();
+            startCartExpiryTimer(function() {
+                showAlert('Tu carrito expiró. Redirigiendo al catálogo...', 'warning');
+                setTimeout(function() {
+                    if (window.spaNavigate) window.spaNavigate('/customer/catalog'); else window.location.href = '/customer/catalog';
+                }, 2000);
+            });
+        };
     </script>
     </div><!-- #spa-view-content -->
 </body>

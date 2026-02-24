@@ -45,6 +45,11 @@ module.exports = (sequelize) => {
       allowNull: true,
       field: 'ref_id'
     },
+    purchaseOrderId: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      field: 'purchase_order_id'
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -66,6 +71,11 @@ module.exports = (sequelize) => {
     InventoryMovement.belongsTo(models.Product, {
       foreignKey: 'productId',
       as: 'product'
+    });
+
+    InventoryMovement.belongsTo(models.PurchaseOrder, {
+      foreignKey: 'purchaseOrderId',
+      as: 'purchaseOrder'
     });
   };
 

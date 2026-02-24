@@ -8,33 +8,29 @@ class CreditService {
    * @param {Date} asOfDate - Date to calculate interest as of (defaults to today)
    */
   static calculateInterest(credit, asOfDate = new Date()) {
-    if (credit.status !== 'ACTIVE' || !credit.dueDate || credit.interestRate <= 0) {
+    if (credit.status !== 'ACTIVE' || credit.interestRate <= 0) {
       return 0;
     }
 
-    const dueDate = new Date(credit.dueDate);
+    // Interest runs from the last calculation date (or creation date) to asOfDate
+    const startDate = credit.lastInterestCalculationDate
+      ? new Date(credit.lastInterestCalculationDate)
+      : new Date(credit.createdAt);
+
     const calculationDate = new Date(asOfDate);
     calculationDate.setHours(0, 0, 0, 0);
-    dueDate.setHours(0, 0, 0, 0);
+    startDate.setHours(0, 0, 0, 0);
 
-    // Only calculate interest if past due date
-    if (calculationDate <= dueDate) {
-      return 0;
-    }
-
-    // Calculate days overdue
-    const daysDiff = Math.floor((calculationDate - dueDate) / (1000 * 60 * 60 * 24));
+    const daysDiff = Math.floor((calculationDate - startDate) / (1000 * 60 * 60 * 24));
     if (daysDiff <= 0) {
       return 0;
     }
 
-    // Calculate interest: principal * rate * days
-    // Interest rate is daily (e.g., 0.001 = 0.1% per day)
+    // Daily interest: principal * daily_rate * days
     const principal = parseFloat(credit.currentBalance || credit.initialAmount);
     const rate = parseFloat(credit.interestRate);
-    const interest = principal * rate * daysDiff;
 
-    return Math.max(0, interest);
+    return Math.max(0, principal * rate * daysDiff);
   }
 
   /**
@@ -68,22 +64,7 @@ class CreditService {
     credit.currentBalance = parseFloat(credit.initialAmount) + credit.interestAmount;
     credit.lastInterestCalculationDate = calcDate.toISOString().split('T')[0];
 
-    // Check if overdue
-    if (credit.dueDate && new Date(credit.dueDate) < calcDate && credit.currentBalance > 0) {
-      // Update participant status if exists
-      if (credit.groupPurchaseParticipantId) {
-        await GroupPurchaseParticipant.update(
-          { status: 'OVERDUE' },
-          {
-            where: {
-              id: credit.groupPurchaseParticipantId,
-              status: { [Op.in]: ['PENDING', 'PARTIAL'] }
-            },
-            transaction
-          }
-        );
-      }
-    }
+    // No due-date based overdue logic — interest accumulates from day 1
 
     await credit.save({ transaction });
 

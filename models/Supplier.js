@@ -33,6 +33,25 @@ module.exports = (sequelize) => {
       type: DataTypes.TEXT,
       allowNull: true
     },
+    ruc: {
+      type: DataTypes.STRING(20),
+      allowNull: true
+    },
+    supplierCode: {
+      type: DataTypes.STRING(30),
+      allowNull: true,
+      field: 'supplier_code'
+    },
+    creditDays: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      field: 'credit_days'
+    },
+    notes: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
     isActive: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
@@ -58,6 +77,11 @@ module.exports = (sequelize) => {
     Supplier.hasMany(models.SupplierPrice, {
       foreignKey: 'supplierId',
       as: 'prices'
+    });
+
+    Supplier.hasMany(models.PurchaseOrder, {
+      foreignKey: 'supplierId',
+      as: 'purchaseOrders'
     });
   };
 

@@ -1,9 +1,12 @@
 -- =============================================================================
 -- SEED PARA EL PRIMER DESPLIEGUE - Sistema de Licorería
 -- =============================================================================
--- Ejecutar después de init.sql y de las migraciones (001 a 015).
+-- Ejecutar después de init.sql y de las migraciones (001 a 018).
 -- Configuración inicial del tenant_id = 1 y datos de ejemplo opcionales.
 -- =============================================================================
+
+-- Continuar aunque alguna tabla aún no exista (las migraciones las crean después)
+\set ON_ERROR_STOP off
 
 -- -----------------------------------------------------------------------------
 -- 1. CONFIGURACIÓN INICIAL (settings) - tenant_id = 1
@@ -12,6 +15,7 @@
 INSERT INTO settings (tenant_id, setting_key, setting_value, setting_type, description, updated_at)
 VALUES
   (1, 'tax_rate', '16', 'number', 'Porcentaje de IVA (0-100)', NOW()),
+  (1, 'tax_enabled', 'true', 'string', 'IVA habilitado (true/false)', NOW()),
   (1, 'brand_slogan', 'Sistema de Licorería', 'string', 'Nombre o eslogan del negocio', NOW()),
   (1, 'page_title_login', 'Iniciar Sesión - LOCOBAR', 'string', 'Título pestaña login', NOW()),
   (1, 'page_title_register', 'Registro - LOCOBAR', 'string', 'Título pestaña registro', NOW()),
@@ -33,6 +37,25 @@ ON CONFLICT (tenant_id, setting_key) DO NOTHING;
 -- 2. DATOS DE EJEMPLO (ejecutar una sola vez en primer despliegue)
 -- -----------------------------------------------------------------------------
 -- Si ya tienes datos, comenta o elimina esta sección para evitar duplicados.
+
+-- Categorías de producto
+INSERT INTO product_categories (tenant_id, name, sort_order) VALUES
+(1, 'Whisky', 1),
+(1, 'Vodka', 2),
+(1, 'Tequila', 3),
+(1, 'Ron', 4),
+(1, 'Cerveza', 5),
+(1, 'Accesorios', 6)
+ON CONFLICT DO NOTHING;
+
+-- Presentaciones de producto
+INSERT INTO product_presentations (tenant_id, name, units_per_sale, sort_order) VALUES
+(1, 'Individual', 1, 1),
+(1, 'Six Pack', 6, 2),
+(1, 'Caja (24)', 24, 3),
+(1, 'Cajetilla', 20, 4),
+(1, 'Media Cajetilla', 10, 5)
+ON CONFLICT DO NOTHING;
 
 -- Productos simples
 INSERT INTO products (tenant_id, name, sku, product_type, sale_price, cost_mode, is_active, stock_min, created_at) VALUES
