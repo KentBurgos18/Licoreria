@@ -586,6 +586,63 @@ async function initializeApp() {
       console.warn('⚠️ Migración 026 (discount_rate):', e.message);
     }
 
+    // ── Seed primer despliegue ────────────────────────────────────────────────
+    // Se ejecuta automáticamente solo cuando no existe ningún usuario admin
+    // (indica BD recién creada). Crea admin por defecto + datos iniciales.
+    try {
+      const bcrypt = require('bcrypt');
+      const [adminRows] = await sequelize.query(
+        `SELECT COUNT(*) AS count FROM users WHERE role = 'ADMIN' AND tenant_id = 1`
+      );
+      const adminCount = parseInt(adminRows[0].count, 10);
+
+      if (adminCount === 0) {
+        console.log('🌱 Primer despliegue detectado — ejecutando seed inicial...');
+
+        // Usuario administrador por defecto
+        const passwordHash = await bcrypt.hash('admin123', 10);
+        await sequelize.query(
+          `INSERT INTO users (tenant_id, name, email, password, role, is_active, created_at)
+           VALUES (1, 'Administrador', 'admin@locobar.com', :hash, 'ADMIN', true, NOW())
+           ON CONFLICT DO NOTHING`,
+          { replacements: { hash: passwordHash } }
+        );
+        console.log('  ✅ Usuario admin: admin@locobar.com / admin123');
+
+        // Categorías de producto (si la tabla está vacía)
+        const [catRows] = await sequelize.query(
+          `SELECT COUNT(*) AS count FROM product_categories WHERE tenant_id = 1`
+        );
+        if (parseInt(catRows[0].count, 10) === 0) {
+          await sequelize.query(
+            `INSERT INTO product_categories (tenant_id, name, sort_order) VALUES
+             (1,'Whisky',1),(1,'Vodka',2),(1,'Tequila',3),
+             (1,'Ron',4),(1,'Cerveza',5),(1,'Accesorios',6)
+             ON CONFLICT DO NOTHING`
+          );
+          console.log('  ✅ Categorías de producto creadas');
+        }
+
+        // Presentaciones de producto (si la tabla está vacía)
+        const [presRows] = await sequelize.query(
+          `SELECT COUNT(*) AS count FROM product_presentations WHERE tenant_id = 1`
+        );
+        if (parseInt(presRows[0].count, 10) === 0) {
+          await sequelize.query(
+            `INSERT INTO product_presentations (tenant_id, name, units_per_sale, sort_order) VALUES
+             (1,'Individual',1,1),(1,'Six Pack',6,2),
+             (1,'Caja (24)',24,3),(1,'Cajetilla',20,4),(1,'Media Cajetilla',10,5)
+             ON CONFLICT DO NOTHING`
+          );
+          console.log('  ✅ Presentaciones de producto creadas');
+        }
+
+        console.log('🌱 Seed completado — accede con admin@locobar.com / admin123');
+      }
+    } catch (e) {
+      console.warn('⚠️ Seed primer despliegue:', e.message);
+    }
+
     // Sync models (create tables if they don't exist)
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: true });
