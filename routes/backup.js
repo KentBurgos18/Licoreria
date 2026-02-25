@@ -40,7 +40,7 @@ router.get('/download', requireRole('ADMIN'), async (req, res) => {
   try {
     fs.mkdirSync(tmpDir, { recursive: true });
 
-    // 1. Volcar la base de datos — usamos stdout para mayor compatibilidad
+    // 1. Volcar la base de datos — stdout pipe al archivo; esperamos finish del stream
     await new Promise((resolve, reject) => {
       const pgDump = spawn('pg_dump', [
         '-h', DB_HOST,
@@ -54,24 +54,31 @@ router.get('/download', requireRole('ADMIN'), async (req, res) => {
       ], { env: pgEnv() });
 
       const outStream = fs.createWriteStream(sqlFile);
-      pgDump.stdout.pipe(outStream);
+      pgDump.stdout.pipe(outStream); // pipe cierra outStream automáticamente al terminar
 
       let stderr = '';
-      pgDump.stderr.on('data', d => {
-        stderr += d.toString();
-        console.error('[backup] pg_dump:', d.toString().trim());
-      });
-      pgDump.on('error', err => reject(new Error('No se pudo ejecutar pg_dump: ' + err.message)));
-      pgDump.on('close', code => {
-        outStream.end();
-        if (code !== 0) {
-          reject(new Error(`pg_dump falló (código ${code}): ${stderr.slice(0, 400)}`));
+      let pgCode = null;
+      let streamDone = false;
+
+      function tryResolve() {
+        if (pgCode === null || !streamDone) return; // esperar ambos eventos
+        if (pgCode !== 0) {
+          reject(new Error(`pg_dump falló (código ${pgCode}): ${stderr.slice(0, 400)}`));
         } else if (!fs.existsSync(sqlFile) || fs.statSync(sqlFile).size === 0) {
           reject(new Error('pg_dump no generó datos. Verifica la conexión a la BD. ' + stderr.slice(0, 200)));
         } else {
           resolve();
         }
+      }
+
+      pgDump.stderr.on('data', d => {
+        stderr += d.toString();
+        console.error('[backup] pg_dump:', d.toString().trim());
       });
+      pgDump.on('error', err => reject(new Error('No se pudo ejecutar pg_dump: ' + err.message)));
+      pgDump.on('close', code => { pgCode = code; tryResolve(); });
+      outStream.on('finish', () => { streamDone = true; tryResolve(); });
+      outStream.on('error', err => reject(new Error('Error escribiendo backup: ' + err.message)));
     });
 
     // 2. Construir el .tar.gz: database.sql + uploads/ (si existe)
