@@ -81,13 +81,20 @@ router.get('/download', requireRole('ADMIN'), async (req, res) => {
       outStream.on('error', err => reject(new Error('Error escribiendo backup: ' + err.message)));
     });
 
-    // 2. Construir el .tar.gz: database.sql + uploads/ (si existe)
-    const tarArgs = ['-czf', tarFile, '-C', tmpDir, 'database.sql'];
+    // 2. Construir el .tar.gz usando cwd=tmpDir (compatible con BusyBox/Alpine tar)
     const uploadsExists = fs.existsSync(UPLOADS_DIR) && fs.readdirSync(UPLOADS_DIR).length > 0;
+    const filesToInclude = ['database.sql'];
     if (uploadsExists) {
-      tarArgs.push('-C', path.join(__dirname, '..'), 'uploads');
+      // Copiar uploads dentro del tmpDir para que tar los encuentre con ruta relativa
+      try {
+        await spawnPromise('cp', ['-rp', UPLOADS_DIR, path.join(tmpDir, 'uploads')]);
+        filesToInclude.push('uploads');
+      } catch (e) {
+        console.warn('[backup] No se pudieron incluir uploads (se omiten):', e.message);
+      }
     }
-    await spawnPromise('tar', tarArgs);
+    // tar con cwd=tmpDir: todos los paths son relativos, sin -C
+    await spawnPromise('tar', ['-czf', tarFile, ...filesToInclude], { cwd: tmpDir });
 
     // 3. Enviar archivo al cliente
     res.download(tarFile, filename, (err) => {
