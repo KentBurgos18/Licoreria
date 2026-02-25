@@ -375,6 +375,35 @@ async function initializeApp() {
     await sequelize.authenticate();
     console.log('✅ Database connection established successfully');
 
+    // Asegurar que la tabla users existe (migración 013)
+    try {
+      const [uTbl] = await sequelize.query(`
+        SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users'
+      `);
+      if (!uTbl || uTbl.length === 0) {
+        console.log('🔄 Creando tabla users...');
+        await sequelize.query(`
+          CREATE TABLE IF NOT EXISTS users (
+            id BIGSERIAL PRIMARY KEY,
+            tenant_id BIGINT NOT NULL DEFAULT 1,
+            name VARCHAR(100) NOT NULL,
+            email VARCHAR(150) NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            role VARCHAR(20) NOT NULL DEFAULT 'CASHIER' CHECK (role IN ('ADMIN', 'MANAGER', 'CASHIER')),
+            is_active BOOLEAN NOT NULL DEFAULT TRUE,
+            last_login TIMESTAMP WITH TIME ZONE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_users_tenant ON users(tenant_id)`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
+        await sequelize.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_tenant_email ON users(tenant_id, email)`);
+        console.log('✅ Tabla users creada');
+      }
+    } catch (e) {
+      console.warn('⚠️ No se pudo crear/verificar tabla users:', e.message);
+    }
+
     // Asegurar que la tabla notifications existe (pago efectivo pendiente de confirmar)
     try {
       const [r] = await sequelize.query(`
@@ -573,6 +602,102 @@ async function initializeApp() {
       }
     } catch (e) {
       console.warn('⚠️ Migración 021 (product_id nullable):', e.message);
+    }
+
+    // Migración 022: ruc, supplier_code, credit_days, notes en suppliers
+    try {
+      const [suppCol] = await sequelize.query(`
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'suppliers' AND column_name = 'credit_days'
+      `);
+      if (!suppCol || suppCol.length === 0) {
+        console.log('🔄 Aplicando migración 022 (ruc/credit_days en suppliers)...');
+        await sequelize.query(`ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS ruc VARCHAR(20)`);
+        await sequelize.query(`ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS supplier_code VARCHAR(30)`);
+        await sequelize.query(`ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS credit_days INTEGER NOT NULL DEFAULT 0`);
+        await sequelize.query(`ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS notes TEXT`);
+        await sequelize.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_suppliers_code ON suppliers(tenant_id, supplier_code) WHERE supplier_code IS NOT NULL`);
+        console.log('✅ Migración 022 aplicada');
+      }
+    } catch (e) {
+      console.warn('⚠️ Migración 022 (suppliers ruc/credit_days):', e.message);
+    }
+
+    // Migración 023: tabla purchase_orders
+    try {
+      const [poTbl] = await sequelize.query(`
+        SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'purchase_orders'
+      `);
+      if (!poTbl || poTbl.length === 0) {
+        console.log('🔄 Aplicando migración 023 (purchase_orders)...');
+        await sequelize.query(`
+          CREATE TABLE IF NOT EXISTS purchase_orders (
+            id BIGSERIAL PRIMARY KEY,
+            tenant_id BIGINT NOT NULL,
+            supplier_id BIGINT REFERENCES suppliers(id) ON DELETE SET NULL,
+            invoice_number VARCHAR(100),
+            purchase_date DATE NOT NULL,
+            total_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+            credit_days INTEGER NOT NULL DEFAULT 0,
+            due_date DATE,
+            amount_paid DECIMAL(12,2) NOT NULL DEFAULT 0,
+            status VARCHAR(20) NOT NULL DEFAULT 'PAID'
+              CHECK (status IN ('PAID', 'PENDING', 'PARTIAL', 'OVERDUE')),
+            notes TEXT,
+            last_notified_at TIMESTAMP WITH TIME ZONE,
+            paid_at TIMESTAMP WITH TIME ZONE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_purchase_orders_tenant ON purchase_orders(tenant_id)`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_purchase_orders_supplier ON purchase_orders(supplier_id)`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON purchase_orders(status)`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_purchase_orders_due_date ON purchase_orders(due_date)`);
+        console.log('✅ Migración 023 aplicada');
+      }
+    } catch (e) {
+      console.warn('⚠️ Migración 023 (purchase_orders):', e.message);
+    }
+
+    // Migración 024: purchase_order_id en inventory_movements
+    try {
+      const [poImCol] = await sequelize.query(`
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'inventory_movements' AND column_name = 'purchase_order_id'
+      `);
+      if (!poImCol || poImCol.length === 0) {
+        console.log('🔄 Aplicando migración 024 (purchase_order_id en inventory_movements)...');
+        await sequelize.query(`ALTER TABLE inventory_movements ADD COLUMN IF NOT EXISTS purchase_order_id BIGINT REFERENCES purchase_orders(id) ON DELETE SET NULL`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_inventory_movements_purchase_order ON inventory_movements(purchase_order_id)`);
+        console.log('✅ Migración 024 aplicada');
+      }
+    } catch (e) {
+      console.warn('⚠️ Migración 024 (purchase_order_id):', e.message);
+    }
+
+    // Migración 025: tabla purchase_order_items
+    try {
+      const [poiTbl] = await sequelize.query(`
+        SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'purchase_order_items'
+      `);
+      if (!poiTbl || poiTbl.length === 0) {
+        console.log('🔄 Aplicando migración 025 (purchase_order_items)...');
+        await sequelize.query(`
+          CREATE TABLE IF NOT EXISTS purchase_order_items (
+            id            BIGSERIAL PRIMARY KEY,
+            purchase_order_id BIGINT NOT NULL REFERENCES purchase_orders(id) ON DELETE CASCADE,
+            product_id    BIGINT NOT NULL,
+            quantity      DECIMAL(12, 3) NOT NULL,
+            unit_cost     DECIMAL(12, 2) NOT NULL DEFAULT 0,
+            created_at    TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_poi_order ON purchase_order_items(purchase_order_id)`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_poi_product ON purchase_order_items(product_id)`);
+        console.log('✅ Migración 025 aplicada');
+      }
+    } catch (e) {
+      console.warn('⚠️ Migración 025 (purchase_order_items):', e.message);
     }
 
     // Migración 026: setting cash_transfer_discount_rate
