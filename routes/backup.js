@@ -40,18 +40,39 @@ router.get('/download', requireRole('ADMIN'), async (req, res) => {
   try {
     fs.mkdirSync(tmpDir, { recursive: true });
 
-    // 1. Volcar la base de datos
-    await spawnPromise('pg_dump', [
-      '-h', DB_HOST,
-      '-p', String(DB_PORT),
-      '-U', DB_USER,
-      '-d', DB_NAME,
-      '--clean',
-      '--if-exists',
-      '--no-owner',
-      '--no-acl',
-      '-f', sqlFile,
-    ], { env: pgEnv() });
+    // 1. Volcar la base de datos — usamos stdout para mayor compatibilidad
+    await new Promise((resolve, reject) => {
+      const pgDump = spawn('pg_dump', [
+        '-h', DB_HOST,
+        '-p', String(DB_PORT),
+        '-U', DB_USER,
+        '-d', DB_NAME,
+        '--clean',
+        '--if-exists',
+        '--no-owner',
+        '--no-acl',
+      ], { env: pgEnv() });
+
+      const outStream = fs.createWriteStream(sqlFile);
+      pgDump.stdout.pipe(outStream);
+
+      let stderr = '';
+      pgDump.stderr.on('data', d => {
+        stderr += d.toString();
+        console.error('[backup] pg_dump:', d.toString().trim());
+      });
+      pgDump.on('error', err => reject(new Error('No se pudo ejecutar pg_dump: ' + err.message)));
+      pgDump.on('close', code => {
+        outStream.end();
+        if (code !== 0) {
+          reject(new Error(`pg_dump falló (código ${code}): ${stderr.slice(0, 400)}`));
+        } else if (!fs.existsSync(sqlFile) || fs.statSync(sqlFile).size === 0) {
+          reject(new Error('pg_dump no generó datos. Verifica la conexión a la BD. ' + stderr.slice(0, 200)));
+        } else {
+          resolve();
+        }
+      });
+    });
 
     // 2. Construir el .tar.gz: database.sql + uploads/ (si existe)
     const tarArgs = ['-czf', tarFile, '-C', tmpDir, 'database.sql'];
