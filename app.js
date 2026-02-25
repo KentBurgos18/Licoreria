@@ -404,6 +404,73 @@ async function initializeApp() {
       console.warn('⚠️ No se pudo crear/verificar tabla users:', e.message);
     }
 
+    // Asegurar que la tabla group_purchases existe (migración 007)
+    try {
+      const [gpTbl] = await sequelize.query(`
+        SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'group_purchases'
+      `);
+      if (!gpTbl || gpTbl.length === 0) {
+        console.log('🔄 Creando tabla group_purchases...');
+        await sequelize.query(`
+          CREATE TABLE IF NOT EXISTS group_purchases (
+            id BIGSERIAL PRIMARY KEY,
+            tenant_id BIGINT NOT NULL,
+            sale_id BIGINT NOT NULL,
+            product_id BIGINT,
+            quantity DECIMAL(12, 3) NOT NULL DEFAULT 1,
+            total_amount DECIMAL(12, 2) NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+              CHECK (status IN ('PENDING', 'PARTIAL', 'COMPLETED', 'CANCELLED')),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            completed_at TIMESTAMP WITH TIME ZONE,
+            CONSTRAINT fk_group_purchases_sale FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE RESTRICT
+          )
+        `);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_group_purchases_tenant ON group_purchases(tenant_id)`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_group_purchases_sale ON group_purchases(sale_id)`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_group_purchases_status ON group_purchases(status)`);
+        console.log('✅ Tabla group_purchases creada');
+      }
+    } catch (e) {
+      console.warn('⚠️ No se pudo crear/verificar tabla group_purchases:', e.message);
+    }
+
+    // Asegurar que la tabla group_purchase_participants existe (migración 008)
+    try {
+      const [gppTbl] = await sequelize.query(`
+        SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'group_purchase_participants'
+      `);
+      if (!gppTbl || gppTbl.length === 0) {
+        console.log('🔄 Creando tabla group_purchase_participants...');
+        await sequelize.query(`
+          CREATE TABLE IF NOT EXISTS group_purchase_participants (
+            id BIGSERIAL PRIMARY KEY,
+            group_purchase_id BIGINT NOT NULL,
+            customer_id BIGINT NOT NULL,
+            amount_due DECIMAL(12, 2) NOT NULL,
+            amount_paid DECIMAL(12, 2) NOT NULL DEFAULT 0,
+            status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+              CHECK (status IN ('PENDING', 'PARTIAL', 'PAID', 'OVERDUE')),
+            due_date DATE,
+            interest_rate DECIMAL(5, 4) NOT NULL DEFAULT 0,
+            interest_amount DECIMAL(12, 2) NOT NULL DEFAULT 0,
+            payment_method VARCHAR(20) NOT NULL DEFAULT 'CREDIT'
+              CONSTRAINT chk_gpp_payment_method CHECK (payment_method IN ('CASH', 'TRANSFER', 'CREDIT')),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            paid_at TIMESTAMP WITH TIME ZONE,
+            CONSTRAINT fk_gpp_group_purchase FOREIGN KEY (group_purchase_id) REFERENCES group_purchases(id) ON DELETE CASCADE,
+            CONSTRAINT fk_gpp_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE RESTRICT
+          )
+        `);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_gpp_group_purchase ON group_purchase_participants(group_purchase_id)`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_gpp_customer ON group_purchase_participants(customer_id)`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_gpp_status ON group_purchase_participants(status)`);
+        console.log('✅ Tabla group_purchase_participants creada');
+      }
+    } catch (e) {
+      console.warn('⚠️ No se pudo crear/verificar tabla group_purchase_participants:', e.message);
+    }
+
     // Asegurar que la tabla notifications existe (pago efectivo pendiente de confirmar)
     try {
       const [r] = await sequelize.query(`

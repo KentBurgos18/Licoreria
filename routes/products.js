@@ -565,19 +565,23 @@ router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
       });
     }
 
-    // Eliminar movimientos de inventario asociados (ya verificamos que no tiene ventas)
-    await InventoryMovement.destroy({ where: { productId } });
-
-    // No eliminar si tiene compras grupales
-    const groupPurchasesCount = await GroupPurchase.count({ where: { productId } });
-    if (groupPurchasesCount > 0) {
-      return res.status(400).json({
-        error: 'No se puede eliminar: el producto tiene compras grupales asociadas.',
-        code: 'PRODUCT_HAS_GROUP_PURCHASES'
-      });
+    // No eliminar si tiene compras grupales (verificar ANTES de borrar movimientos)
+    try {
+      const groupPurchasesCount = await GroupPurchase.count({ where: { productId } });
+      if (groupPurchasesCount > 0) {
+        return res.status(400).json({
+          error: 'No se puede eliminar: el producto tiene compras grupales asociadas.',
+          code: 'PRODUCT_HAS_GROUP_PURCHASES'
+        });
+      }
+    } catch (e) {
+      // Si la tabla no existe aún, ignorar la verificación
+      if (!e.message?.includes('does not exist')) throw e;
     }
 
-    // Borrar en la base de datos con SQL directo para garantizar que se elimine
+    // Eliminar movimientos de inventario y luego el producto
+    await InventoryMovement.destroy({ where: { productId } });
+
     if (product.productType === 'COMBO') {
       await sequelize.query(
         'DELETE FROM product_components WHERE combo_product_id = :productId',
