@@ -63,7 +63,6 @@ services:
       APPLE_KEY_ID: ${APPLE_KEY_ID:-}
       APPLE_PRIVATE_KEY: ${APPLE_PRIVATE_KEY:-}
     ports:
-      - "80:3000"
       - "3000:3000"
     depends_on:
       postgres:
