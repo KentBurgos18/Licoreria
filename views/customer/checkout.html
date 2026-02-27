@@ -55,15 +55,33 @@
         }
 
         /* ── Checkout grid ── */
+        /* Desktop: 2 columnas. Cada sección ocupa su fila en col-1; sidebar en col-2 */
         .checkout-grid {
             display: grid;
             grid-template-columns: 1fr 320px;
-            gap: 18px;
+            grid-template-rows: auto auto auto;
+            column-gap: 18px;
+            row-gap: 14px;
             align-items: start;
         }
+        .co-pay     { grid-column: 1; grid-row: 1; }
+        .co-notes   { grid-column: 1; grid-row: 2; }
+        .co-order   { grid-column: 1; grid-row: 3; }
+        .co-sidebar { grid-column: 2; grid-row: 1 / 4; }
+        /* Quitar margin-bottom de sections dentro del grid (el gap ya separa) */
+        .co-pay, .co-notes, .co-order { margin-bottom: 0; }
+
+        /* Móvil: flex columna con orden: Pago → Total → Notas → Resumen pedido */
         @media (max-width: 860px) {
-            .checkout-grid { grid-template-columns: 1fr; }
-            .co-sidebar { order: -1; }
+            .checkout-grid { display: flex; flex-direction: column; gap: 14px; }
+            .co-pay,
+            .co-notes,
+            .co-order,
+            .co-sidebar { width: 100%; max-width: none; box-sizing: border-box; }
+            .co-pay     { order: 1; }
+            .co-sidebar { order: 2; position: static; top: auto; }
+            .co-notes   { order: 3; }
+            .co-order   { order: 4; }
         }
 
         /* ── Section cards ── */
@@ -272,7 +290,10 @@
         .order-item-price { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; color: var(--accent2); flex-shrink: 0; }
 
         /* ── Total sidebar ── */
-        .co-sidebar { position: sticky; top: 76px; z-index: 1; }
+        /* sticky solo en desktop — en móvil lo controla la media query */
+        @media (min-width: 861px) {
+            .co-sidebar { position: sticky; top: 76px; z-index: 1; }
+        }
         .total-card {
             background: var(--surf);
             border: 1px solid var(--border);
@@ -406,11 +427,8 @@
         <!-- Checkout Grid -->
         <div class="checkout-grid">
 
-            <!-- LEFT: Forms -->
-            <div class="co-left">
-
                 <!-- 1. Método de Pago -->
-                <div class="section">
+                <div class="section co-pay">
                     <div class="section-head">
                         <div class="section-num">1</div>
                         <div class="section-title">Método de Pago</div>
@@ -508,7 +526,7 @@
                 </div>
 
                 <!-- 2. Notas adicionales -->
-                <div class="section">
+                <div class="section co-notes">
                     <div class="section-head">
                         <div class="section-num">2</div>
                         <div class="section-title">Notas adicionales <span style="font-weight:400;color:var(--text3);font-size:11.5px;">(opcional)</span></div>
@@ -519,7 +537,7 @@
                 </div>
 
                 <!-- 3. Resumen del Pedido -->
-                <div class="section">
+                <div class="section co-order">
                     <div class="section-head">
                         <div class="section-num">3</div>
                         <div class="section-title">Resumen del Pedido</div>
@@ -528,8 +546,6 @@
                         <!-- filled by JS -->
                     </div>
                 </div>
-
-            </div><!-- end co-left -->
 
             <!-- RIGHT: Total sidebar -->
             <div class="co-sidebar">
