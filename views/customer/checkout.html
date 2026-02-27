@@ -8,69 +8,351 @@
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
     <link href="/public/css/theme.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.css">
-    <script type="module" src="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js"></script>
     <style>
-        .navbar-custom {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        /* ── Page layout ── */
+        .co-page { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+        .co-title { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+        .co-title h1 { font-size: 21px; font-weight: 800; color: var(--text); letter-spacing: -.01em; margin: 0; }
+        .co-title-icon { color: var(--accent2); flex-shrink: 0; }
+
+        /* ── Alert wrap ── */
+        .alert-wrap { margin-bottom: 14px; }
+        .alert-wrap .alert { border-radius: 10px; font-size: 13.5px; }
+
+        /* ── Timer Banner ── */
+        .timer-banner {
+            background: var(--accentbg);
+            border: 1px solid var(--border);
+            border-radius: 12px; padding: 12px 16px;
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 20px;
+            position: relative; overflow: hidden;
+            transition: all .3s;
         }
-        #userMenu .user-name-text {
-            display: none;
+        .timer-banner::before {
+            content: ''; position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: var(--progress, 100%);
+            background: linear-gradient(90deg, var(--accentbg), transparent);
+            transition: width 1s linear;
         }
-        @media (min-width: 576px) {
-            #userMenu .user-name-text {
-                display: inline;
+        .timer-banner.alert-warning { background: var(--ambg); border-color: rgba(251,191,36,.25); }
+        .timer-banner.alert-warning .timer-icon-wrap { background: var(--ambg); color: var(--amber); }
+        .timer-banner.alert-warning .timer-display { color: var(--amber); }
+        .timer-icon-wrap {
+            width: 34px; height: 34px; border-radius: 8px;
+            background: var(--accentbg); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--accent2); flex-shrink: 0; position: relative; z-index: 1;
+        }
+        .timer-text { flex: 1; font-size: 13px; color: var(--text2); position: relative; z-index: 1; }
+        .timer-text strong { color: var(--text); }
+        .timer-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 20px; font-weight: 700;
+            color: var(--accent2); min-width: 65px; text-align: center;
+            position: relative; z-index: 1;
+        }
+
+        /* ── Checkout grid ── */
+        .checkout-grid {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 18px;
+            align-items: start;
+        }
+        @media (max-width: 860px) {
+            .checkout-grid { grid-template-columns: 1fr; }
+            .co-sidebar { order: -1; }
+        }
+
+        /* ── Section cards ── */
+        .section {
+            background: var(--surf);
+            border: 1px solid var(--border);
+            border-radius: 16px; overflow: hidden;
+            box-shadow: var(--shadow);
+            margin-bottom: 14px;
+            transition: background .3s, border-color .3s;
+        }
+        .section:last-child { margin-bottom: 0; }
+        .section-head {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 9px;
+        }
+        .section-num {
+            width: 22px; height: 22px; border-radius: 6px;
+            background: var(--accentbg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 800; color: var(--accent);
+            flex-shrink: 0;
+        }
+        .section-title { font-size: 14px; font-weight: 700; color: var(--text); }
+        .section-body { padding: 18px; }
+
+        /* ── Payment method cards ── */
+        .pay-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        @media (max-width: 560px) {
+            .pay-grid {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                gap: 10px;
+                padding-bottom: 4px;
+                scroll-snap-type: x mandatory;
+                -webkit-overflow-scrolling: touch;
+            }
+            .pay-grid::-webkit-scrollbar { display: none; }
+            .pay-grid .pay-card {
+                flex: 0 0 148px;
+                min-width: 148px;
+                scroll-snap-align: start;
             }
         }
-        .payment-methods-scroll {
-            display: flex;
-            gap: 1rem;
-            overflow-x: auto;
-            padding-bottom: 0.5rem;
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
+        .pay-card {
+            background: var(--surf2);
+            border: 1.5px solid var(--border);
+            border-radius: 12px; padding: 16px 12px;
+            cursor: pointer; text-align: center;
+            transition: all .2s; position: relative; overflow: hidden;
         }
-        .payment-methods-scroll::-webkit-scrollbar {
-            height: 6px;
-        }
-        .payment-methods-scroll::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 3px;
-        }
-        .payment-method-card {
-            flex: 0 0 auto;
-            width: 140px;
-            min-height: 100px;
-            border: 2px solid #dee2e6;
+        .pay-card::before {
+            content: ''; position: absolute; inset: 0;
+            background: var(--accentbg); opacity: 0; transition: opacity .2s;
             border-radius: 12px;
-            padding: 1rem;
-            cursor: pointer;
-            text-align: center;
-            transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
-            scroll-snap-align: start;
         }
-        .payment-method-card:hover {
-            border-color: #0d6efd;
-            background-color: #f8f9fa;
+        .pay-card:hover { border-color: var(--accent2); transform: translateY(-1px); box-shadow: var(--shadow); }
+        .pay-card.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accentbg); }
+        .pay-card.active::before { opacity: 1; }
+        .pay-icon-wrap {
+            width: 44px; height: 44px; border-radius: 12px;
+            margin: 0 auto 10px;
+            background: var(--accentbg);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--accent2); position: relative; z-index: 1;
+            transition: background .2s;
         }
-        .payment-method-card.active {
-            border-color: #0d6efd;
-            background-color: #e7f1ff;
-            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+        .pay-card.active .pay-icon-wrap { background: var(--accent); color: #fff; }
+        .pay-name { font-size: 13px; font-weight: 700; color: var(--text); position: relative; z-index: 1; margin-bottom: 3px; }
+        .pay-sub { font-size: 11px; color: var(--text3); position: relative; z-index: 1; }
+        .pay-check {
+            position: absolute; top: 8px; right: 8px;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transform: scale(.5);
+            transition: all .2s; z-index: 2;
         }
-        .payment-method-card .bi {
-            font-size: 1.75rem;
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #0d6efd;
+        .pay-card.active .pay-check { opacity: 1; transform: scale(1); }
+        .payphone-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 9.5px; font-weight: 700;
+            background: var(--ambg); color: var(--amber);
+            border: 1px solid rgba(251,191,36,.2);
+            border-radius: 4px; padding: 2px 6px;
+            position: relative; z-index: 1; margin-top: 4px;
+            letter-spacing: .04em;
         }
-        .payment-method-card.active .bi {
-            color: #0a58ca;
+
+        /* ── Card visual preview (decorative) ── */
+        .card-preview-wrap { margin-bottom: 14px; animation: coSlideDown .3s ease both; }
+        @keyframes coSlideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+        .payphone-section-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px;
         }
-        .payment-method-card small {
-            font-size: 0.8rem;
-            color: #6c757d;
+        .payphone-logo-badge {
+            background: var(--ambg); border: 1px solid rgba(251,191,36,.2);
+            border-radius: 6px; padding: 4px 10px;
+            display: flex; align-items: center; gap: 5px;
         }
+        .payphone-logo-badge span { font-size: 11px; font-weight: 800; color: var(--amber); letter-spacing: .04em; }
+        .payphone-secure { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text3); }
+        .card-preview {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border-radius: 14px; padding: 20px;
+            position: relative; overflow: hidden; min-height: 130px;
+            margin-bottom: 12px;
+        }
+        .card-preview::before {
+            content: ''; position: absolute;
+            width: 180px; height: 180px; border-radius: 50%;
+            background: rgba(255,255,255,.07);
+            top: -50px; right: -50px;
+        }
+        .card-preview::after {
+            content: ''; position: absolute;
+            width: 110px; height: 110px; border-radius: 50%;
+            background: rgba(255,255,255,.04);
+            bottom: -20px; left: 30px;
+        }
+        /* card top row: bank name + chip */
+        .cp-top {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px; position: relative; z-index: 1;
+        }
+        .cp-bank {
+            font-size: 11px; font-weight: 700; letter-spacing: .1em;
+            color: rgba(255,255,255,.85); text-transform: uppercase;
+            min-height: 14px; transition: opacity .2s;
+        }
+        .cp-bank.cp-updating { opacity: 0; }
+        .cp-chip {
+            width: 34px; height: 26px; border-radius: 4px;
+            background: rgba(255,255,255,.3);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .cp-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 15px; letter-spacing: .18em;
+            color: rgba(255,255,255,.9); margin-bottom: 14px;
+            position: relative; z-index: 1;
+            transition: opacity .15s;
+        }
+        .cp-num.cp-updating { opacity: 0; }
+        .cp-val { transition: opacity .15s; }
+        .cp-val.cp-updating { opacity: 0; }
+        .cp-bottom {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            position: relative; z-index: 1;
+        }
+        .cp-label { font-size: 9px; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px; }
+        .cp-val { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.9); }
+        .cp-brand-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+        .cp-brand { font-size: 22px; line-height: 1; }
+        .cp-type {
+            font-size: 9px; font-weight: 700; letter-spacing: .08em;
+            color: rgba(255,255,255,.7); text-transform: uppercase;
+            min-height: 11px; transition: opacity .2s;
+        }
+        .cp-type.cp-updating { opacity: 0; }
+        .payphone-hint {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 12px; color: var(--text2);
+            padding: 8px 12px; background: var(--accentbg);
+            border: 1px solid var(--border); border-radius: 8px;
+            margin-bottom: 14px;
+        }
+
+        /* ── Notes textarea ── */
+        .notes-ta {
+            width: 100%; background: var(--surf2);
+            border: 1px solid var(--border); border-radius: 10px;
+            padding: 11px 14px; font-size: 13px;
+            color: var(--text); outline: none;
+            resize: vertical; min-height: 80px;
+            transition: border-color .2s, box-shadow .2s;
+            font-family: inherit;
+        }
+        .notes-ta::placeholder { color: var(--text3); }
+        .notes-ta:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accentbg); }
+
+        /* ── Order summary items ── */
+        .order-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 0; border-bottom: 1px solid var(--border);
+        }
+        .order-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .order-item-img {
+            width: 44px; height: 44px; border-radius: 8px; flex-shrink: 0;
+            background: var(--surf2); border: 1px solid var(--border);
+            overflow: hidden; display: flex; align-items: center; justify-content: center;
+            color: var(--text3);
+        }
+        .order-item-img img { width: 100%; height: 100%; object-fit: cover; }
+        .order-item-info { flex: 1; min-width: 0; }
+        .order-item-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .order-item-meta { font-size: 11.5px; color: var(--text2); }
+        .order-item-price { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; color: var(--accent2); flex-shrink: 0; }
+
+        /* ── Total sidebar ── */
+        .co-sidebar { position: sticky; top: 76px; z-index: 1; }
+        .total-card {
+            background: var(--surf);
+            border: 1px solid var(--border);
+            border-radius: 16px; overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: background .3s, border-color .3s;
+        }
+        .total-head {
+            padding: 13px 18px;
+            background: var(--accentbg);
+            border-bottom: 1px solid var(--border);
+            font-size: 13px; font-weight: 800; color: var(--text);
+            display: flex; align-items: center; gap: 7px;
+        }
+        .total-body { padding: 16px 18px; }
+        .total-line {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 6px 0; font-size: 13px;
+        }
+        .total-line .lk { color: var(--text2); }
+        .total-line .lv { font-weight: 600; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+        .total-divider { height: 1px; background: var(--border); margin: 10px 0; }
+        .total-final {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 0 4px;
+        }
+        .total-final .lk { font-size: 15px; font-weight: 800; color: var(--text); }
+        .total-final .lv {
+            font-size: 22px; font-weight: 800; color: var(--accent2);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .confirm-btn {
+            width: 100%; margin-top: 14px;
+            padding: 14px 16px; border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff !important;
+            font-size: 15px; font-weight: 800;
+            border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 9px;
+            letter-spacing: .02em;
+            box-shadow: 0 6px 20px rgba(0,0,0,.25);
+            transition: all .2s; position: relative; overflow: hidden;
+        }
+        .confirm-btn::after {
+            content: ''; position: absolute; inset: 0;
+            background: rgba(255,255,255,.08);
+            opacity: 0; transition: opacity .2s;
+        }
+        .confirm-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.35); }
+        .confirm-btn:hover::after { opacity: 1; }
+        .confirm-btn:active { transform: translateY(0); }
+        .confirm-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+        .back-btn {
+            width: 100%; margin-top: 8px;
+            padding: 10px; border-radius: 10px;
+            background: var(--accentbg); color: var(--text2) !important;
+            border: 1px solid var(--border);
+            font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: all .15s;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            text-decoration: none !important;
+        }
+        .back-btn:hover { color: var(--text) !important; border-color: var(--accent); }
+        .security-row {
+            display: flex; align-items: center; justify-content: center; gap: 14px;
+            margin-top: 14px; padding-top: 14px;
+            border-top: 1px solid var(--border);
+        }
+        .sec-badge { display: flex; align-items: center; gap: 4px; font-size: 10.5px; color: var(--text3); }
+
+        /* ── Thank you modal styling ── */
+        .modal-content { background: var(--surf) !important; border: 1px solid var(--border) !important; border-radius: 16px !important; }
+        .modal-header { border-bottom: 1px solid var(--border) !important; }
+        .modal-footer { border-top: 1px solid var(--border) !important; }
+        .modal-title { color: var(--text) !important; font-weight: 700; }
+        .btn-close { filter: invert(1) !important; }
+
+        /* user name responsive */
+        #userMenu .user-name-text { display: none; }
+        @media (min-width: 576px) { #userMenu .user-name-text { display: inline; } }
     </style>
 </head>
 <body>
@@ -88,7 +370,7 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item spa-link" href="/customer/orders"><i class="bi bi-receipt"></i> Mis Pedidos</a></li>
-                        <li><a class="dropdown-item spa-link" href="/customer/credits"><i class="bi bi-credit-card"></i> Crédito que está debiendo</a></li>
+                        <li><a class="dropdown-item spa-link" href="/customer/credits"><i class="bi bi-credit-card"></i> Mi Crédito</a></li>
                         <li><a class="dropdown-item spa-link" href="/customer/group-purchases"><i class="bi bi-people"></i> Compras Grupales</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
@@ -99,100 +381,212 @@
     </nav>
 
     <div id="spa-view-content">
-    <!-- Main Content -->
-    <div class="container mt-4">
-        <h2 class="mb-4"><i class="bi bi-credit-card"></i> Finalizar Compra</h2>
-        <div id="cartExpiryBanner" class="alert alert-info d-none py-2 mb-2" role="alert">
-            <i class="bi bi-clock-history"></i>
-            Los ítems del carrito se reservan por <strong>30 min</strong>.
-            Tiempo restante: <strong id="cartExpiryCountdown">--:--</strong>
+    <div class="co-page">
+
+        <!-- Alert container -->
+        <div id="alertContainer" class="alert-wrap"></div>
+
+        <!-- Page title -->
+        <div class="co-title">
+            <svg class="co-title-icon" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <h1>Finalizar Compra</h1>
         </div>
-        <div id="alertContainer"></div>
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card card-lb mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Método de Pago</h5>
+
+        <!-- Timer Banner -->
+        <div id="cartExpiryBanner" class="timer-banner d-none" role="alert">
+            <div class="timer-icon-wrap">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="timer-text">
+                Los ítems del carrito se reservan por <strong>30 min</strong>
+            </div>
+            <div class="timer-display" id="cartExpiryCountdown">--:--</div>
+        </div>
+
+        <!-- Checkout Grid -->
+        <div class="checkout-grid">
+
+            <!-- LEFT: Forms -->
+            <div class="co-left">
+
+                <!-- 1. Método de Pago -->
+                <div class="section">
+                    <div class="section-head">
+                        <div class="section-num">1</div>
+                        <div class="section-title">Método de Pago</div>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label d-block mb-2">Seleccione método de pago</label>
-                            <input type="hidden" id="paymentMethod" value="" required>
-                            <div class="payment-methods-scroll" id="paymentMethodsScroll">
-                                <div class="payment-method-card" data-method="CASH" title="Efectivo" onclick="selectPaymentMethod('CASH', this)">
-                                    <i class="bi bi-cash-stack"></i>
-                                    <strong>Efectivo</strong>
-                                    <small class="d-block">Pago al recibir</small>
+                    <div class="section-body">
+                        <input type="hidden" id="paymentMethod" value="" required>
+                        <div class="pay-grid">
+                            <!-- CASH -->
+                            <div class="pay-card payment-method-card" data-method="CASH" onclick="selectPaymentMethod('CASH', this)">
+                                <div class="pay-check">
+                                    <svg width="9" height="9" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                                 </div>
-                                <div class="payment-method-card" data-method="CARD" title="Tarjeta" onclick="selectPaymentMethod('CARD', this)">
-                                    <i class="bi bi-credit-card-2-front"></i>
-                                    <strong>Tarjeta</strong>
-                                    <small class="d-block">Visa, Mastercard</small>
+                                <div class="pay-icon-wrap">
+                                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                                 </div>
-                                <div class="payment-method-card" data-method="TRANSFER" title="Transferencia" onclick="selectPaymentMethod('TRANSFER', this)">
-                                    <i class="bi bi-bank"></i>
-                                    <strong>Transferencia</strong>
-                                    <small class="d-block">Transferencia bancaria</small>
+                                <div class="pay-name">Efectivo</div>
+                                <div class="pay-sub">Pago al recibir</div>
+                            </div>
+                            <!-- CARD -->
+                            <div class="pay-card payment-method-card" data-method="CARD" onclick="selectPaymentMethod('CARD', this)">
+                                <div class="pay-check">
+                                    <svg width="9" height="9" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                                 </div>
+                                <div class="pay-icon-wrap">
+                                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
+                                </div>
+                                <div class="pay-name">Tarjeta</div>
+                                <div class="pay-sub">Visa, Mastercard</div>
+                                <div class="payphone-badge">⚡ Payphone</div>
+                            </div>
+                            <!-- TRANSFER -->
+                            <div class="pay-card payment-method-card" data-method="TRANSFER" onclick="selectPaymentMethod('TRANSFER', this)">
+                                <div class="pay-check">
+                                    <svg width="9" height="9" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                </div>
+                                <div class="pay-icon-wrap">
+                                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                </div>
+                                <div class="pay-name">Transferencia</div>
+                                <div class="pay-sub">Transferencia bancaria</div>
                             </div>
                         </div>
-                        <div id="payphone-inline-section" class="mb-3 d-none">
-                            <label class="form-label">Datos de pago con tarjeta</label>
-                            <p class="text-muted small">Complete los datos y use el botón de pago de PayPhone.</p>
+
+                        <!-- PayPhone section (tarjeta) -->
+                        <div id="payphone-inline-section" class="d-none" style="margin-top: 18px;">
+                            <!-- Card visual preview (decorativa) -->
+                            <div class="card-preview-wrap">
+                                <div class="payphone-section-header">
+                                    <div class="payphone-logo-badge">
+                                        <svg width="12" height="12" fill="none" stroke="#d97706" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                        <span>PAYPHONE</span>
+                                    </div>
+                                    <div class="payphone-secure">
+                                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                        Pago seguro SSL
+                                    </div>
+                                </div>
+                                <div class="card-preview" id="cardPreviewEl">
+                                    <div class="cp-top">
+                                        <div class="cp-bank" id="cpBank"></div>
+                                        <div class="cp-chip">
+                                            <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+                                                <rect x="0.5" y="0.5" width="15" height="11" rx="1.5" stroke="rgba(255,255,255,0.4)" fill="rgba(255,255,255,0.1)"/>
+                                                <line x1="0.5" y1="4" x2="15.5" y2="4" stroke="rgba(255,255,255,0.3)"/>
+                                                <line x1="0.5" y1="8" x2="15.5" y2="8" stroke="rgba(255,255,255,0.3)"/>
+                                                <line x1="5" y1="0.5" x2="5" y2="11.5" stroke="rgba(255,255,255,0.3)"/>
+                                                <line x1="11" y1="0.5" x2="11" y2="11.5" stroke="rgba(255,255,255,0.3)"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="cp-num" id="cpNum">•••• •••• •••• ••••</div>
+                                    <div class="cp-bottom">
+                                        <div>
+                                            <div class="cp-label">Titular</div>
+                                            <div class="cp-val" id="cpHolder">NOMBRE APELLIDO</div>
+                                        </div>
+                                        <div style="text-align:right">
+                                            <div class="cp-label">Expira</div>
+                                            <div class="cp-val" id="cpExpiry">MM/AA</div>
+                                        </div>
+                                        <div class="cp-brand-wrap">
+                                            <div class="cp-brand" id="cpBrand">💳</div>
+                                            <div class="cp-type" id="cpType"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="payphone-hint">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                    Completa el formulario de pago de PayPhone a continuación para procesar tu tarjeta:
+                                </div>
+                            </div>
                             <div id="pp-button-inline"></div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Notas adicionales (opcional)</label>
-                            <textarea class="form-control" id="notes" rows="3" placeholder="Instrucciones especiales, dirección de entrega, etc."></textarea>
-                        </div>
                     </div>
                 </div>
 
-                <div class="card card-lb">
-                    <div class="card-header">
-                        <h5 class="mb-0">Resumen del Pedido</h5>
+                <!-- 2. Notas adicionales -->
+                <div class="section">
+                    <div class="section-head">
+                        <div class="section-num">2</div>
+                        <div class="section-title">Notas adicionales <span style="font-weight:400;color:var(--text3);font-size:11.5px;">(opcional)</span></div>
                     </div>
-                    <div class="card-body">
-                        <div id="orderSummary">
-                            <!-- Order items will be displayed here -->
-                        </div>
+                    <div class="section-body">
+                        <textarea class="notes-ta" id="notes" rows="3" placeholder="Instrucciones especiales, dirección de entrega, horario preferido..."></textarea>
                     </div>
                 </div>
-            </div>
 
-            <div class="col-md-4">
-                <div class="card card-lb sticky-top" style="top: 20px;">
-                    <div class="card-body">
-                        <h5 class="card-title">Total</h5>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Subtotal:</span>
-                            <span id="subtotal">$0.00</span>
+                <!-- 3. Resumen del Pedido -->
+                <div class="section">
+                    <div class="section-head">
+                        <div class="section-num">3</div>
+                        <div class="section-title">Resumen del Pedido</div>
+                    </div>
+                    <div class="section-body" id="orderSummary">
+                        <!-- filled by JS -->
+                    </div>
+                </div>
+
+            </div><!-- end co-left -->
+
+            <!-- RIGHT: Total sidebar -->
+            <div class="co-sidebar">
+                <div class="total-card">
+                    <div class="total-head">
+                        <svg width="14" height="14" fill="none" stroke="var(--accent2)" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        Resumen del Total
+                    </div>
+                    <div class="total-body">
+                        <div class="total-line">
+                            <span class="lk">Subtotal</span>
+                            <span class="lv" id="subtotal">$0.00</span>
                         </div>
-                        <div class="justify-content-between mb-2 tax-row d-none">
-                            <span id="taxLabel">IVA:</span>
-                            <span id="tax">$0.00</span>
+                        <div class="total-line tax-row d-none">
+                            <span class="lk" id="taxLabel">IVA:</span>
+                            <span class="lv" id="tax">$0.00</span>
                         </div>
-                        <div class="d-flex justify-content-between mb-2 discount-row d-none" id="discountRow">
-                            <span class="text-success">Descuento:</span>
-                            <span id="discount" class="text-success">-$0.00</span>
+                        <div class="total-line discount-row d-none" id="discountRow">
+                            <span class="lk" style="color:var(--green);">Descuento</span>
+                            <span class="lv" id="discount" style="color:var(--green);">-$0.00</span>
                         </div>
-                        <hr>
-                        <div class="d-flex justify-content-between mb-3">
-                            <strong>Total:</strong>
-                            <strong id="total" class="text-primary">$0.00</strong>
+                        <div class="total-divider"></div>
+                        <div class="total-final">
+                            <span class="lk">Total</span>
+                            <span class="lv" id="total">$0.00</span>
                         </div>
-                        <p id="payphoneConfirmNote" class="small text-muted d-none mb-2">Complete el formulario de pago con tarjeta en la columna izquierda y use el botón de PayPhone para pagar.</p>
-                        <button class="btn btn-lb-accent w-100 btn-lg" onclick="processOrder()" id="processBtn">
-                            <i class="bi bi-check-circle"></i> Confirmar Pedido
+                        <p id="payphoneConfirmNote" class="d-none" style="font-size:12px;color:var(--text2);margin-top:10px;padding:8px 12px;background:var(--ambg);border-radius:8px;border:1px solid rgba(251,191,36,.2);">
+                            Complete el formulario de pago con tarjeta y use el botón de PayPhone para pagar.
+                        </p>
+                        <button class="confirm-btn" onclick="processOrder()" id="processBtn">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                            Confirmar Pedido
                         </button>
-                        <a href="/customer/cart" class="btn btn-outline-secondary w-100 mt-2 spa-link">
-                            <i class="bi bi-arrow-left"></i> Volver al Carrito
+                        <a href="/customer/cart" class="back-btn spa-link">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                            Volver al Carrito
                         </a>
+                        <div class="security-row">
+                            <div class="sec-badge">
+                                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                Pago seguro
+                            </div>
+                            <div class="sec-badge">
+                                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                SSL cifrado
+                            </div>
+                            <div class="sec-badge">
+                                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                Verificado
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
+            </div><!-- end co-sidebar -->
+
+        </div><!-- end checkout-grid -->
+    </div><!-- end co-page -->
 
     <!-- Modal: Pago con tarjeta (Cajita PayPhone) -->
     <div class="modal fade" id="payphoneModal" tabindex="-1" data-bs-backdrop="static">
@@ -231,11 +625,14 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-body text-center py-5">
-                    <h4 class="text-success mb-3">¡Gracias por su compra!</h4>
-                    <p class="text-muted mb-0" id="thankYouSlogan">Sistema de Licorería</p>
+                    <div style="width:70px;height:70px;border-radius:50%;border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                        <svg width="32" height="32" fill="none" stroke="var(--accent2)" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <h4 style="font-weight:800;color:var(--text);margin-bottom:8px;">¡Gracias por su compra!</h4>
+                    <p style="color:var(--text2);margin-bottom:0;" id="thankYouSlogan">Sistema de Licorería</p>
                 </div>
                 <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-lb-primary" data-bs-dismiss="modal" id="thankYouCloseBtn">Aceptar</button>
+                    <button type="button" class="confirm-btn" style="max-width:200px;" id="thankYouCloseBtn">Aceptar</button>
                 </div>
             </div>
         </div>
@@ -345,6 +742,8 @@
                 data: JSON.stringify({ items: items, notes: $('#notes').val() || null }),
                 success: function(config) {
                     container.innerHTML = '';
+                    resetCardPreview();
+                    initCardPreviewSync();
                     loadPayphoneScript(function() {
                         initPayphoneCajitaInline(config);
                     });
@@ -355,6 +754,176 @@
                 }
             });
         }
+
+        // ── Card preview live sync ──────────────────────────────────────────
+        function resetCardPreview() {
+            var n = document.getElementById('cpNum');
+            var h = document.getElementById('cpHolder');
+            var e = document.getElementById('cpExpiry');
+            var b = document.getElementById('cpBrand');
+            var bk = document.getElementById('cpBank');
+            var t = document.getElementById('cpType');
+            if (n) n.textContent = '•••• •••• •••• ••••';
+            if (h) h.textContent = 'NOMBRE APELLIDO';
+            if (e) e.textContent = 'MM/AA';
+            if (b) b.textContent = '💳';
+            if (bk) bk.textContent = '';
+            if (t) t.textContent = '';
+        }
+
+        function initCardPreviewSync() {
+            var container = document.getElementById('pp-button-inline');
+            if (!container) return;
+            if (window._ppPreviewPollTimer) { clearInterval(window._ppPreviewPollTimer); window._ppPreviewPollTimer = null; }
+            // MutationObserver para detectar cuándo PayPhone termina de renderizar
+            var obs = new MutationObserver(function() {
+                if (container.querySelectorAll('input').length > 0) {
+                    obs.disconnect();
+                    startPreviewPolling(container);
+                }
+            });
+            obs.observe(container, { childList: true, subtree: true });
+            if (container.querySelectorAll('input').length > 0) {
+                obs.disconnect();
+                startPreviewPolling(container);
+            }
+        }
+
+        // Polling — PayPhone usa React y sus inputs no disparan eventos DOM nativos
+        function startPreviewPolling(container) {
+            var prev = {};
+            window._ppPreviewPollTimer = setInterval(function() {
+                var ppSection = document.getElementById('payphone-inline-section');
+                if (!ppSection || ppSection.classList.contains('d-none')) {
+                    clearInterval(window._ppPreviewPollTimer);
+                    window._ppPreviewPollTimer = null;
+                    return;
+                }
+                container.querySelectorAll('input').forEach(function(inp, idx) {
+                    var cur = inp.value;
+                    if (cur !== prev[idx]) {
+                        prev[idx] = cur;
+                        processPayphoneInput(cur, inp.placeholder || '');
+                    }
+                });
+            }, 200);
+        }
+
+        function processPayphoneInput(raw, placeholder) {
+            raw = (raw || '').trim();
+            var stripped = raw.replace(/[\s\-]/g, '');
+
+            var numEl    = document.getElementById('cpNum');
+            var holderEl = document.getElementById('cpHolder');
+            var expiryEl = document.getElementById('cpExpiry');
+            var brandEl  = document.getElementById('cpBrand');
+
+            // Número: 12-19 dígitos
+            if (/^\d{12,19}$/.test(stripped)) {
+                var parts = stripped.match(/.{1,4}/g) || [];
+                var masked = parts.map(function(p, i) {
+                    return i < parts.length - 1 ? '••••' : p;
+                }).join(' ');
+                setCardPreviewText(numEl, masked);
+                updateCardBrand(stripped, brandEl);
+                if (stripped.length >= 8) lookupBin(stripped.substring(0, 8));
+                return;
+            }
+
+            // Expiración: MM/YY o MM/YYYY
+            if (/^\d{1,2}\/\d{2,4}$/.test(raw)) {
+                setCardPreviewText(expiryEl, raw);
+                return;
+            }
+
+            // CVV: 3-4 dígitos solos — ignorar
+            if (/^\d{3,4}$/.test(stripped) && stripped.length <= 4) return;
+
+            // Nombre: letras y espacios (≥2 chars)
+            if (raw.length >= 2 && /^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s'.\-]+$/.test(raw)) {
+                setCardPreviewText(holderEl, raw.toUpperCase());
+                return;
+            }
+
+            // Campo vaciado → reset según placeholder
+            if (raw === '') {
+                var ph = placeholder.toLowerCase();
+                if (/número|card|tarjeta|1234/.test(ph)) {
+                    setCardPreviewText(numEl, '•••• •••• •••• ••••');
+                    if (brandEl) brandEl.innerHTML = '💳';
+                    setCardPreviewText(document.getElementById('cpBank'), '');
+                    setCardPreviewText(document.getElementById('cpType'), '');
+                } else if (/expir|mm|fecha/.test(ph)) {
+                    setCardPreviewText(expiryEl, 'MM/AA');
+                } else if (/titular|nombre|name/.test(ph)) {
+                    setCardPreviewText(holderEl, 'NOMBRE APELLIDO');
+                }
+            }
+        }
+
+        function setCardPreviewText(el, val) {
+            if (!el || el.textContent === val) return;
+            el.classList.add('cp-updating');
+            setTimeout(function() {
+                el.textContent = val;
+                el.classList.remove('cp-updating');
+            }, 80);
+        }
+
+        function updateCardBrand(cardNum, brandEl) {
+            if (!brandEl) return;
+            var first  = cardNum.charAt(0);
+            var first2 = cardNum.substring(0, 2);
+            var numVal = parseInt(cardNum.substring(0, 4), 10);
+            var html;
+            if (first === '4') {
+                // VISA — texto blanco en negrita
+                html = '<span style="font-family:Arial,sans-serif;font-size:14px;font-weight:900;font-style:italic;color:#fff;letter-spacing:.5px">VISA</span>';
+            } else if (first === '5' || (numVal >= 2221 && numVal <= 2720)) {
+                // Mastercard — dos círculos
+                html = '<svg width="34" height="22" viewBox="0 0 34 22" fill="none" style="display:block">'
+                     + '<circle cx="12" cy="11" r="10" fill="#EB001B" opacity=".9"/>'
+                     + '<circle cx="22" cy="11" r="10" fill="#F79E1B" opacity=".85"/>'
+                     + '<path d="M17 3.2a10 10 0 0 1 0 15.6A10 10 0 0 1 17 3.2z" fill="#FF5F00" opacity=".85"/>'
+                     + '</svg>';
+            } else if (first2 === '34' || first2 === '37') {
+                // Amex
+                html = '<span style="font-family:Arial,sans-serif;font-size:11px;font-weight:900;color:#fff;letter-spacing:.5px">AMEX</span>';
+            } else if (first === '6') {
+                // Discover
+                html = '<span style="font-family:Arial,sans-serif;font-size:10px;font-weight:900;color:#fff;letter-spacing:.5px">DISCOVER</span>';
+            } else {
+                html = '💳';
+            }
+            if (brandEl.innerHTML !== html) brandEl.innerHTML = html;
+        }
+
+        // BIN lookup — banco emisor + débito/crédito
+        var _binCache = {};
+        var _binPending = {};
+        function lookupBin(bin) {
+            if (_binCache[bin]) { applyBinData(_binCache[bin]); return; }
+            if (_binPending[bin]) return;
+            _binPending[bin] = true;
+            fetch('/api/public/bin/' + bin)
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(data) {
+                    _binPending[bin] = false;
+                    if (!data) return;
+                    _binCache[bin] = data;
+                    applyBinData(data);
+                })
+                .catch(function() { _binPending[bin] = false; });
+        }
+
+        function applyBinData(data) {
+            setCardPreviewText(document.getElementById('cpBank'), data.bank ? data.bank.toUpperCase() : '');
+            var label = data.type === 'debit' ? 'Débito'
+                      : data.type === 'credit' ? 'Crédito'
+                      : data.type === 'prepaid' ? 'Prepago' : '';
+            setCardPreviewText(document.getElementById('cpType'), label);
+        }
+        // ────────────────────────────────────────────────────────────────────
 
         function logout() {
             localStorage.removeItem('customerToken');
@@ -411,22 +980,22 @@
         function displayOrderSummary() {
             const summary = $('#orderSummary');
             let html = '';
-
             cart.forEach(item => {
                 const itemTotal = item.price * item.quantity;
+                const imgHtml = item.imageUrl
+                    ? `<img src="${item.imageUrl}" alt="${item.productName}">`
+                    : `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="m3 9 4-4 4 4 4-4 4 4"/><circle cx="8" cy="14" r="2"/></svg>`;
                 html += `
-                    <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
-                        <div>
-                            <strong>${item.productName}</strong>
-                            <div class="text-muted small">Cantidad: ${item.quantity} x $${item.price.toFixed(2)}</div>
+                    <div class="order-item">
+                        <div class="order-item-img">${imgHtml}</div>
+                        <div class="order-item-info">
+                            <div class="order-item-name">${item.productName}</div>
+                            <div class="order-item-meta">${item.quantity} × $${item.price.toFixed(2)}</div>
                         </div>
-                        <div class="text-end">
-                            <strong>$${itemTotal.toFixed(2)}</strong>
-                        </div>
+                        <div class="order-item-price">$${itemTotal.toFixed(2)}</div>
                     </div>
                 `;
             });
-
             summary.html(html);
             updateTotals();
         }
@@ -550,7 +1119,7 @@
                     return;
                 }
                 if (payphonePPB) payphonePPB = null;
-                payphonePPB = new window.PPaymentButtonBox({
+                var ppbConfig = {
                     token: config.token,
                     storeId: config.storeId,
                     clientTransactionId: config.clientTransactionId,
@@ -562,7 +1131,9 @@
                     reference: config.reference || 'Venta LOCOBAR',
                     lang: 'es',
                     defaultMethod: 'card'
-                });
+                };
+                if (config.returnUrl) ppbConfig.returnUrl = config.returnUrl;
+                payphonePPB = new window.PPaymentButtonBox(ppbConfig);
                 payphonePPB.render('pp-button-inline');
             } catch (e) {
                 console.error('PayPhone init error:', e);
@@ -578,7 +1149,7 @@
                     return;
                 }
                 if (payphonePPB) payphonePPB = null;
-                payphonePPB = new window.PPaymentButtonBox({
+                var ppbConfig2 = {
                     token: config.token,
                     storeId: config.storeId,
                     clientTransactionId: config.clientTransactionId,
@@ -590,7 +1161,9 @@
                     reference: config.reference || 'Venta LOCOBAR',
                     lang: 'es',
                     defaultMethod: 'card'
-                });
+                };
+                if (config.returnUrl) ppbConfig2.returnUrl = config.returnUrl;
+                payphonePPB = new window.PPaymentButtonBox(ppbConfig2);
                 payphonePPB.render('pp-button-modal');
             } catch (e) {
                 console.error('PayPhone init error:', e);
@@ -732,6 +1305,7 @@
                 }
             }, 10 * 60 * 1000);
         }
+
         function startCartExpiryTimer(onExpired) {
             if (window._cartTimerInterval) {
                 clearInterval(window._cartTimerInterval);

@@ -209,13 +209,30 @@ router.get('/check-email', async (req, res) => {
 // POST /auth/register - Register new customer
 router.post('/register', async (req, res) => {
   try {
-    const { tenantId = 1, name, cedula, email, phone, address, latitude, longitude, password } = req.body;
+    const { tenantId = 1, firstName, lastName, birthDate, cedula, email, phone, address, latitude, longitude, password } = req.body;
+    const name = [firstName, lastName].filter(Boolean).join(' ').trim() || firstName || '';
 
     // Validate required fields
-    if (!name || !email || !password || !cedula) {
+    if (!firstName || !lastName || !email || !password || !cedula) {
       return res.status(400).json({
-        error: 'Name, cédula, email and password are required',
+        error: 'Nombres, apellidos, cédula, email y contraseña son requeridos',
         code: 'MISSING_FIELDS'
+      });
+    }
+
+    // Validar edad mínima (18 años)
+    if (!birthDate) {
+      return res.status(400).json({ error: 'La fecha de nacimiento es requerida', code: 'MISSING_BIRTH_DATE' });
+    }
+    const birth = new Date(birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    if (age < 18) {
+      return res.status(400).json({
+        error: 'Debes ser mayor de 18 años para registrarte',
+        code: 'UNDERAGE'
       });
     }
 
@@ -261,9 +278,34 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // PASO 2: Buscar en clientes (con trim y unscoped para evitar problemas con scopes)
+    // PASO 2: Verificar si ya hay un registro pendiente de verificación en el store
+    const emailNormalized = email.trim();
+    const existingEntry = registrationVerificationStore[emailNormalized];
+    if (existingEntry && existingEntry.registrationData) {
+      // Ya hay un registro pendiente — reenviar código con los datos guardados
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const codeExpires = Date.now() + (15 * 60 * 1000);
+      registrationVerificationStore[emailNormalized] = {
+        code: verificationCode,
+        codeExpires,
+        registrationData: existingEntry.registrationData
+      };
+      EmailService.initialize(tenantId).then(() => {
+        EmailService.sendVerificationCode(emailNormalized, verificationCode, tenantId).catch(err => {
+          console.warn('Could not resend verification code:', err.message);
+        });
+      }).catch(err => {
+        console.warn('Email service not configured:', err.message);
+      });
+      return res.status(200).json({
+        message: 'Ya tienes una cuenta pendiente de verificación. Te hemos reenviado el código a tu correo.',
+        requiresVerification: true
+      });
+    }
+
+    // PASO 3: Buscar en clientes ya verificados en BD
     const existingCustomer = await Customer.unscoped().findOne({
-      where: { email: email.trim(), tenantId, isActive: true }
+      where: { email: emailNormalized, tenantId, isActive: true }
     });
 
     if (existingCustomer) {
@@ -282,53 +324,41 @@ router.post('/register', async (req, res) => {
       fullAddress += fullAddress ? ` | Coordenadas: ${latitude}, ${longitude}` : `Coordenadas: ${latitude}, ${longitude}`;
     }
 
-    // Create customer
-    const customer = await Customer.create({
-      tenantId,
-      name,
-      cedula: cedula.trim(),
-      email: email.trim(), // Guardar email con trim para consistencia
-      phone,
-      address: fullAddress || null,
-      password: passwordHash,
-      isActive: true
-    });
-
     // Generate verification code (6 digits)
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     const codeExpires = Date.now() + (15 * 60 * 1000); // 15 minutos
 
-    // Guardar código de verificación en almacenamiento temporal
-    registrationVerificationStore[email.trim()] = {
+    // Guardar código + datos de registro en store (el cliente se crea al verificar el código)
+    registrationVerificationStore[emailNormalized] = {
       code: verificationCode,
       codeExpires,
-      customerId: customer.id
+      registrationData: {
+        tenantId,
+        name,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        birthDate: birthDate || null,
+        cedula: cedula.trim(),
+        email: emailNormalized,
+        phone,
+        address: fullAddress || null,
+        password: passwordHash,
+        isActive: true
+      }
     };
 
     // Send verification code via email (async, don't wait)
     EmailService.initialize(tenantId).then(() => {
-      EmailService.sendVerificationCode(email, verificationCode, tenantId).catch(err => {
+      EmailService.sendVerificationCode(emailNormalized, verificationCode, tenantId).catch(err => {
         console.warn('Could not send verification code email:', err.message);
       });
     }).catch(err => {
       console.warn('Email service not configured:', err.message);
     });
 
-    // NO generar token todavía - esperar verificación del código
-    // El token se generará después de verificar el código
-
     res.status(201).json({
       message: 'Registro exitoso. Por favor verifica tu correo electrónico e ingresa el código de verificación.',
-      requiresVerification: true,
-      customer: {
-        id: customer.id,
-        name: customer.name,
-        cedula: customer.cedula,
-        email: customer.email,
-        phone: customer.phone
-      },
-      // NO enviar token todavía
-      verificationCode // Solo para desarrollo - remover en producción
+      requiresVerification: true
     });
   } catch (error) {
     console.error('Error registering customer:', error);
@@ -393,7 +423,9 @@ router.post('/login', async (req, res) => {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role
+          role: user.role,
+          themeId: user.themeId || 1,
+          themeMode: user.themeMode || 'auto'
         },
         token,
         redirectTo: '/dashboard'
@@ -420,20 +452,29 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Verificar contraseña del cliente
-    const isValidPassword = await bcrypt.compare(password, customer.password);
-
-    if (!isValidPassword) {
+    // Verificar contraseña antes de chequear email (para no revelar si la cuenta existe)
+    const isValidPasswordCheck = await bcrypt.compare(password, customer.password);
+    if (!isValidPasswordCheck) {
       return res.status(401).json({
         error: 'Credenciales inválidas',
         code: 'INVALID_CREDENTIALS'
       });
     }
 
-    // Generar JWT token para cliente
+    // Verificar que el email haya sido confirmado
+    if (customer.emailVerified === false) {
+      return res.status(403).json({
+        error: 'Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada e ingresa el código de verificación.',
+        code: 'EMAIL_NOT_VERIFIED',
+        requiresVerification: true,
+        email: customer.email
+      });
+    }
+
+    // Generar JWT token para cliente (contraseña ya verificada arriba)
     const token = jwt.sign(
-      { 
-        customerId: customer.id, 
+      {
+        customerId: customer.id,
         tenantId: customer.tenantId,
         email: customer.email,
         type: 'customer'
@@ -442,7 +483,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '30d' }
     );
 
-    res.json({
+    return res.json({
       message: 'Login exitoso',
       userType: 'customer',
       user: {
@@ -455,6 +496,7 @@ router.post('/login', async (req, res) => {
       token,
       redirectTo: '/customer/catalog'
     });
+
   } catch (error) {
     console.error('Error en login:', error);
     res.status(500).json({
@@ -755,6 +797,48 @@ router.post('/verify-reset-code', async (req, res) => {
   }
 });
 
+// POST /auth/resend-verification-code - Reenviar código de verificación de registro
+router.post('/resend-verification-code', async (req, res) => {
+  try {
+    const { email, tenantId = 1 } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email es requerido', code: 'MISSING_EMAIL' });
+    }
+
+    const emailNormalized = email.trim();
+    const storeEntry = registrationVerificationStore[emailNormalized];
+
+    if (!storeEntry || !storeEntry.registrationData) {
+      // No revelar si el email existe o ya está verificado
+      return res.json({ message: 'Si el email existe y no está verificado, recibirás un nuevo código.' });
+    }
+
+    // Generar nuevo código preservando los datos de registro
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeExpires = Date.now() + (15 * 60 * 1000);
+
+    registrationVerificationStore[emailNormalized] = {
+      code: verificationCode,
+      codeExpires,
+      registrationData: storeEntry.registrationData
+    };
+
+    EmailService.initialize(tenantId).then(() => {
+      EmailService.sendVerificationCode(emailNormalized, verificationCode, tenantId).catch(err => {
+        console.warn('Could not resend verification code:', err.message);
+      });
+    }).catch(err => {
+      console.warn('Email service not configured:', err.message);
+    });
+
+    res.json({ message: 'Código de verificación reenviado. Revisa tu correo electrónico.' });
+  } catch (error) {
+    console.error('Error in resend-verification-code:', error);
+    res.status(500).json({ error: 'Error interno del servidor', code: 'INTERNAL_ERROR' });
+  }
+});
+
 // POST /auth/verify-registration-code - Verificar código de registro
 router.post('/verify-registration-code', async (req, res) => {
   try {
@@ -797,15 +881,11 @@ router.post('/verify-registration-code', async (req, res) => {
       });
     }
 
-    // Código verificado correctamente - obtener cliente
-    const customer = await Customer.unscoped().findByPk(storeEntry.customerId);
-
-    if (!customer) {
-      return res.status(404).json({
-        error: 'Cliente no encontrado',
-        code: 'CUSTOMER_NOT_FOUND'
-      });
-    }
+    // Código verificado correctamente - crear el cliente ahora
+    const customer = await Customer.create({
+      ...storeEntry.registrationData,
+      emailVerified: true
+    });
 
     // Generar JWT token ahora que el código está verificado
     const token = jwt.sign(
@@ -942,6 +1022,43 @@ router.post('/reset-password', async (req, res) => {
       error: 'Error interno del servidor',
       code: 'INTERNAL_ERROR'
     });
+  }
+});
+
+// PATCH /auth/me/theme - Guardar preferencia de tema del usuario admin
+router.patch('/me/theme', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Token requerido', code: 'NO_TOKEN' });
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch {
+      return res.status(401).json({ error: 'Token inválido', code: 'INVALID_TOKEN' });
+    }
+
+    if (decoded.type !== 'admin') {
+      return res.status(403).json({ error: 'Solo admins pueden cambiar el tema', code: 'FORBIDDEN' });
+    }
+
+    const { themeId, themeMode } = req.body;
+    if (![1, 2, 3, 4].includes(Number(themeId))) {
+      return res.status(400).json({ error: 'themeId debe ser 1-4', code: 'INVALID_THEME_ID' });
+    }
+    if (!['auto', 'dark', 'light'].includes(themeMode)) {
+      return res.status(400).json({ error: 'themeMode debe ser auto, dark o light', code: 'INVALID_THEME_MODE' });
+    }
+
+    await User.update(
+      { themeId: Number(themeId), themeMode },
+      { where: { id: decoded.userId } }
+    );
+
+    res.json({ themeId: Number(themeId), themeMode });
+  } catch (error) {
+    console.error('Error saving theme:', error);
+    res.status(500).json({ error: 'Error interno del servidor', code: 'INTERNAL_ERROR' });
   }
 });
 

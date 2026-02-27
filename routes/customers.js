@@ -363,16 +363,25 @@ router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
 
     if (permanent === 'true') {
       // Verificar si el cliente tiene ventas asociadas
-      const { Sale } = require('../models');
+      const { Sale, CustomerPayment, CustomerCredit, GroupPurchaseParticipant, sequelize: db } = require('../models');
       const salesCount = await Sale.count({ where: { customerId: id } });
-      
+
       if (salesCount > 0) {
         return res.status(400).json({
           error: `No se puede eliminar: el cliente tiene ${salesCount} venta(s) asociada(s). Solo se puede desactivar.`,
           code: 'CUSTOMER_HAS_SALES'
         });
       }
-      
+
+      // Eliminar registros relacionados antes de destruir el cliente
+      await CustomerPayment.destroy({ where: { customerId: id } });
+      await CustomerCredit.destroy({ where: { customerId: id } });
+      try {
+        await GroupPurchaseParticipant.destroy({ where: { customerId: id } });
+      } catch (e) {
+        if (!e.message?.includes('does not exist')) throw e;
+      }
+
       await customer.destroy();
       res.json({ message: 'Cliente eliminado permanentemente' });
     } else {

@@ -7,6 +7,8 @@
     <title id="dashboardPageTitle">Sistema de Licorería - Dashboard</title>
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/public/css/dashboard-themes.css">
+    <link id="themeFontLink" rel="stylesheet" href="">
     <!-- Google Maps API (carga optimizada con async) -->
     <script>(g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]);for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.googleapis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
         key: "AIzaSyA2QRfT8cdYlLfnzeLOA7HTzqOCibzfBt8",
@@ -19,8 +21,7 @@
             left: 0;
             height: 100vh;
             width: 250px;
-            background-color: #2c3e50;
-            padding-top: 20px;
+            padding-top: 0;
             z-index: 1000;
             display: flex;
             flex-direction: column;
@@ -38,38 +39,14 @@
             background: transparent;
         }
         .sidebar-nav-scroll::-webkit-scrollbar-thumb {
-            background: #4a6278;
+            background: var(--th-border2, #4a6278);
             border-radius: 2px;
         }
-        .sidebar-logout {
-            flex-shrink: 0;
-            border-top: 1px solid rgba(255,255,255,0.15);
-            padding: 8px 10px;
-        }
-        
-        .sidebar .nav-link {
-            color: #ecf0f1;
-            padding: 12px 20px;
-            margin: 5px 10px;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-        }
-        
-        .sidebar .nav-link:hover {
-            background-color: #34495e;
-            color: #3498db;
-        }
-        
-        .sidebar .nav-link.active {
-            background-color: #3498db;
-            color: white;
-        }
-        
         .main-content {
             margin-left: 250px;
             padding: 20px;
+            padding-top: 76px;
             min-height: 100vh;
-            background-color: #f8f9fa;
         }
         
         .stats-card {
@@ -100,11 +77,7 @@
             display: block;
         }
         
-        .navbar-custom {
-            background-color: #34495e;
-            padding: 15px 30px;
-            margin-left: 250px;
-        }
+        /* .navbar-custom reemplazado por .topbar en dashboard-themes.css */
 
         /* Cuadro de notificaciones: responsive (laptop y móvil) */
         .notifications-dropdown-menu {
@@ -320,21 +293,21 @@
         #sell .sell-search-input-wrap .form-control:focus + .input-group-text,
         #sell .sell-search-input-wrap:focus-within .input-group-text { border-color: #86b7fe; }
         .sell-catalog-card {
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--th-border);
             border-radius: 10px;
             padding: 10px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s;
             display: flex;
             flex-direction: row;
             align-items: center;
             gap: 10px;
             height: 100%;
-            background: #fff;
+            background: var(--th-surf);
             position: relative;
         }
-        .sell-catalog-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .sell-catalog-card.disabled { opacity: 0.65; cursor: not-allowed; }
-        .sell-catalog-card.disabled:hover { transform: none; }
+        .sell-catalog-card:hover { box-shadow: var(--th-shadow); border-color: var(--th-accent); }
+        .sell-catalog-card.disabled { opacity: 0.55; cursor: not-allowed; }
+        .sell-catalog-card.disabled:hover { transform: none; border-color: var(--th-border); box-shadow: none; }
         .sell-catalog-card:not(.disabled) { cursor: pointer; }
         .sell-catalog-card-image-wrap {
             flex-shrink: 0;
@@ -342,7 +315,7 @@
             height: 70px;
             border-radius: 8px;
             overflow: hidden;
-            background: #f8f8f8;
+            background: var(--th-surf2);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -354,7 +327,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #ccc;
+            color: var(--th-text3);
             font-size: 1.8em;
         }
         .sell-catalog-card-body {
@@ -374,12 +347,13 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             line-height: 1.3;
+            color: var(--th-text);
         }
         .sell-catalog-combo-badge {
             position: absolute;
             top: 8px;
             right: 8px;
-            background: #ffc107;
+            background: var(--th-amber);
             color: #000;
             padding: 3px 8px;
             border-radius: 12px;
@@ -395,9 +369,9 @@
             align-self: flex-start;
             margin-top: 4px;
         }
-        .sell-catalog-stock-available { background: #d4edda; color: #155724; }
-        .sell-catalog-stock-low { background: #fff3cd; color: #856404; }
-        .sell-catalog-stock-out { background: #f8d7da; color: #721c24; }
+        .sell-catalog-stock-available { background: var(--th-gbg);  color: var(--th-green); }
+        .sell-catalog-stock-low       { background: var(--th-ambg); color: var(--th-amber); }
+        .sell-catalog-stock-out       { background: var(--th-rbg);  color: var(--th-red);   }
         
         .pos-search-loading {
             position: absolute;
@@ -408,7 +382,7 @@
         
         /* Carrito del modal Vender: estilo como carrito del cliente */
         #sellCartModal .cart-item {
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--th-border);
             border-radius: 10px;
             padding: 12px;
             margin-bottom: 12px;
@@ -417,9 +391,10 @@
             flex-direction: row;
             align-items: stretch;
             gap: 12px;
+            background: var(--th-surf2);
         }
         #sellCartModal .cart-item:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: var(--th-shadow);
         }
         #sellCartModal .cart-item-image-wrap {
             flex-shrink: 0;
@@ -427,7 +402,7 @@
             height: 90px;
             border-radius: 8px;
             overflow: hidden;
-            background: #f0f0f0;
+            background: var(--th-surf3);
         }
         #sellCartModal .cart-item-image-wrap img,
         #sellCartModal .cart-item-image-wrap .cart-image-placeholder {
@@ -439,7 +414,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #ccc;
+            color: var(--th-text3);
             font-size: 2em;
         }
         #sellCartModal .cart-item-body {
@@ -464,9 +439,9 @@
         #sellCartModal .quantity-controls {
             display: inline-flex;
             align-items: stretch;
-            background: #f8f9fa;
+            background: var(--th-surf);
             border-radius: 20px;
-            border: 1px solid #dee2e6;
+            border: 1px solid var(--th-border);
             overflow: hidden;
             height: 36px;
         }
@@ -501,8 +476,9 @@
             justify-content: center;
             font-weight: 600;
             font-size: 0.95rem;
-            border-left: 1px solid #dee2e6;
-            border-right: 1px solid #dee2e6;
+            border-left: 1px solid var(--th-border);
+            border-right: 1px solid var(--th-border);
+            color: var(--th-text);
         }
         /* Evitar que el dropdown del método de pago quede detrás del modal o sin poder seleccionar */
         #sellCartModal .modal-footer {
@@ -535,13 +511,13 @@
             right: 30px;
             width: 70px;
             height: 70px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--th-accent), var(--th-accent2));
             border-radius: 50%;
             display: none;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 4px 20px var(--th-abg);
             z-index: 1000;
             transition: all 0.3s ease;
             animation: sellCartPulse 2s infinite;
@@ -601,29 +577,30 @@
             left: 250px;
             right: 0;
             z-index: 1001;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            color: #fff;
-            padding: 14px 16px;
+            background: var(--th-surf);
+            border-top: 1px solid var(--th-border);
+            color: var(--th-text);
+            padding: 12px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.25);
             transform: translateY(100%);
             transition: transform 0.3s ease;
             will-change: transform;
         }
-        /* Fuera de Vender: barra siempre oculta e inactiva (como si no existiera) */
+        /* Fuera de Vender: barra siempre oculta e inactiva */
         body:not(.section-sell) #sellCartBottomBar {
             transform: translateY(100%) !important;
             visibility: hidden;
             pointer-events: none;
         }
-        /* En Vender, sin ítems: barra oculta pero ya “presente” para la animación al agregar el primero */
+        /* En Vender, sin ítems: barra “presente” para la animación */
         body.section-sell #sellCartBottomBar {
             visibility: visible;
             pointer-events: auto;
         }
-        /* En Vender, con ítems: misma animación que cliente (barra sube desde abajo) */
+        /* En Vender, con ítems: barra sube desde abajo */
         body.section-sell #sellCartBottomBar.sell-cart-bar-visible {
             transform: translateY(0);
         }
@@ -633,30 +610,57 @@
             gap: 2px;
         }
         #sellCartBottomBar .sell-cart-bar-items {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             font-weight: 700;
+            color: var(--th-text);
         }
         #sellCartBottomBar .sell-cart-bar-total {
-            font-size: 0.9rem;
-            opacity: 0.95;
+            font-size: 0.85rem;
+            color: var(--th-text2);
+        }
+        #sellCartBottomBar .sell-cart-bar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #sellCartBottomBar .btn-vaciar-carrito-sell {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: transparent;
+            color: var(--th-red);
+            font-size: 13px;
+            font-weight: 500;
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--th-rbg);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+        #sellCartBottomBar .btn-vaciar-carrito-sell:hover {
+            background: var(--th-rbg);
         }
         #sellCartBottomBar .btn-ver-carrito-sell {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: #fff;
-            color: #0f3460;
+            background: linear-gradient(135deg, var(--th-accent), var(--th-accent2));
+            color: #fff;
             font-weight: 600;
-            padding: 10px 18px;
+            font-size: 14px;
+            padding: 10px 20px;
             border-radius: 8px;
             border: none;
             cursor: pointer;
             white-space: nowrap;
             text-decoration: none;
+            box-shadow: 0 4px 14px var(--th-abg);
+            transition: all 0.18s;
         }
         #sellCartBottomBar .btn-ver-carrito-sell:hover {
-            background: #f0f0f0;
-            color: #16213e;
+            opacity: 0.9;
+            transform: translateY(-1px);
         }
         body.sell-cart-bar-visible .main-content { padding-bottom: 90px; }
         
@@ -846,13 +850,11 @@
             
             .main-content {
                 margin-left: 0;
-                padding: 60px 15px 80px 15px;
+                padding: 72px 15px 80px 15px;
             }
-            
-            .navbar-custom {
-                margin-left: 0;
-                padding: 10px 15px;
-                overflow: visible;
+
+            .topbar {
+                left: 0 !important;
             }
 
             /* Notificaciones en móvil: un poco más ancho, sin recortes */
@@ -1105,69 +1107,99 @@
 <body>
     <!-- Sidebar Overlay (for mobile) -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileMenu()"></div>
-    
+
     <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="text-center mb-3">
-            <h4 style="color: white;">
-                <i class="bi bi-shop"></i> LOCOBAR
-            </h4>
+    <nav class="sidebar">
+        <!-- Logo + toggle de modo -->
+        <div class="sb-logo">
+            <div class="sb-logo-icon"><i class="bi bi-shop"></i></div>
+            <div class="sb-logo-text">
+                <span class="sb-logo-name">LOCOBAR</span>
+                <span class="sb-logo-sub">Sistema</span>
+            </div>
+            <button class="sb-theme-btn" id="themeToggleBtn" onclick="cycleThemeMode()" title="Cambiar modo claro/oscuro">
+                <i class="bi bi-sun-fill" id="themeToggleIcon"></i>
+            </button>
         </div>
+
+        <!-- Navegación scrollable -->
         <div class="sidebar-nav-scroll">
-            <nav class="nav flex-column">
+            <nav class="nav flex-column sb-nav">
+                <span class="sb-group-label">PRINCIPAL</span>
                 <a class="nav-link" href="#" data-section="dashboard">
-                    <i class="bi bi-speedometer2"></i> Dashboard
+                    <svg class="sb-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span>
                 </a>
+
+                <span class="sb-group-label">INVENTARIO</span>
                 <a class="nav-link" href="#" data-section="products">
-                    <i class="bi bi-box"></i> Productos
+                    <svg class="sb-icon" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 3H8L6 7h12l-2-4z"/><circle cx="12" cy="14" r="2"/></svg><span>Productos</span>
                 </a>
                 <a class="nav-link" href="#" data-section="suppliers">
-                    <i class="bi bi-truck"></i> Proveedores
-                    <span class="badge bg-danger ms-1 d-none" id="supplierDebtsBadge">0</span>
+                    <svg class="sb-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Proveedores</span>
+                    <span class="badge bg-danger ms-auto d-none" id="supplierDebtsBadge">0</span>
                 </a>
                 <a class="nav-link" href="#" data-section="purchases">
-                    <i class="bi bi-cart-plus"></i> Compras
+                    <svg class="sb-icon" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span>Compras</span>
                 </a>
+
+                <span class="sb-group-label">VENTAS</span>
                 <a class="nav-link" href="#" data-section="sell">
-                    <i class="bi bi-cash"></i> Vender
+                    <svg class="sb-icon" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span>Vender</span>
                 </a>
                 <a class="nav-link" href="#" data-section="sales">
-                    <i class="bi bi-cash-stack"></i> Ventas
+                    <svg class="sb-icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span>Ventas</span>
                 </a>
                 <a class="nav-link" href="#" data-section="group-purchases">
-                    <i class="bi bi-people"></i> Compras Grupales
+                    <svg class="sb-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Compras Grupales</span>
                 </a>
                 <a class="nav-link" href="#" data-section="credits">
-                    <i class="bi bi-credit-card"></i> Créditos
+                    <svg class="sb-icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><span>Créditos</span>
                 </a>
+
+                <span class="sb-group-label">GESTIÓN</span>
                 <a class="nav-link" href="#" data-section="customers">
-                    <i class="bi bi-people-fill"></i> Clientes
+                    <svg class="sb-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Clientes</span>
                 </a>
                 <a class="nav-link" href="#" data-section="users">
-                    <i class="bi bi-people"></i> Usuarios
+                    <svg class="sb-icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/><path d="M19 11a3 3 0 0 1 0 6"/><path d="M5 11a3 3 0 0 0 0 6"/></svg><span>Usuarios</span>
                 </a>
                 <a class="nav-link" href="#" data-section="settings">
-                    <i class="bi bi-gear"></i> Configuración
+                    <svg class="sb-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Configuración</span>
                 </a>
             </nav>
         </div>
+
+        <!-- Footer: usuario + cerrar sesión -->
         <div class="sidebar-logout">
-            <a class="nav-link text-danger" href="#" onclick="logout()">
-                <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+            <div class="sb-user-card">
+                <div class="sb-avatar" id="sidebarAvatar">A</div>
+                <div class="sb-user-info">
+                    <span class="sb-user-name" id="sidebarUserName">Admin</span>
+                    <span class="sb-user-role" id="sidebarUserRole">En línea</span>
+                </div>
+            </div>
+            <a class="nav-link sb-logout-btn" href="#" onclick="logout()">
+                <svg class="sb-icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span>Cerrar Sesión</span>
             </a>
         </div>
-    </div>
+    </nav>
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-dark navbar-custom">
-        <div class="container-fluid d-flex justify-content-between align-items-center">
-            <span class="navbar-text mb-0">
-                <i class="bi bi-person-circle"></i> 
-                <span id="currentUser">Cargando...</span>
-                <small class="ms-2 badge bg-light text-dark" id="currentUserRole"></small>
-            </span>
+    <!-- Topbar -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <button class="topbar-menu-btn d-lg-none" onclick="toggleMobileMenu()" title="Menú">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="topbar-breadcrumb">
+                <i class="bi bi-grid" id="topbarIcon"></i>
+                <span id="topbarTitle">Dashboard</span>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <span class="topbar-clock" id="topbarClock"></span>
             <div class="dropdown">
-                <button class="btn btn-outline-light btn-sm position-relative" type="button" id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notificaciones">
+                <button class="topbar-icon-btn position-relative" type="button" id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notificaciones">
                     <i class="bi bi-bell"></i>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="notificationsBadge">0</span>
                 </button>
@@ -1178,96 +1210,154 @@
                     <li id="notificationsListItems"></li>
                 </ul>
             </div>
+            <span id="currentUser" class="d-none"></span>
+            <small id="currentUserRole" class="d-none"></small>
         </div>
-    </nav>
+    </header>
 
     <!-- Main Content -->
     <div class="main-content">
         <!-- Dashboard Section -->
         <div id="dashboard" class="content-section">
-            <h2 class="mb-4">
-                <i class="bi bi-speedometer2"></i> Dashboard
-            </h2>
-            
-            <!-- Stats cards: en desktop 4 por fila (como antes); en móvil 2 por fila, cuadradas -->
-            <div class="row stats-cards-row">
-                <div class="col-6 col-md-3">
-                    <div class="stats-card">
-                        <h5>Productos Totales</h5>
-                        <h2 id="totalProducts">0</h2>
-                        <small><i class="bi bi-box"></i> Activos en sistema</small>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="stats-card success">
-                        <h5>Stock Disponible</h5>
-                        <h2 id="totalStock">0</h2>
-                        <small><i class="bi bi-check-circle"></i> Unidades totales</small>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="stats-card warning">
-                        <h5>Ventas del Mes</h5>
-                        <h2 id="monthlySales">$0</h2>
-                        <small><i class="bi bi-cash"></i> Facturación actual</small>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="stats-card info">
-                        <h5>Combos Activos</h5>
-                        <h2 id="totalCombos">0</h2>
-                        <small><i class="bi bi-gift"></i> Ofertas virtuales</small>
-                    </div>
+
+            <!-- Page header -->
+            <div class="db-ph">
+                <div class="db-ptitle">Dashboard <span>·</span> General</div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm" style="background:var(--th-surf2);border:1px solid var(--th-border);color:var(--th-text2);" onclick="loadDashboardData()">
+                        <i class="bi bi-arrow-clockwise"></i> Actualizar
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="showSection('sell')">
+                        <i class="bi bi-plus"></i> Nueva Venta
+                    </button>
                 </div>
             </div>
 
-            <div class="row mt-4">
-                <div class="col-md-8">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0">
-                                <i class="bi bi-graph-up"></i> Ventas Recientes
-                            </h5>
+            <!-- Stat cards -->
+            <div class="db-sg">
+                <div class="db-sc db-t1">
+                    <div class="db-sth">
+                        <div class="db-si db-si-t"><i class="bi bi-box"></i></div>
+                        <span class="db-sch db-fl">activos</span>
+                    </div>
+                    <div class="db-sv" id="totalProducts">0</div>
+                    <div class="db-sl">Productos Totales</div>
+                </div>
+                <div class="db-sc db-t2">
+                    <div class="db-sth">
+                        <div class="db-si db-si-g"><i class="bi bi-archive"></i></div>
+                        <span class="db-sch db-up" id="totalStockBadge">unidades</span>
+                    </div>
+                    <div class="db-sv" id="totalStock">0</div>
+                    <div class="db-sl">Stock Disponible</div>
+                </div>
+                <div class="db-sc db-t3">
+                    <div class="db-sth">
+                        <div class="db-si db-si-r"><i class="bi bi-bar-chart-line"></i></div>
+                        <span class="db-sch db-up">mes actual</span>
+                    </div>
+                    <div class="db-sv" id="monthlySales">$0</div>
+                    <div class="db-sl">Ventas del Mes</div>
+                </div>
+                <div class="db-sc db-t4">
+                    <div class="db-sth">
+                        <div class="db-si db-si-y"><i class="bi bi-gift"></i></div>
+                        <span class="db-sch db-fl">activo</span>
+                    </div>
+                    <div class="db-sv" id="totalCombos">0</div>
+                    <div class="db-sl">Combos Activos</div>
+                </div>
+            </div>
+
+            <!-- Main grid -->
+            <div class="db-mg">
+
+                <!-- Recent sales table -->
+                <div class="db-card">
+                    <div class="db-ch">
+                        <div class="db-chl">
+                            <div class="db-cic"><i class="bi bi-bar-chart-line"></i></div>
+                            <div>
+                                <div class="db-ct">Ventas Recientes</div>
+                                <div class="db-cd" id="recentSalesCount">últimas transacciones</div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover" id="recentSalesTable">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Fecha</th>
-                                            <th>Total</th>
-                                            <th>Método</th>
-                                            <th>Estado</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td colspan="5" class="text-center text-muted">
-                                                Cargando ventas recientes...
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                        <button class="db-cl" onclick="showSection('sales')">Ver todas →</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table mb-0" id="recentSalesTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Fecha</th>
+                                    <th>Total</th>
+                                    <th>Método</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">
+                                        Cargando ventas recientes...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Right column -->
+                <div class="db-rc">
+
+                    <!-- Stock alerts -->
+                    <div class="db-card">
+                        <div class="db-ch">
+                            <div class="db-chl">
+                                <div class="db-cic db-cic-y"><i class="bi bi-exclamation-triangle"></i></div>
+                                <div>
+                                    <div class="db-ct">Stock Bajo</div>
+                                    <div class="db-cd">Requiere reposición</div>
+                                </div>
+                            </div>
+                            <span class="db-alert-badge" id="lowStockBadge">cargando</span>
+                        </div>
+                        <div style="padding:12px;">
+                            <div id="lowStockProducts">
+                                <div class="text-center text-muted small py-2">Cargando productos...</div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0">
-                                <i class="bi bi-exclamation-triangle"></i> Productos con Stock Bajo
-                            </h5>
+
+                    <!-- Quick actions -->
+                    <div class="db-card">
+                        <div class="db-ch">
+                            <div class="db-chl">
+                                <div class="db-cic"><i class="bi bi-lightning-charge"></i></div>
+                                <div class="db-ct">Acciones Rápidas</div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div id="lowStockProducts">
-                                <div class="text-center text-muted">
-                                    Cargando productos...
+                        <div style="padding:12px;">
+                            <div class="db-qg">
+                                <div class="db-qi" onclick="showSection('sell')">
+                                    <div class="db-qic db-qic-t"><i class="bi bi-cash"></i></div>
+                                    <div class="db-ql">Nueva Venta</div>
+                                </div>
+                                <div class="db-qi admin-only" onclick="showCreateProductModal()">
+                                    <div class="db-qic db-qic-g"><i class="bi bi-plus-circle"></i></div>
+                                    <div class="db-ql">Agregar Producto</div>
+                                </div>
+                                <div class="db-qi" onclick="showSection('customers')">
+                                    <div class="db-qic db-qic-b"><i class="bi bi-person-plus"></i></div>
+                                    <div class="db-ql">Nuevo Cliente</div>
+                                </div>
+                                <div class="db-qi" onclick="showSection('settings')">
+                                    <div class="db-qic db-qic-y"><i class="bi bi-gear"></i></div>
+                                    <div class="db-ql">Configuración</div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -1285,47 +1375,62 @@
 
             <!-- Filters -->
             <div class="card mb-4">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label class="form-label">Buscar</label>
-                            <input type="text" class="form-control" id="productSearch" placeholder="Nombre o SKU...">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Tipo</label>
-                            <select class="form-select" id="productTypeFilter">
-                                <option value="">Todos</option>
-                                <option value="SIMPLE">Simple</option>
-                                <option value="COMBO">Combo</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Categoría</label>
-                            <select class="form-select" id="productCategoryFilter">
-                                <option value="">Todas</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Presentación</label>
-                            <select class="form-select" id="productPresentationFilter">
-                                <option value="">Todas</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Estado</label>
-                            <select class="form-select" id="productStatusFilter">
-                                <option value="">Todos</option>
-                                <option value="true">Activo</option>
-                                <option value="false">Inactivo</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">&nbsp;</label>
-                            <button class="btn btn-outline-secondary w-100" onclick="filterProducts()">
-                                <i class="bi bi-funnel"></i> Filtrar
-                            </button>
+                <div class="card-body p-2 p-md-3">
+
+                    <!-- Fila 1: Búsqueda siempre visible + toggle de filtros en mobile -->
+                    <div class="d-flex gap-2 mb-2">
+                        <input type="text" class="form-control form-control-sm" id="productSearch"
+                               placeholder="Nombre o SKU...">
+                        <!-- Botón "Filtros" solo en mobile -->
+                        <button class="btn btn-outline-secondary btn-sm flex-shrink-0 d-md-none"
+                                type="button"
+                                data-bs-toggle="collapse" data-bs-target="#productFiltersExtra"
+                                aria-expanded="false">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                            Filtros
+                        </button>
+                    </div>
+
+                    <!-- Selects + Filtrar: siempre visibles en md+, colapsables en mobile -->
+                    <div class="collapse d-md-block" id="productFiltersExtra">
+                        <div class="row g-2">
+                            <div class="col-6 col-md-2">
+                                <label class="form-label form-label-sm mb-1">Tipo</label>
+                                <select class="form-select form-select-sm" id="productTypeFilter">
+                                    <option value="">Todos</option>
+                                    <option value="SIMPLE">Simple</option>
+                                    <option value="COMBO">Combo</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label form-label-sm mb-1">Categoría</label>
+                                <select class="form-select form-select-sm" id="productCategoryFilter">
+                                    <option value="">Todas</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label form-label-sm mb-1">Presentación</label>
+                                <select class="form-select form-select-sm" id="productPresentationFilter">
+                                    <option value="">Todas</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label form-label-sm mb-1">Estado</label>
+                                <select class="form-select form-select-sm" id="productStatusFilter">
+                                    <option value="">Todos</option>
+                                    <option value="true">Activo</option>
+                                    <option value="false">Inactivo</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4 d-flex align-items-end gap-2">
+                                <button class="btn btn-outline-secondary btn-sm" onclick="loadProducts()" title="Recargar productos desde el servidor">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                                    Recargar
+                                </button>
+                            </div>
                         </div>
                     </div>
+
                 </div>
             </div>
 
@@ -1541,24 +1646,41 @@
                 </div>
             </div>
 
-            <!-- Búsqueda y filtro (igual que catálogo cliente) -->
-            <div class="mb-4">
-                <div class="input-group input-group-lg sell-search-input-wrap mb-2">
-                    <input type="text" class="form-control" id="sellProductSearch" placeholder="Buscar productos..." autocomplete="off">
-                    <span class="input-group-text"><i class="bi bi-search text-muted"></i></span>
-                </div>
-                <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
-                    <select class="form-select form-select-sm" id="sellCategoryFilter" aria-label="Filtro de categoría" style="min-width: 160px;">
-                        <option value="">Todas las categorías</option>
-                    </select>
-                    <select class="form-select form-select-sm" id="sellPresentationFilter" aria-label="Filtro de presentación" style="min-width: 160px;">
-                        <option value="">Todas las presentaciones</option>
-                    </select>
-                    <select class="form-select form-select-sm" id="sellTypeFilter" aria-label="Filtro de tipo" style="max-width: 180px;">
-                        <option value="">Todos los tipos</option>
-                        <option value="SIMPLE">Productos simples</option>
-                        <option value="COMBO">Combos</option>
-                    </select>
+            <!-- Filtros -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label">Buscar</label>
+                            <input type="text" class="form-control" id="sellProductSearch" placeholder="Nombre o SKU..." autocomplete="off">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select" id="sellTypeFilter">
+                                <option value="">Todos</option>
+                                <option value="SIMPLE">Simple</option>
+                                <option value="COMBO">Combo</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Categoría</label>
+                            <select class="form-select" id="sellCategoryFilter">
+                                <option value="">Todas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Presentación</label>
+                            <select class="form-select" id="sellPresentationFilter">
+                                <option value="">Todas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-outline-secondary w-100" onclick="clearSellSearch()">
+                                <i class="bi bi-x-circle"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1717,7 +1839,7 @@
         <div id="credits" class="content-section">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2 class="mb-0">
-                    <i class="bi bi-credit-card"></i> Créditos y Deudas
+                    <i class="bi bi-credit-card"></i> Créditos
                 </h2>
                 <button class="btn btn-info" onclick="calculateAllInterests()">
                     <i class="bi bi-calculator"></i> Calcular Intereses
@@ -1887,8 +2009,18 @@
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="payphone-tab" data-bs-toggle="tab" data-bs-target="#payphone-settings" type="button" role="tab">
+                        <i class="bi bi-credit-card"></i> PayPhone
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
                     <button class="nav-link" id="backup-tab" data-bs-toggle="tab" data-bs-target="#backup-settings" type="button" role="tab">
                         <i class="bi bi-database"></i> Respaldo
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="appearance-tab" data-bs-toggle="tab" data-bs-target="#appearance-settings" type="button" role="tab">
+                        <i class="bi bi-palette"></i> Apariencia
                     </button>
                 </li>
             </ul>
@@ -2164,6 +2296,54 @@
                     </div>
                 </div>
 
+                <!-- PayPhone Settings Tab -->
+                <div class="tab-pane fade" id="payphone-settings" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-credit-card"></i> Configuración PayPhone (Cajita de Pagos)
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                Obtén tus credenciales en el portal de desarrolladores:
+                                <a href="https://appdeveloper.payphonetodoesposible.com/login" target="_blank" rel="noopener">
+                                    appdeveloper.payphonetodoesposible.com
+                                </a>
+                                → Cajita → Configuración → Token de acceso y Store ID.
+                            </div>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-shield-lock"></i>
+                                <strong>Seguridad:</strong> El Token se guarda de forma protegida. No compartas estas credenciales.
+                            </div>
+                            <form id="payphoneSettingsForm">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Token de Acceso <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="payphoneToken"
+                                               placeholder="Pega aquí tu token de PayPhone" autocomplete="off">
+                                        <button class="btn btn-outline-secondary" type="button" id="togglePayphoneToken">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">Si ya tienes un token guardado, déjalo en blanco para no modificarlo.</div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">Store ID <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="payphoneStoreId"
+                                           placeholder="Ej: 1234567">
+                                    <div class="form-text">Identificador de tu tienda en PayPhone.</div>
+                                </div>
+                                <div id="payphoneStatus" class="mb-3" style="display:none;"></div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Guardar Configuración PayPhone
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Respaldo -->
                 <div class="tab-pane fade" id="backup-settings" role="tabpanel">
                     <div class="row g-4">
@@ -2216,6 +2396,82 @@
                             </div>
                         </div>
 
+                    </div>
+                </div>
+
+                <!-- Apariencia -->
+                <div class="tab-pane fade" id="appearance-settings" role="tabpanel">
+                    <!-- Selector de modo -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-circle-half"></i> Modo de color</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">Elige si quieres el panel en modo claro, oscuro, o que cambie automáticamente según la hora del día (claro de 07:00 a 21:00, oscuro el resto).</p>
+                            <div class="theme-mode-selector">
+                                <button class="theme-mode-btn btn" data-mode="auto" onclick="setThemeMode('auto')">
+                                    <i class="bi bi-circle-half"></i>
+                                    Automático
+                                    <div class="small">Claro de día, oscuro de noche</div>
+                                </button>
+                                <button class="theme-mode-btn btn" data-mode="light" onclick="setThemeMode('light')">
+                                    <i class="bi bi-sun-fill"></i>
+                                    Claro
+                                </button>
+                                <button class="theme-mode-btn btn" data-mode="dark" onclick="setThemeMode('dark')">
+                                    <i class="bi bi-moon-fill"></i>
+                                    Oscuro
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selector de tema -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-palette"></i> Tema visual</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">Cada tema tiene su propia paleta de colores y tipografía. Tu preferencia se guarda por usuario.</p>
+                            <div class="theme-picker-grid">
+                                <div class="theme-picker-card" data-theme-id="1" onclick="setThemeId(1)">
+                                    <div class="theme-preview-swatches">
+                                        <span style="background:#0f1117;flex:2"></span>
+                                        <span style="background:#7c3aed;flex:1"></span>
+                                        <span style="background:#a78bfa;flex:1"></span>
+                                    </div>
+                                    <div class="theme-picker-name">Slate &amp; Violet</div>
+                                    <i class="bi bi-check-circle-fill theme-check"></i>
+                                </div>
+                                <div class="theme-picker-card" data-theme-id="2" onclick="setThemeId(2)">
+                                    <div class="theme-preview-swatches">
+                                        <span style="background:#080d0d;flex:2"></span>
+                                        <span style="background:#0d9488;flex:1"></span>
+                                        <span style="background:#2dd4bf;flex:1"></span>
+                                    </div>
+                                    <div class="theme-picker-name">Midnight Teal</div>
+                                    <i class="bi bi-check-circle-fill theme-check"></i>
+                                </div>
+                                <div class="theme-picker-card" data-theme-id="3" onclick="setThemeId(3)">
+                                    <div class="theme-preview-swatches">
+                                        <span style="background:#111114;flex:2"></span>
+                                        <span style="background:#e11d48;flex:1"></span>
+                                        <span style="background:#fb7185;flex:1"></span>
+                                    </div>
+                                    <div class="theme-picker-name">Rose &amp; Charcoal</div>
+                                    <i class="bi bi-check-circle-fill theme-check"></i>
+                                </div>
+                                <div class="theme-picker-card" data-theme-id="4" onclick="setThemeId(4)">
+                                    <div class="theme-preview-swatches">
+                                        <span style="background:#0a0e1a;flex:2"></span>
+                                        <span style="background:#38bdf8;flex:1"></span>
+                                        <span style="background:#7dd3fc;flex:1"></span>
+                                    </div>
+                                    <div class="theme-picker-name">Navy &amp; Sky</div>
+                                    <i class="bi bi-check-circle-fill theme-check"></i>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -3206,15 +3462,20 @@
         </ul>
     </nav>
 
-    <!-- Barra inferior carrito Punto de Venta (como catálogo cliente) -->
+    <!-- Barra inferior carrito Punto de Venta -->
     <div id="sellCartBottomBar" aria-hidden="true">
         <div class="sell-cart-bar-left">
             <span class="sell-cart-bar-items" id="sellCartBarItems">0 items</span>
             <span class="sell-cart-bar-total" id="sellCartBarTotal">Total: $0.00</span>
         </div>
-        <button type="button" class="btn-ver-carrito-sell" id="sellCartBarBtn" onclick="openSellCartModal()">
-            <i class="bi bi-cart3"></i> Ver mi carrito
-        </button>
+        <div class="sell-cart-bar-actions">
+            <button type="button" class="btn-vaciar-carrito-sell" onclick="clearSellCart()">
+                <i class="bi bi-trash3"></i> Vaciar
+            </button>
+            <button type="button" class="btn-ver-carrito-sell" id="sellCartBarBtn" onclick="openSellCartModal()">
+                <i class="bi bi-cart3"></i> Ver carrito
+            </button>
+        </div>
     </div>
 
     <!-- Scripts -->
@@ -3429,6 +3690,26 @@
             // Actualizar navegación activa
             $('.sidebar .nav-link, .mobile-bottom-nav .nav-link').removeClass('active');
             $(`.sidebar .nav-link[data-section="${section}"], .mobile-bottom-nav .nav-link[data-section="${section}"]`).addClass('active');
+
+            // Actualizar breadcrumb del topbar
+            var sectionMeta = {
+                dashboard:        { label: 'Dashboard',        icon: 'bi-grid' },
+                products:         { label: 'Productos',         icon: 'bi-box-seam' },
+                suppliers:        { label: 'Proveedores',       icon: 'bi-building' },
+                purchases:        { label: 'Compras',           icon: 'bi-bag' },
+                sell:             { label: 'Punto de Venta',    icon: 'bi-cart3' },
+                sales:            { label: 'Ventas',            icon: 'bi-bar-chart-line' },
+                'group-purchases':{ label: 'Compras Grupales',  icon: 'bi-people' },
+                credits:          { label: 'Créditos',          icon: 'bi-wallet2' },
+                customers:        { label: 'Clientes',          icon: 'bi-person' },
+                users:            { label: 'Usuarios',          icon: 'bi-person-gear' },
+                settings:         { label: 'Configuración',     icon: 'bi-sliders' }
+            };
+            var meta = sectionMeta[section] || { label: section, icon: 'bi-circle' };
+            var titleEl = document.getElementById('topbarTitle');
+            var iconEl = document.getElementById('topbarIcon');
+            if (titleEl) titleEl.textContent = meta.label;
+            if (iconEl) iconEl.className = 'bi ' + meta.icon;
             
             // Update mobile nav if on mobile
             if (window.innerWidth <= 768) {
@@ -5376,6 +5657,9 @@
                         return;
                     }
                     
+                    var countEl = document.getElementById('recentSalesCount');
+                    if (countEl) countEl.textContent = response.sales.length + ' transacciones recientes';
+
                     response.sales.forEach(sale => {
                         const date = new Date(sale.createdAt).toLocaleDateString('es-ES', {
                             year: 'numeric',
@@ -5384,22 +5668,27 @@
                             hour: '2-digit',
                             minute: '2-digit'
                         });
-                        
+
                         const total = parseFloat(sale.totalAmount).toFixed(2);
-                        const paymentMethod = sale.paymentMethod === 'CASH' ? 'Efectivo' :
-                                             sale.paymentMethod === 'CARD' ? 'Tarjeta' :
-                                             sale.paymentMethod === 'TRANSFER' ? 'Transferencia' : sale.paymentMethod;
-                        
-                        const statusBadge = sale.status === 'COMPLETED' ? 
-                            '<span class="badge bg-success">Completada</span>' :
-                            '<span class="badge bg-warning">Pendiente</span>';
-                        
+
+                        const mpMap = {
+                            CASH:     ['db-mp-e', 'Efectivo'],
+                            CARD:     ['db-mp-t', 'Tarjeta'],
+                            TRANSFER: ['db-mp-f', 'Transferencia'],
+                            CREDIT:   ['db-mp-c', 'Crédito']
+                        };
+                        const [mpClass, mpLabel] = mpMap[sale.paymentMethod] || ['db-mp-e', sale.paymentMethod];
+
+                        const statusBadge = sale.status === 'COMPLETED' ?
+                            '<span class="db-sp">Completada</span>' :
+                            '<span class="badge bg-warning text-dark">Pendiente</span>';
+
                         const row = `
                             <tr>
-                                <td>${sale.id}</td>
+                                <td class="db-id">#${sale.id}</td>
                                 <td>${date}</td>
-                                <td>$${total}</td>
-                                <td>${paymentMethod}</td>
+                                <td class="db-amt">$${total}</td>
+                                <td><span class="db-mp ${mpClass}">${mpLabel}</span></td>
                                 <td>${statusBadge}</td>
                             </tr>
                         `;
@@ -5470,11 +5759,18 @@
                             const container = $('#lowStockProducts');
                             container.empty();
                             
+                            var badge = document.getElementById('lowStockBadge');
+                            if (badge) {
+                                badge.textContent = lowStockProducts.length === 0 ? '0 alertas' : lowStockProducts.length + ' alerta' + (lowStockProducts.length > 1 ? 's' : '');
+                                badge.style.background = lowStockProducts.length > 0 ? '' : 'var(--th-gbg)';
+                                badge.style.color = lowStockProducts.length > 0 ? '' : 'var(--th-green)';
+                            }
+
                             if (lowStockProducts.length === 0) {
                                 container.html(`
-                                    <div class="text-center text-success">
-                                        <i class="bi bi-check-circle" style="font-size: 2em;"></i>
-                                        <p class="mt-2">Todos los productos tienen stock suficiente</p>
+                                    <div class="text-center py-3" style="color:var(--th-green);">
+                                        <i class="bi bi-check-circle" style="font-size:1.6em;"></i>
+                                        <p class="mt-2 mb-0 small fw-500">Stock suficiente en todos los productos</p>
                                     </div>
                                 `);
                                 return;
@@ -5485,16 +5781,17 @@
                                 const availability = availabilityMap[product.id];
                                 const currentStock = parseFloat(availability.currentStock || 0);
                                 const stockMin = parseFloat(product.stockMin || 0);
-                                
-                                const alertClass = currentStock === 0 ? 'alert-danger' : 'alert-warning';
-                                
+
                                 const productHtml = `
-                                    <div class="alert ${alertClass} mb-2" role="alert">
-                                        <strong>${product.name}</strong><br>
-                                        <small>
-                                            Stock: <strong>${currentStock}</strong> | 
-                                            Mínimo: ${stockMin}
-                                        </small>
+                                    <div class="db-alrt">
+                                        <div class="db-aico"><i class="bi bi-box"></i></div>
+                                        <div>
+                                            <div class="db-an">${product.name}</div>
+                                            <div class="db-atg">
+                                                <span class="db-at db-atd">Stock: ${currentStock}</span>
+                                                <span class="db-at db-atn">Mín: ${stockMin}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 `;
                                 container.append(productHtml);
@@ -6764,6 +7061,8 @@
         function clearSellSearch() {
             $('#sellProductSearch').val('');
             $('#sellTypeFilter').val('');
+            $('#sellCategoryFilter').val('');
+            $('#sellPresentationFilter').val('');
             applySellFilters();
         }
 
@@ -6878,6 +7177,12 @@
             
             updateSellCartModal();
             if (allSellProducts.length > 0) applySellFilters();
+        }
+
+        function clearSellCart() {
+            if (sellCart.length === 0) return;
+            sellCart = [];
+            updateSellCart();
         }
 
         function updateSellCartModal() {
@@ -8116,20 +8421,42 @@
         function checkAuth() {
             const token = localStorage.getItem('adminToken');
             const user = localStorage.getItem('adminUser');
-            
+
             if (!token) {
-                // No hay token, redirigir al login
                 window.location.href = '/login';
                 return false;
             }
-            
-            // Mostrar nombre y rol del usuario (etiqueta legible)
+
+            // Reloj + fecha en topbar
+            function updateClock() {
+                var el = document.getElementById('topbarClock');
+                if (!el) return;
+                var now = new Date();
+                var fecha = now.toLocaleDateString('es-EC', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+                var h = String(now.getHours()).padStart(2, '0');
+                var m = String(now.getMinutes()).padStart(2, '0');
+                el.textContent = fecha + ' · ' + h + ':' + m;
+            }
+            updateClock();
+            // Sincronizar al inicio del próximo minuto, luego cada 60s exactos
+            setTimeout(function() {
+                updateClock();
+                setInterval(updateClock, 60000);
+            }, (60 - new Date().getSeconds()) * 1000);
+
             if (user) {
                 try {
                     const userData = JSON.parse(user);
                     currentUserRole = userData.role;
                     $('#currentUser').text(userData.name || 'Usuario');
                     $('#currentUserRole').text(getRoleLabel(userData.role) || '');
+                    // Actualizar sidebar user card
+                    var sbAvatar = document.getElementById('sidebarAvatar');
+                    var sbName = document.getElementById('sidebarUserName');
+                    var sbRole = document.getElementById('sidebarUserRole');
+                    if (sbAvatar) sbAvatar.textContent = (userData.name || 'A')[0].toUpperCase();
+                    if (sbName) sbName.textContent = userData.name || userData.email || 'Admin';
+                    if (sbRole) sbRole.textContent = 'En línea';
                     // Ocultar menú solo para Empleado (CASHIER): Usuarios, Configuración, Compras grupales, Créditos
                     if (currentUserRole === 'CASHIER') {
                         $('.sidebar .nav-link[data-section="users"]').hide();
@@ -8171,6 +8498,7 @@
         
         // Ejecutar verificación de autenticación
         checkAuth();
+        // initTheme() se llama desde el bloque del theme manager (script siguiente)
 
         // Notificaciones (pago en efectivo pendiente de confirmar)
         let notificationsSocket = null;
@@ -8440,18 +8768,21 @@
 
         function showAlert(message, type) {
             const alertHtml = `
-                <div class="alert alert-${type} alert-dismissible fade show position-fixed" 
-                     style="top: 80px; right: 20px; z-index: 9999; min-width: 300px;" role="alert">
+                <div class="alert alert-${type} alert-dismissible fade show position-fixed"
+                     style="top: 80px; right: 20px; z-index: 9999; min-width: 300px; max-width: 420px;" role="alert">
                     ${message}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             `;
-            
+
             $('body').append(alertHtml);
-            
-            setTimeout(() => {
-                $('.alert').alert('close');
-            }, 5000);
+
+            // Errores y advertencias no se cierran solos — el usuario debe cerrarlos manualmente
+            if (type !== 'danger' && type !== 'warning') {
+                setTimeout(() => {
+                    $('.alert').alert('close');
+                }, 5000);
+            }
         }
 
         function showProductImageModal(imageUrl, productName) {
@@ -8976,6 +9307,15 @@
                             case 'email_subject_temporary_password':
                                 $('#emailSubjectTemporaryPassword').val(setting.settingValue || 'Clave Temporal');
                                 break;
+                            case 'payphone_token':
+                                // No mostrar el token por seguridad (solo indicar si está configurado)
+                                if (setting.settingValue) {
+                                    $('#payphoneStatus').html('<div class="alert alert-success py-2"><i class="bi bi-check-circle"></i> Token configurado. Déjalo en blanco para mantener el actual.</div>').show();
+                                }
+                                break;
+                            case 'payphone_store_id':
+                                $('#payphoneStoreId').val(setting.settingValue || '');
+                                break;
                         }
                     });
                     // Título de la pestaña: usar page_title_dashboard si está configurado, si no brand_slogan + " - Dashboard"
@@ -9120,6 +9460,50 @@
                 },
                 error: function(xhr) {
                     const error = xhr.responseJSON?.error || 'Error al guardar configuración SMTP';
+                    showAlert(error, 'danger');
+                }
+            });
+        });
+
+        // Toggle visibilidad del token PayPhone
+        $('#togglePayphoneToken').on('click', function() {
+            var input = $('#payphoneToken');
+            var icon = $(this).find('i');
+            if (input.attr('type') === 'password') {
+                input.attr('type', 'text');
+                icon.removeClass('bi-eye').addClass('bi-eye-slash');
+            } else {
+                input.attr('type', 'password');
+                icon.removeClass('bi-eye-slash').addClass('bi-eye');
+            }
+        });
+
+        $('#payphoneSettingsForm').on('submit', function(e) {
+            e.preventDefault();
+            var settings = [
+                { key: 'payphone_store_id', value: $('#payphoneStoreId').val().trim(), type: 'string' }
+            ];
+            // Solo guardar token si el usuario escribió algo
+            var tokenVal = $('#payphoneToken').val().trim();
+            if (tokenVal) {
+                settings.push({ key: 'payphone_token', value: tokenVal, type: 'string' });
+            }
+            if (!$('#payphoneStoreId').val().trim()) {
+                showAlert('El Store ID es requerido', 'warning');
+                return;
+            }
+            $.ajax({
+                url: '/api/settings/bulk',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ tenantId: 1, settings: settings }),
+                success: function() {
+                    showAlert('Configuración PayPhone guardada exitosamente', 'success');
+                    $('#payphoneToken').val('');
+                    $('#payphoneStatus').html('<div class="alert alert-success py-2"><i class="bi bi-check-circle"></i> Token configurado. Déjalo en blanco para mantener el actual.</div>').show();
+                },
+                error: function(xhr) {
+                    var error = xhr.responseJSON?.error || 'Error al guardar configuración PayPhone';
                     showAlert(error, 'danger');
                 }
             });
@@ -9330,6 +9714,114 @@
                 }
             }
         });
+    </script>
+
+    <!-- ===== THEME MANAGER ===== -->
+    <script>
+    (function() {
+        var FONT_URLS = {
+            1: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
+            2: 'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap',
+            3: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap',
+            4: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap'
+        };
+        var FONT_NAMES = { 1: 'Inter', 2: 'Outfit', 3: 'Nunito', 4: 'DM Sans' };
+
+        function detectTimeMode() {
+            var h = new Date().getHours();
+            return (h >= 7 && h < 19) ? 'light' : 'dark';
+        }
+
+        window.applyTheme = function(themeId, themeMode) {
+            var id = parseInt(themeId) || 1;
+            var resolvedMode = (themeMode === 'auto') ? detectTimeMode() : (themeMode || 'dark');
+            document.documentElement.setAttribute('data-theme-id', id);
+            document.documentElement.setAttribute('data-theme-mode', resolvedMode);
+            document.documentElement.style.fontFamily = (FONT_NAMES[id] || 'Inter') + ', system-ui, sans-serif';
+            var fontLink = document.getElementById('themeFontLink');
+            if (fontLink && FONT_URLS[id]) fontLink.href = FONT_URLS[id];
+            var icon = document.getElementById('themeToggleIcon');
+            if (icon) icon.className = (resolvedMode === 'dark') ? 'bi bi-moon-fill' : 'bi bi-sun-fill';
+            updateThemePickerUI(id, themeMode || 'auto');
+        };
+
+        window.cycleThemeMode = function() {
+            var u = {};
+            try { u = JSON.parse(localStorage.getItem('adminUser') || '{}'); } catch(e) {}
+            var modes = ['auto', 'light', 'dark'];
+            var next = modes[(modes.indexOf(u.themeMode || 'auto') + 1) % 3];
+            window.setThemeMode(next);
+        };
+
+        window.setThemeId = function(id) {
+            var u = {};
+            try { u = JSON.parse(localStorage.getItem('adminUser') || '{}'); } catch(e) {}
+            u.themeId = id;
+            localStorage.setItem('adminUser', JSON.stringify(u));
+            window.applyTheme(id, u.themeMode || 'auto');
+            saveThemeToServer(id, u.themeMode || 'auto');
+        };
+
+        window.setThemeMode = function(mode) {
+            var u = {};
+            try { u = JSON.parse(localStorage.getItem('adminUser') || '{}'); } catch(e) {}
+            u.themeMode = mode;
+            localStorage.setItem('adminUser', JSON.stringify(u));
+            window.applyTheme(u.themeId || 1, mode);
+            saveThemeToServer(u.themeId || 1, mode);
+        };
+
+        function saveThemeToServer(themeId, themeMode) {
+            var token = localStorage.getItem('adminToken');
+            if (!token) return;
+            fetch('/api/auth/me/theme', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ themeId: themeId, themeMode: themeMode })
+            }).catch(function(e) { console.warn('Theme save:', e.message); });
+        }
+
+        window.updateThemePickerUI = function(themeId, themeMode) {
+            document.querySelectorAll('.theme-picker-card').forEach(function(c) {
+                var active = parseInt(c.dataset.themeId) === parseInt(themeId);
+                c.classList.toggle('theme-picker-card--active', active);
+                var chk = c.querySelector('.theme-check');
+                if (chk) chk.style.display = active ? 'inline' : 'none';
+            });
+            document.querySelectorAll('.theme-mode-btn').forEach(function(b) {
+                b.classList.toggle('active', b.dataset.mode === themeMode);
+            });
+        };
+
+        window.initTheme = function() {
+            var u = {};
+            try { u = JSON.parse(localStorage.getItem('adminUser') || '{}'); } catch(e) {}
+            window.applyTheme(u.themeId || 1, u.themeMode || 'auto');
+            // Re-evaluar modo auto cada hora
+            setInterval(function() {
+                var u2 = {};
+                try { u2 = JSON.parse(localStorage.getItem('adminUser') || '{}'); } catch(e) {}
+                if ((u2.themeMode || 'auto') === 'auto') window.applyTheme(u2.themeId || 1, 'auto');
+            }, 60 * 60 * 1000);
+        };
+
+        // Aplicar tema inmediatamente al cargar (antes de que se pinte el DOM visible)
+        // para evitar flash de colores incorrectos
+        (function() {
+            var u = {};
+            try { u = JSON.parse(localStorage.getItem('adminUser') || '{}'); } catch(e) {}
+            var id = parseInt(u.themeId) || 1;
+            var mode = (u.themeMode === 'auto') ? detectTimeMode() : (u.themeMode || 'dark');
+            document.documentElement.setAttribute('data-theme-id', id);
+            document.documentElement.setAttribute('data-theme-mode', mode);
+            if (FONT_URLS[id]) {
+                var lnk = document.getElementById('themeFontLink');
+                if (lnk) lnk.href = FONT_URLS[id];
+            }
+        })();
+        // Llamar initTheme ahora que está definido (actualiza ícono, picker, fecha y modo auto)
+        window.initTheme();
+    })();
     </script>
 
     <!-- Product Image Modal -->

@@ -1,27 +1,24 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <!-- Aplicar tema guardado antes de renderizar (evita flash) -->
+    <script>(function(){var t=localStorage.getItem('lb_theme')||'teal';var m=localStorage.getItem('lb_mode')||'auto';var h=new Date().getHours();var r=m==='auto'?(h>=7&&h<19?'light':'dark'):m;var d=document.documentElement;d.setAttribute('data-lb-theme',t);d.setAttribute('data-lb-mode',r);d.classList.add('lb-themed');})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0f3460">
+    <meta name="theme-color" content="#0a1616">
     <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
     <link rel="apple-touch-icon" href="/public/img/icono-LB.png">
     <link rel="manifest" href="/public/manifest.webmanifest">
     <title>LOCOBAR</title>
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link href="/public/css/theme.css" rel="stylesheet">
+    <link href="/public/css/customer-themes.css" rel="stylesheet">
     <style>
-        .navbar-custom {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-        }
-        .navbar-brand img {
-            max-height: 40px;
-            width: auto;
-        }
         #userMenu .user-name-text { display: none; }
         @media (min-width: 576px) {
             #userMenu .user-name-text { display: inline; }
@@ -29,7 +26,7 @@
         #spa-loading {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,255,0.85);
+            background: var(--bg, #f8f9fa);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -40,52 +37,181 @@
             opacity: 0;
             pointer-events: none;
         }
-        /* Pantalla completa en móvil: respetar notch y barra de inicio */
         html, body {
             min-height: 100vh;
             min-height: -webkit-fill-available;
             padding-bottom: env(safe-area-inset-bottom);
         }
-        body {
-            -webkit-overflow-scrolling: touch;
+        body { -webkit-overflow-scrolling: touch; }
+        /* ── Navbar brand ── */
+        .nav-brand-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px; font-weight: 800; letter-spacing: .16em;
+            color: var(--text, #e8f5f5);
+        }
+        .nav-brand-name > span { color: var(--accent2, #2dd4bf); }
+        .nav-brand-dot {
+            display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+            background: #d97706; margin: 0 2px; vertical-align: middle;
+            box-shadow: 0 0 8px rgba(217,119,6,.6);
+        }
+        .nav-brand-img {
+            height: 34px; width: 34px; object-fit: contain;
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,.4));
         }
     </style>
 </head>
 <body>
-    <!-- Navbar (común a todas las vistas) -->
-    <nav class="navbar navbar-dark navbar-custom navbar-lb">
+    <!-- Navbar común a todas las vistas -->
+    <nav class="navbar navbar-dark navbar-lb navbar-custom">
         <div class="container-fluid">
-            <a class="navbar-brand spa-link d-flex align-items-center" href="/customer/catalog" data-spa-href="/customer/catalog">
-                <img src="/public/img/banner-LB.png" alt="LOCOBAR">
+            <a class="navbar-brand spa-link d-flex align-items-center gap-2" href="/customer/catalog" data-spa-href="/customer/catalog">
+                <img src="/public/img/icono-LB.png" alt="LOCOBAR" class="nav-brand-img">
+                <span class="nav-brand-name">LOCO<span class="nav-brand-dot"></span><span>BAR</span></span>
             </a>
             <div class="d-flex align-items-center">
                 <div class="dropdown">
-                    <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false" title="Mi cuenta">
+                    <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center gap-1"
+                            type="button" id="userMenu"
+                            data-bs-toggle="dropdown" aria-expanded="false" title="Mi cuenta">
                         <i class="bi bi-person-circle fs-4"></i>
-                        <span class="user-name-text ms-1" id="userName">Usuario</span>
+                        <span class="user-name-text" id="userName">Usuario</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item spa-link" href="/customer/orders" data-spa-href="/customer/orders"><i class="bi bi-receipt"></i> Mis Pedidos</a></li>
-                        <li><a class="dropdown-item spa-link" href="/customer/credits" data-spa-href="/customer/credits"><i class="bi bi-credit-card"></i> Crédito que está debiendo</a></li>
-                        <li><a class="dropdown-item spa-link" href="/customer/group-purchases" data-spa-href="/customer/group-purchases"><i class="bi bi-people"></i> Compras Grupales</a></li>
+                        <li><a class="dropdown-item spa-link" href="/customer/orders" data-spa-href="/customer/orders">
+                            <i class="bi bi-receipt"></i> Mis Pedidos
+                        </a></li>
+                        <li><a class="dropdown-item spa-link" href="/customer/credits" data-spa-href="/customer/credits">
+                            <i class="bi bi-credit-card"></i> Crédito que está debiendo
+                        </a></li>
+                        <li><a class="dropdown-item spa-link" href="/customer/group-purchases" data-spa-href="/customer/group-purchases">
+                            <i class="bi bi-people"></i> Compras Grupales
+                        </a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                        <li>
+                            <a class="dropdown-item" href="#"
+                               data-bs-toggle="modal" data-bs-target="#lbThemePickerModal"
+                               onclick="return false;">
+                                <i class="bi bi-palette2"></i> Apariencia
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="logout(); return false;">
+                            <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                        </a></li>
                     </ul>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Contenedor donde se inyecta cada vista (sin recargar la página) -->
+    <!-- Contenedor SPA -->
     <main id="app-content"></main>
 
-    <!-- Indicador de carga (como Rollercoin) -->
+    <!-- Indicador de carga -->
     <div id="spa-loading" aria-hidden="true">
         <div class="text-center">
-            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <div class="spinner-border" style="width:3rem;height:3rem;" role="status">
                 <span class="visually-hidden">Cargando...</span>
             </div>
-            <p class="mt-2 text-muted">Cargando...</p>
+            <p class="mt-2" style="font-size:13px;">Cargando...</p>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         Modal de Apariencia (selector de tema)
+         ══════════════════════════════════════════════ -->
+    <div class="modal fade lb-tp-modal" id="lbThemePickerModal" tabindex="-1"
+         aria-labelledby="lbThemePickerLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:360px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="lbThemePickerLabel">
+                        <i class="bi bi-palette2" style="color:var(--accent)"></i>
+                        Apariencia
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+
+                    <!-- Selector de modo -->
+                    <div class="lb-tp-label">Modo</div>
+                    <div class="lb-mode-row">
+                        <div class="lb-mode-card" data-mode="auto" onclick="lbSetMode('auto')">
+                            <div class="lb-mode-icon">
+                                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/><circle cx="12" cy="12" r="5"/><path d="M12 2a10 10 0 0 0 0 20" stroke-dasharray="4 4"/></svg>
+                            </div>
+                            <div class="lb-mode-name">Auto</div>
+                            <div class="lb-mode-desc">Claro de día,<br>oscuro de noche</div>
+                        </div>
+                        <div class="lb-mode-card" data-mode="light" onclick="lbSetMode('light')">
+                            <div class="lb-mode-icon">
+                                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                            </div>
+                            <div class="lb-mode-name">Claro</div>
+                            <div class="lb-mode-desc">Fondo blanco</div>
+                        </div>
+                        <div class="lb-mode-card" data-mode="dark" onclick="lbSetMode('dark')">
+                            <div class="lb-mode-icon">
+                                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                            </div>
+                            <div class="lb-mode-name">Oscuro</div>
+                            <div class="lb-mode-desc">Fondo negro</div>
+                        </div>
+                    </div>
+
+                    <!-- Selector de tema de color -->
+                    <div class="lb-tp-label">Tema de color</div>
+                    <div class="lb-theme-grid">
+                        <div class="lb-tp-card" data-theme="teal" onclick="lbSetTheme('teal')">
+                            <div class="lb-tp-swatch">
+                                <span style="background:#080d0d;flex:1.8"></span>
+                                <span style="background:#0d9488;flex:1"></span>
+                                <span style="background:#2dd4bf;flex:.7"></span>
+                            </div>
+                            <div class="lb-tp-name">Midnight Teal</div>
+                            <i class="bi bi-check-circle-fill lb-tp-check"></i>
+                        </div>
+                        <div class="lb-tp-card" data-theme="violet" onclick="lbSetTheme('violet')">
+                            <div class="lb-tp-swatch">
+                                <span style="background:#0f1117;flex:1.8"></span>
+                                <span style="background:#7c3aed;flex:1"></span>
+                                <span style="background:#a78bfa;flex:.7"></span>
+                            </div>
+                            <div class="lb-tp-name">Slate & Violet</div>
+                            <i class="bi bi-check-circle-fill lb-tp-check"></i>
+                        </div>
+                        <div class="lb-tp-card" data-theme="rose" onclick="lbSetTheme('rose')">
+                            <div class="lb-tp-swatch">
+                                <span style="background:#111114;flex:1.8"></span>
+                                <span style="background:#e11d48;flex:1"></span>
+                                <span style="background:#fb7185;flex:.7"></span>
+                            </div>
+                            <div class="lb-tp-name">Rose & Charcoal</div>
+                            <i class="bi bi-check-circle-fill lb-tp-check"></i>
+                        </div>
+                        <div class="lb-tp-card" data-theme="navy" onclick="lbSetTheme('navy')">
+                            <div class="lb-tp-swatch">
+                                <span style="background:#0a0e1a;flex:1.8"></span>
+                                <span style="background:#38bdf8;flex:1"></span>
+                                <span style="background:#7dd3fc;flex:.7"></span>
+                            </div>
+                            <div class="lb-tp-name">Navy & Sky</div>
+                            <i class="bi bi-check-circle-fill lb-tp-check"></i>
+                        </div>
+                        <div class="lb-tp-card" data-theme="locobar" onclick="lbSetTheme('locobar')">
+                            <div class="lb-tp-swatch">
+                                <span style="background:#0a0800;flex:1.8"></span>
+                                <span style="background:#d4a328;flex:1"></span>
+                                <span style="background:#f0c040;flex:.7"></span>
+                            </div>
+                            <div class="lb-tp-name">LOCOBAR Gold</div>
+                            <i class="bi bi-check-circle-fill lb-tp-check"></i>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </div>
     </div>
 
@@ -98,10 +224,52 @@
             localStorage.removeItem('customerCart');
             window.location.href = '/customer/login';
         }
+
         var customer = JSON.parse(localStorage.getItem('customer')) || null;
         if (customer) {
             document.getElementById('userName').textContent = customer.name;
         }
+
+        // ── Theme management ─────────────────────────────────────────────
+
+        function lbResolveMode(mode) {
+            if (mode !== 'auto') return mode;
+            var h = new Date().getHours();
+            return (h >= 7 && h < 19) ? 'light' : 'dark';
+        }
+
+        function lbSetMode(mode) {
+            localStorage.setItem('lb_mode', mode);
+            document.documentElement.setAttribute('data-lb-mode', lbResolveMode(mode));
+            lbUpdatePickerUI();
+        }
+
+        function lbSetTheme(theme) {
+            localStorage.setItem('lb_theme', theme);
+            document.documentElement.setAttribute('data-lb-theme', theme);
+            lbUpdatePickerUI();
+        }
+
+        function lbUpdatePickerUI() {
+            var savedMode  = localStorage.getItem('lb_mode')  || 'auto';
+            var savedTheme = localStorage.getItem('lb_theme') || 'teal';
+            document.querySelectorAll('.lb-mode-card').forEach(function(c) {
+                c.classList.toggle('active', c.dataset.mode === savedMode);
+            });
+            document.querySelectorAll('.lb-tp-card').forEach(function(c) {
+                c.classList.toggle('active', c.dataset.theme === savedTheme);
+            });
+        }
+
+        // Actualizar UI del picker cuando se abre el modal
+        document.getElementById('lbThemePickerModal').addEventListener('show.bs.modal', lbUpdatePickerUI);
+
+        // Re-evaluar modo automático cada hora
+        setInterval(function() {
+            if ((localStorage.getItem('lb_mode') || 'auto') === 'auto') {
+                document.documentElement.setAttribute('data-lb-mode', lbResolveMode('auto'));
+            }
+        }, 60 * 60 * 1000);
     </script>
     <script src="/js/customer-spa-router.js"></script>
 </body>

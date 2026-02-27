@@ -288,10 +288,16 @@ router.post('/cart/validate', authenticateCustomer, async (req, res) => {
   }
 });
 
+// Helper: obtener credenciales PayPhone desde BD (o fallback a .env)
+async function getPayphoneCredentials(tenantId = 1) {
+  const token = (await Setting.getSetting(tenantId, 'payphone_token', null)) || process.env.PAYPHONE_TOKEN;
+  const storeId = (await Setting.getSetting(tenantId, 'payphone_store_id', null)) || process.env.PAYPHONE_STORE_ID;
+  return { token, storeId };
+}
+
 // GET /customer/payphone-config - Credenciales para la Cajita (solo cliente autenticado)
-router.get('/payphone-config', authenticateCustomer, (req, res) => {
-  const token = process.env.PAYPHONE_TOKEN;
-  const storeId = process.env.PAYPHONE_STORE_ID;
+router.get('/payphone-config', authenticateCustomer, async (req, res) => {
+  const { token, storeId } = await getPayphoneCredentials(req.tenantId);
   if (!token || !storeId) {
     return res.status(503).json({
       error: 'Pago con tarjeta no configurado. Contacte al administrador.',
@@ -307,8 +313,7 @@ router.post('/checkout/prepare-payphone', authenticateCustomer, async (req, res)
     const { items, notes } = req.body;
     const { tenantId, customerId } = req;
 
-    const token = process.env.PAYPHONE_TOKEN;
-    const storeId = process.env.PAYPHONE_STORE_ID;
+    const { token, storeId } = await getPayphoneCredentials(tenantId);
     if (!token || !storeId) {
       return res.status(503).json({
         error: 'Pago con tarjeta no configurado. Contacte al administrador.',
@@ -438,6 +443,7 @@ router.post('/checkout/prepare-payphone', authenticateCustomer, async (req, res)
     // Si NO hay impuesto (taxRate == 0):
     //   amountWithoutTax = subtotal, amountWithTax = 0, tax = 0
     const hasRealTax = taxRate > 0 && taxCents > 0;
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
     res.json({
       clientTransactionId,
       token,
@@ -447,7 +453,8 @@ router.post('/checkout/prepare-payphone', authenticateCustomer, async (req, res)
       amountWithTax: hasRealTax ? subtotalCents : 0,
       tax: taxCents,
       currency: 'USD',
-      reference: `Venta LOCOBAR ${clientTransactionId}`
+      reference: `Venta LOCOBAR ${clientTransactionId}`,
+      returnUrl: `${baseUrl}/customer/checkout/resultado`
     });
   } catch (error) {
     console.error('Error preparing PayPhone payment:', error);
@@ -471,7 +478,7 @@ router.post('/checkout/confirm-payphone', authenticateCustomer, async (req, res)
       });
     }
 
-    const token = process.env.PAYPHONE_TOKEN;
+    const { token } = await getPayphoneCredentials(req.tenantId);
     if (!token) {
       return res.status(503).json({
         error: 'Pago con tarjeta no configurado.',

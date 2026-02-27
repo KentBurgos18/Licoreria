@@ -199,6 +199,26 @@ app.get('/api/public/product-presentations', async (req, res) => {
   }
 });
 
+// API pública: proxy BIN lookup (evita CORS del browser al llamar binlist.net)
+app.get('/api/public/bin/:bin', async (req, res) => {
+  const bin = req.params.bin.replace(/\D/g, '').substring(0, 8);
+  if (bin.length < 6) return res.status(400).json({ error: 'BIN inválido' });
+  try {
+    const r = await fetch(`https://lookup.binlist.net/${bin}`, {
+      headers: { 'Accept-Version': '3', 'Accept': 'application/json' }
+    });
+    if (!r.ok) return res.json({});
+    const data = await r.json();
+    res.json({
+      bank: data.bank ? (data.bank.name || '') : '',
+      type: data.type || '',   // 'debit' | 'credit' | 'prepaid'
+      brand: data.brand || ''
+    });
+  } catch (e) {
+    res.json({});
+  }
+});
+
 // Service Worker para Web Push (debe estar en raíz para scope correcto)
 app.get('/sw.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
@@ -835,6 +855,51 @@ async function initializeApp() {
       console.warn('⚠️ Seed primer despliegue:', e.message);
     }
 
+    // Agregar columna email_verified a customers si no existe (migración inline — corre en todos los entornos)
+    try {
+      const [evResults] = await sequelize.query(`
+        SELECT column_name FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'customers' AND column_name = 'email_verified'
+      `);
+      if (evResults.length === 0) {
+        console.log('🔄 Agregando columna email_verified a la tabla customers...');
+        await sequelize.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT TRUE`);
+        console.log('✅ Columna email_verified agregada exitosamente');
+      }
+    } catch (e) {
+      console.warn('⚠️ No se pudo agregar columna email_verified:', e.message);
+    }
+
+    // Migración: first_name, last_name, birth_date en customers
+    try {
+      await sequelize.query(`
+        ALTER TABLE customers
+          ADD COLUMN IF NOT EXISTS first_name VARCHAR(100),
+          ADD COLUMN IF NOT EXISTS last_name  VARCHAR(100),
+          ADD COLUMN IF NOT EXISTS birth_date DATE;
+      `);
+      // Rellenar first_name/last_name desde name si están vacíos
+      await sequelize.query(`
+        UPDATE customers
+        SET first_name = TRIM(split_part(name, ' ', 1)),
+            last_name  = TRIM(NULLIF(substring(name FROM position(' ' IN name) + 1), ''))
+        WHERE first_name IS NULL AND name IS NOT NULL AND name <> '';
+      `);
+    } catch (e) {
+      console.warn('⚠️ Migración first_name/last_name/birth_date:', e.message);
+    }
+
+    // Migración: theme_id, theme_mode en users
+    try {
+      await sequelize.query(`
+        ALTER TABLE users
+          ADD COLUMN IF NOT EXISTS theme_id SMALLINT NOT NULL DEFAULT 1,
+          ADD COLUMN IF NOT EXISTS theme_mode VARCHAR(10) NOT NULL DEFAULT 'auto';
+      `);
+    } catch (e) {
+      console.warn('⚠️ Migración theme_id/theme_mode en users:', e.message);
+    }
+
     // Sync models (create tables if they don't exist)
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: true });
@@ -874,6 +939,7 @@ async function initializeApp() {
         console.warn('⚠️  No se pudo agregar columna cedula automáticamente:', error.message);
         console.warn('   Ejecuta manualmente la migración: database/migrations/005_add_customer_cedula.sql');
       }
+
     }
 
     // Socket.IO: auth and rooms (staff, sale:id)
@@ -909,6 +975,42 @@ async function initializeApp() {
       }
       socket.disconnect(true);
     });
+
+    // ─── Scheduler: calcular intereses diariamente a medianoche ─────────────
+    const CreditService = require('./services/CreditService');
+    const { CustomerCredit } = require('./models');
+
+    async function runDailyInterestCalculation() {
+      try {
+        const credits = await CustomerCredit.findAll({ where: { status: 'ACTIVE' } });
+        for (const credit of credits) {
+          await CreditService.updateCreditBalance(credit.id);
+        }
+        if (credits.length > 0) {
+          console.log(`💰 Intereses diarios calculados: ${credits.length} crédito(s) [${new Date().toLocaleString('es-EC')}]`);
+        }
+      } catch (err) {
+        console.error('❌ Error en cálculo de intereses diarios:', err.message);
+      }
+    }
+
+    function scheduleMidnightInterest() {
+      const now = new Date();
+      const nextRun = new Date(now);
+      nextRun.setDate(nextRun.getDate() + 1);
+      nextRun.setHours(0, 0, 30, 0); // 00:00:30 AM del día siguiente
+      const msUntil = nextRun - now;
+      setTimeout(async () => {
+        await runDailyInterestCalculation();
+        scheduleMidnightInterest(); // reprogramar para el día siguiente
+      }, msUntil);
+      console.log(`⏰ Próximo cálculo de intereses: ${nextRun.toLocaleString('es-EC')}`);
+    }
+
+    // Calcular al iniciar (por si el servidor estuvo caído) y luego a medianoche
+    await runDailyInterestCalculation();
+    scheduleMidnightInterest();
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Start server
     server.listen(PORT, () => {

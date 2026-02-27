@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <script>(function(){var h=new Date().getHours();document.documentElement.setAttribute('data-mode',(h>=7&&h<19)?'light':'dark');})();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
     <link rel="apple-touch-icon" href="/public/img/icono-LB.png">
@@ -9,149 +10,456 @@
     <title>Iniciar Sesión - LOCOBAR</title>
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
-    <link href="/public/css/theme.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .login-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            padding: 40px;
-            max-width: 440px;
-            width: 100%;
-        }
-        .logo {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-        .logo-icon {
-            max-width: 140px;
-            height: auto;
-            display: block;
-            margin: 0 auto 4px auto;
-        }
-        .login-title-wrap {
-            display: inline-block;
-            text-align: center;
-        }
-        .login-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1a1a2e;
-            margin: 0;
-            letter-spacing: 0.02em;
-        }
-        .login-separator {
-            width: 100%;
-            height: 2px;
-            background: #0f3460;
-            margin: 4px 0;
-            border: none;
-        }
-        .login-slogan {
-            font-size: 0.95rem;
-            color: #6c757d;
-            margin: 0;
-        }
-        .form-control:focus {
-            border-color: #0f3460;
-            box-shadow: 0 0 0 0.25rem rgba(15, 52, 96, 0.25);
-        }
-        .btn-login {
-            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
-            border: none;
-            padding: 12px;
-            font-weight: 600;
-        }
-        .btn-login:hover {
-            background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
-        }
-        .input-group-text {
-            background-color: #f8f9fa;
-            border-right: none;
-        }
-        .input-group .form-control {
-            border-left: none;
-        }
-        .input-group:focus-within .input-group-text {
-            border-color: #0f3460;
-        }
-        .footer-text {
-            text-align: center;
-            margin-top: 25px;
-            color: #6c757d;
-            font-size: 0.85em;
-        }
-        .register-link {
-            text-align: center;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-        }
-        .user-type-badge {
-            display: none;
-            text-align: center;
-            margin-bottom: 15px;
-        }
+    *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      background: #060b0b;
+      padding: 24px; position: relative; overflow: hidden;
+    }
+
+    /* ── Fondo decorativo ── */
+    .lb-bg {
+      position: fixed; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 50% 60% at 10% 50%, rgba(13,148,136,.12) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 90% 20%, rgba(217,119,6,.07) 0%, transparent 50%),
+        radial-gradient(ellipse 40% 50% at 90% 80%, rgba(45,212,191,.06) 0%, transparent 55%);
+    }
+    .lb-grid {
+      position: fixed; inset: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(13,148,136,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(13,148,136,.03) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+
+    /* ── Card ── */
+    .lb-card {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 780px;
+      display: grid; grid-template-columns: 1fr 1fr;
+      background: #0e1a1a; border: 1px solid rgba(13,148,136,.18);
+      border-radius: 22px; overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(13,148,136,.06), 0 24px 64px rgba(0,0,0,.6);
+      animation: lb-up .5s ease both;
+    }
+    @keyframes lb-up { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:none } }
+
+    /* ── Panel izquierdo ── */
+    .lb-left {
+      background: linear-gradient(160deg, #071414 0%, #0a1a1a 50%, #050f0f 100%);
+      border-right: 1px solid rgba(13,148,136,.12);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 28px;
+      position: relative; overflow: hidden;
+    }
+    .lb-left::before {
+      content: ''; position: absolute;
+      bottom: -60px; right: -60px;
+      width: 200px; height: 200px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(217,119,6,.12), transparent 70%);
+      pointer-events: none;
+    }
+    .lb-left::after {
+      content: ''; position: absolute;
+      top: -40px; left: -40px;
+      width: 160px; height: 160px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(13,148,136,.1), transparent 70%);
+      pointer-events: none;
+    }
+    .lb-drink-wrap { position: relative; z-index: 1; margin-bottom: 18px; }
+    .lb-drink {
+      width: 150px; height: 150px; object-fit: contain;
+      filter: drop-shadow(0 8px 20px rgba(13,148,136,.18)) drop-shadow(0 4px 14px rgba(217,119,6,.3));
+      transition: transform .4s cubic-bezier(.34,1.56,.64,1);
+    }
+    .lb-drink:hover { transform: scale(1.06) rotate(-2deg); }
+    .lb-brand { text-align: center; position: relative; z-index: 1; }
+    .lb-brand-name {
+      font-size: 26px; font-weight: 800; letter-spacing: .16em;
+      color: #e8f5f5; margin-bottom: 3px;
+    }
+    .lb-brand-name span { color: #2dd4bf; }
+    .lb-dot {
+      display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+      background: #d97706; margin: 0 2px; vertical-align: middle;
+      box-shadow: 0 0 8px rgba(217,119,6,.6);
+    }
+    .lb-tag { font-size: 11.5px; color: #2e5555; letter-spacing: .05em; margin-top: 6px; }
+    .lb-badge {
+      position: relative; z-index: 1; margin-top: 20px;
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(13,148,136,.08); border: 1px solid rgba(13,148,136,.18);
+      border-radius: 20px; padding: 5px 12px;
+      font-size: 10.5px; font-weight: 600; color: #2e5555; letter-spacing: .06em;
+    }
+    .lb-badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: #22c55e; }
+
+    /* ── Panel derecho ── */
+    .lb-right {
+      padding: 32px 32px 28px;
+      display: flex; flex-direction: column;
+    }
+    .lb-right-top { margin-bottom: 22px; }
+    .lb-rtitle { font-size: 17px; font-weight: 800; color: #e8f5f5; margin-bottom: 3px; }
+    .lb-rsub { font-size: 12px; color: #2e5555; }
+
+    /* Alerta */
+    #alertContainer { margin-bottom: 10px; }
+    #alertContainer .alert {
+      font-size: 13px; padding: 8px 12px;
+      border-radius: 8px; border: none;
+    }
+    #alertContainer .alert-success {
+      background: rgba(13,148,136,.15); color: #2dd4bf;
+      border: 1px solid rgba(13,148,136,.25);
+    }
+    #alertContainer .alert-danger {
+      background: rgba(244,63,94,.12); color: #fb7185;
+      border: 1px solid rgba(244,63,94,.2);
+    }
+    #alertContainer .alert-warning {
+      background: rgba(245,158,11,.12); color: #fbbf24;
+      border: 1px solid rgba(245,158,11,.2);
+    }
+    #alertContainer .btn-close { filter: invert(1); opacity: .5; }
+
+    /* Form groups */
+    .lb-fgroup { margin-bottom: 13px; }
+    .lb-lbl {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 10.5px; font-weight: 700; color: #4a8585;
+      letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px;
+    }
+    .lb-iw { position: relative; display: flex; align-items: center; }
+    .lb-ico {
+      position: absolute; left: 11px; color: #1e4040;
+      pointer-events: none; display: flex; align-items: center;
+    }
+    .lb-iw input[type=email],
+    .lb-iw input[type=password],
+    .lb-iw input[type=text] {
+      width: 100%;
+      background: rgba(6,11,11,.75); border: 1px solid rgba(13,148,136,.14);
+      border-radius: 9px; padding: 10px 12px 10px 36px;
+      font-size: 13px; font-family: 'Outfit', sans-serif; color: #e8f5f5; outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .lb-iw input::placeholder { color: #193535; }
+    .lb-iw input:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,.1); }
+    .lb-eye {
+      position: absolute; right: 9px;
+      background: none; border: none; cursor: pointer;
+      color: #1e4040; padding: 4px;
+      display: flex; align-items: center;
+      transition: color .15s; border-radius: 5px;
+    }
+    .lb-eye:hover { color: #4a8585; }
+
+    /* Opciones (recordarme + olvidaste) */
+    .lb-opts {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 8px; margin-bottom: 2px;
+    }
+    .lb-rem { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #3a7070; cursor: pointer; }
+    .lb-rem input { width: 12px; height: 12px; padding: 0; accent-color: #0d9488; cursor: pointer; }
+    .lb-fgt {
+      font-size: 11.5px; font-weight: 600; color: #0d9488;
+      background: none; border: none; cursor: pointer;
+      font-family: 'Outfit', sans-serif; transition: color .15s;
+    }
+    .lb-fgt:hover { color: #2dd4bf; }
+
+    /* Botón submit */
+    .lb-sub {
+      width: 100%; margin-top: 18px; padding: 11px 16px; border-radius: 9px;
+      background: linear-gradient(135deg, #0a7870, #0d9488 40%, #2dd4bf);
+      color: #030d0d; font-size: 13.5px; font-weight: 800; font-family: 'Outfit', sans-serif;
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      letter-spacing: .03em;
+      box-shadow: 0 4px 16px rgba(13,148,136,.32);
+      transition: all .2s; position: relative; overflow: hidden;
+    }
+    .lb-sub::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent 40%, rgba(217,119,6,.1) 100%);
+      opacity: 0; transition: opacity .2s;
+    }
+    .lb-sub:hover::after { opacity: 1; }
+    .lb-sub:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(13,148,136,.42); }
+    .lb-sub:active { transform: translateY(0); }
+    .lb-sub:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    /* Footer del panel derecho */
+    .lb-rfoot {
+      margin-top: auto; padding-top: 16px;
+      border-top: 1px solid rgba(13,148,136,.08);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .lb-reg { font-size: 12px; color: #7ecece; }
+    .lb-reg a { color: #2dd4bf; font-weight: 700; text-decoration: none; transition: color .15s; }
+    .lb-reg a:hover { color: #5eead4; }
+    .lb-copy { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #5aadad; }
+
+    /* ── Modales — tema oscuro ── */
+    .modal-content {
+      background: #0e1a1a !important;
+      border: 1px solid rgba(13,148,136,.2) !important;
+      border-radius: 16px !important;
+      color: #e8f5f5 !important;
+    }
+    .modal-header {
+      border-bottom: 1px solid rgba(13,148,136,.12) !important;
+      padding: 16px 20px !important;
+    }
+    .modal-header .modal-title { font-size: 15px; font-weight: 700; color: #e8f5f5; }
+    .modal-header .btn-close { filter: invert(1); opacity: .4; }
+    .modal-body { padding: 20px !important; }
+    .modal-footer { border-top: 1px solid rgba(13,148,136,.08) !important; padding: 14px 20px !important; }
+    .modal-body p, .modal-body small { color: #4a8585; font-size: 13px; }
+    .modal-body .form-label { font-size: 11px; font-weight: 700; color: #4a8585; letter-spacing: .08em; text-transform: uppercase; }
+    .modal-body .form-control {
+      background: rgba(6,11,11,.75) !important;
+      border: 1px solid rgba(13,148,136,.15) !important;
+      border-radius: 9px !important;
+      color: #e8f5f5 !important;
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+    }
+    .modal-body .form-control:focus {
+      border-color: #0d9488 !important;
+      box-shadow: 0 0 0 3px rgba(13,148,136,.12) !important;
+    }
+    .modal-body .form-control::placeholder { color: #193535; }
+    .modal-body .form-text { color: #2e5555 !important; font-size: 11px; }
+    .modal-body .alert-danger { background: rgba(244,63,94,.1); color: #fb7185; border: 1px solid rgba(244,63,94,.2); font-size: 12.5px; border-radius: 8px; }
+    .modal-body .alert-success { background: rgba(13,148,136,.1); color: #2dd4bf; border: 1px solid rgba(13,148,136,.2); font-size: 12.5px; border-radius: 8px; }
+    .modal .btn-primary {
+      background: linear-gradient(135deg, #0a7870, #0d9488 40%, #2dd4bf) !important;
+      color: #030d0d !important; font-weight: 700 !important;
+      border: none !important; border-radius: 9px !important;
+      font-family: 'Outfit', sans-serif;
+    }
+    .modal .btn-primary:hover { box-shadow: 0 4px 14px rgba(13,148,136,.35) !important; }
+    .modal .btn-secondary {
+      background: rgba(13,148,136,.08) !important; color: #4a8585 !important;
+      border: 1px solid rgba(13,148,136,.15) !important; border-radius: 9px !important;
+      font-family: 'Outfit', sans-serif;
+    }
+    .modal .btn-link { color: #0d9488 !important; font-size: 12px; }
+    .modal .btn-outline-secondary {
+      background: rgba(13,148,136,.06) !important; color: #4a8585 !important;
+      border: 1px solid rgba(13,148,136,.12) !important; border-radius: 0 9px 9px 0 !important;
+    }
+    .modal .input-group .form-control { border-radius: 9px 0 0 9px !important; }
+    .modal .text-danger { color: #fb7185 !important; font-size: 12px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 580px) {
+      .lb-card {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+        border-radius: 20px;
+      }
+      .lb-left {
+        padding: 22px 24px 18px;
+        border-right: none;
+        border-bottom: 1px solid rgba(13,148,136,.14);
+        background: linear-gradient(160deg, #091c1c 0%, #0d2020 50%, #081818 100%);
+      }
+      .lb-drink { width: 80px; height: 80px; }
+      .lb-brand-name { font-size: 21px; }
+      .lb-tag { font-size: 11px; }
+      .lb-badge { display: none; }
+      .lb-right { padding: 22px 22px 20px; }
+      .lb-right-top { margin-bottom: 16px; }
+    }
+
+    /* ════════════════════════════════════════
+       MODO CLARO  (7:00 – 19:00)
+       Panel izquierdo permanece oscuro (contraste intencional)
+       Panel derecho + fondo → claro
+    ════════════════════════════════════════ */
+    html[data-mode="light"] body { background: #eef6f6; }
+
+    html[data-mode="light"] .lb-bg {
+      background:
+        radial-gradient(ellipse 50% 60% at 10% 50%, rgba(13,148,136,.08) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 90% 20%, rgba(217,119,6,.05) 0%, transparent 50%),
+        radial-gradient(ellipse 40% 50% at 90% 80%, rgba(45,212,191,.04) 0%, transparent 55%);
+    }
+    html[data-mode="light"] .lb-grid {
+      background-image:
+        linear-gradient(rgba(15,118,110,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15,118,110,.06) 1px, transparent 1px);
+    }
+    html[data-mode="light"] .lb-card {
+      border-color: rgba(15,118,110,.2);
+      box-shadow: 0 0 0 1px rgba(15,118,110,.06), 0 20px 60px rgba(0,0,0,.1);
+    }
+
+    /* Panel derecho: blanco */
+    html[data-mode="light"] .lb-right { background: #ffffff; }
+    html[data-mode="light"] .lb-rtitle { color: #041414; }
+    html[data-mode="light"] .lb-rsub  { color: #5a9a9a; }
+
+    /* Labels y textos del formulario */
+    html[data-mode="light"] .lb-lbl   { color: #2d6e6e; }
+    html[data-mode="light"] .lb-ico   { color: #88bcbc; }
+
+    /* Inputs */
+    html[data-mode="light"] .lb-iw input[type=email],
+    html[data-mode="light"] .lb-iw input[type=password],
+    html[data-mode="light"] .lb-iw input[type=text] {
+      background: rgba(240,252,252,.9);
+      border-color: rgba(15,118,110,.2);
+      color: #041414;
+    }
+    html[data-mode="light"] .lb-iw input::placeholder { color: #88bcbc; }
+    html[data-mode="light"] .lb-iw input:focus {
+      border-color: #0f766e;
+      box-shadow: 0 0 0 3px rgba(15,118,110,.12);
+    }
+
+    /* Ojo, opciones, olvidaste */
+    html[data-mode="light"] .lb-eye        { color: #88bcbc; }
+    html[data-mode="light"] .lb-eye:hover  { color: #2d6e6e; }
+    html[data-mode="light"] .lb-rem        { color: #5a9a9a; }
+    html[data-mode="light"] .lb-fgt        { color: #0f766e; }
+    html[data-mode="light"] .lb-fgt:hover  { color: #0d9488; }
+
+    /* Footer del panel derecho */
+    html[data-mode="light"] .lb-rfoot          { border-top-color: rgba(15,118,110,.15); }
+    html[data-mode="light"] .lb-reg            { color: #1a5252; }
+    html[data-mode="light"] .lb-reg a          { color: #0d9488; font-weight: 800; }
+    html[data-mode="light"] .lb-reg a:hover    { color: #0f766e; }
+    html[data-mode="light"] .lb-copy           { color: #2d6e6e; }
+
+    /* Alertas */
+    html[data-mode="light"] #alertContainer .alert-success {
+      background: rgba(15,118,110,.08); color: #0f766e; border-color: rgba(15,118,110,.2);
+    }
+    html[data-mode="light"] #alertContainer .alert-danger {
+      background: rgba(225,29,72,.07); color: #be123c; border-color: rgba(225,29,72,.2);
+    }
+    html[data-mode="light"] #alertContainer .alert-warning {
+      background: rgba(217,119,6,.07); color: #b45309; border-color: rgba(217,119,6,.2);
+    }
+    html[data-mode="light"] #alertContainer .btn-close { filter: none; opacity: .5; }
+
+    /* Modales en modo claro */
+    html[data-mode="light"] .modal-content {
+      background: #ffffff !important; border-color: rgba(15,118,110,.2) !important; color: #041414 !important;
+    }
+    html[data-mode="light"] .modal-header          { border-bottom-color: rgba(15,118,110,.1) !important; }
+    html[data-mode="light"] .modal-header .modal-title { color: #041414; }
+    html[data-mode="light"] .modal-header .btn-close    { filter: none; opacity: .5; }
+    html[data-mode="light"] .modal-footer          { border-top-color: rgba(15,118,110,.08) !important; }
+    html[data-mode="light"] .modal-body p,
+    html[data-mode="light"] .modal-body small      { color: #2d6e6e; }
+    html[data-mode="light"] .modal-body .form-label { color: #2d6e6e; }
+    html[data-mode="light"] .modal-body .form-control {
+      background: rgba(240,252,252,.9) !important; border-color: rgba(15,118,110,.2) !important; color: #041414 !important;
+    }
+    html[data-mode="light"] .modal-body .form-control::placeholder { color: #88bcbc; }
+    html[data-mode="light"] .modal-body .form-text  { color: #5a9a9a !important; }
+    html[data-mode="light"] .modal .btn-secondary {
+      background: rgba(15,118,110,.08) !important; color: #2d6e6e !important; border-color: rgba(15,118,110,.15) !important;
+    }
+    html[data-mode="light"] .modal .btn-outline-secondary {
+      background: rgba(15,118,110,.06) !important; color: #2d6e6e !important; border-color: rgba(15,118,110,.15) !important;
+    }
+
+    /* Panel izquierdo en modo claro + mobile: adopta tono claro */
+    @media (max-width: 580px) {
+      html[data-mode="light"] .lb-left {
+        background: linear-gradient(160deg, #cdeaea 0%, #dff5f3 50%, #c4e8e5 100%);
+        border-bottom-color: rgba(15,118,110,.2);
+      }
+      html[data-mode="light"] .lb-brand-name { color: #041414; }
+      html[data-mode="light"] .lb-brand-name span { color: #0f766e; }
+      html[data-mode="light"] .lb-dot { background: #b45309; }
+      html[data-mode="light"] .lb-tag { color: #2d6e6e; }
+    }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="logo">
-            <img src="/public/img/icono-LB.png" alt="LOCOBAR" class="logo-icon">
-            <div class="login-title-wrap">
-                <h1 class="login-title">LOCOBAR</h1>
-                <hr class="login-separator">
+    <div class="lb-bg"></div>
+    <div class="lb-grid"></div>
+
+    <div class="lb-card">
+        <!-- Panel izquierdo: logo + branding -->
+        <div class="lb-left">
+            <div class="lb-drink-wrap">
+                <img class="lb-drink" src="/public/img/icono-LB.png" alt="LOCOBAR">
             </div>
-            <p class="login-slogan" id="brandSloganText"></p>
+            <div class="lb-brand">
+                <div class="lb-brand-name">LOCO<span class="lb-dot"></span><span>BAR</span></div>
+                <div class="lb-tag" id="brandSloganText">Donde el sabor se vuelve locura</div>
+            </div>
         </div>
-        
-        <div id="alertContainer"></div>
-        
-        <form id="loginForm">
-            <div class="mb-3">
-                <label class="form-label">Email</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                    <input type="email" class="form-control" id="email" required 
-                           placeholder="tu@email.com" autocomplete="email">
+
+        <!-- Panel derecho: formulario -->
+        <div class="lb-right">
+            <div class="lb-right-top">
+                <div class="lb-rtitle">Bienvenido de vuelta</div>
+                <div class="lb-rsub">Ingresa tus credenciales para continuar</div>
+            </div>
+
+            <div id="alertContainer"></div>
+
+            <form id="loginForm">
+                <div class="lb-fgroup">
+                    <div class="lb-lbl">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        Email
+                    </div>
+                    <div class="lb-iw">
+                        <span class="lb-ico">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        </span>
+                        <input type="email" id="email" placeholder="tu@email.com" autocomplete="email" required>
+                    </div>
                 </div>
-            </div>
-            <div class="mb-4">
-                <label class="form-label">Contraseña</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                    <input type="password" class="form-control" id="password" required 
-                           placeholder="••••••••" autocomplete="current-password">
-                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                        <i class="bi bi-eye"></i>
-                    </button>
+
+                <div class="lb-fgroup">
+                    <div class="lb-lbl">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Contraseña
+                    </div>
+                    <div class="lb-iw">
+                        <span class="lb-ico">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        </span>
+                        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required style="padding-right: 38px;">
+                        <button class="lb-eye" type="button" id="togglePassword">
+                            <svg id="eyeIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
                 </div>
+
+                <div class="lb-opts">
+                    <label class="lb-rem"><input type="checkbox"> Recordarme</label>
+                    <button type="button" class="lb-fgt" id="forgotPasswordLink">¿Olvidaste tu contraseña?</button>
+                </div>
+
+                <button type="submit" class="lb-sub" id="loginBtn">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                    Iniciar Sesión
+                </button>
+            </form>
+
+            <div class="lb-rfoot">
+                <div class="lb-reg">¿Sin cuenta? <a href="/customer/register">Regístrate aquí</a></div>
+                <div class="lb-copy">© 2026 LOCOBAR</div>
             </div>
-            <button type="submit" class="btn btn-lb-primary w-100" id="loginBtn">
-                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
-            </button>
-        </form>
-        
-        <div class="text-center mt-3">
-            <a href="#" id="forgotPasswordLink" style="color: #0f3460; text-decoration: none; font-size: 0.9em;">
-                <i class="bi bi-question-circle"></i> ¿Olvidaste tu contraseña?
-            </a>
-        </div>
-        
-        <div class="register-link">
-            <p class="mb-0">¿No tienes cuenta? <a href="/customer/register">Regístrate aquí</a></p>
-        </div>
-        
-        <div class="footer-text">
-            <p class="mb-0">© 2026 LOCOBAR</p>
         </div>
     </div>
 
@@ -170,7 +478,7 @@
                         <p class="mb-3">Ingresa tu correo electrónico para recibir un código de verificación:</p>
                         <div class="mb-3">
                             <label class="form-label">Correo Electrónico</label>
-                            <input type="email" class="form-control" id="forgotPasswordEmail" 
+                            <input type="email" class="form-control" id="forgotPasswordEmail"
                                    placeholder="tu@email.com" required autocomplete="email">
                         </div>
                         <div id="forgotPasswordError" class="alert alert-danger" style="display: none;"></div>
@@ -179,9 +487,9 @@
                         <p class="mb-3">Ingresa el código de verificación que recibiste en tu correo:</p>
                         <div class="mb-3">
                             <label class="form-label">Código de Verificación</label>
-                            <input type="text" class="form-control text-center" id="forgotPasswordCode" 
+                            <input type="text" class="form-control text-center" id="forgotPasswordCode"
                                    placeholder="000000" maxlength="6" style="font-size: 1.5em; letter-spacing: 0.5em;" required>
-                            <small class="form-text text-muted">El código expira en 15 minutos</small>
+                            <small class="form-text">El código expira en 15 minutos</small>
                         </div>
                         <div id="forgotPasswordCodeError" class="alert alert-danger" style="display: none;"></div>
                     </div>
@@ -218,14 +526,14 @@
                     <p class="mb-3">Ingresa la clave temporal que recibiste en tu correo y tu nueva contraseña:</p>
                     <div class="mb-3">
                         <label class="form-label">Clave Temporal</label>
-                        <input type="text" class="form-control" id="resetTempPassword" 
+                        <input type="text" class="form-control" id="resetTempPassword"
                                placeholder="Ingresa la clave temporal" required>
-                        <small class="form-text text-muted">Revisa tu correo electrónico. La clave temporal expira en 5 minutos.</small>
+                        <small class="form-text">Revisa tu correo electrónico. La clave temporal expira en 5 minutos.</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Nueva Contraseña</label>
                         <div class="input-group">
-                            <input type="password" class="form-control" id="resetNewPassword" 
+                            <input type="password" class="form-control" id="resetNewPassword"
                                    placeholder="Mínimo 6 caracteres" required minlength="6">
                             <button class="btn btn-outline-secondary" type="button" id="toggleNewPassword">
                                 <i class="bi bi-eye"></i>
@@ -235,7 +543,7 @@
                     <div class="mb-3">
                         <label class="form-label">Confirmar Nueva Contraseña</label>
                         <div class="input-group">
-                            <input type="password" class="form-control" id="resetConfirmPassword" 
+                            <input type="password" class="form-control" id="resetConfirmPassword"
                                    placeholder="Repite la contraseña" required minlength="6">
                             <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
                                 <i class="bi bi-eye"></i>
@@ -254,6 +562,40 @@
                             <span class="spinner-border spinner-border-sm me-2"></span>Actualizando...
                         </span>
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Verificar email pendiente -->
+    <div class="modal fade" id="emailVerificationModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-envelope-check"></i> Verifica tu Correo
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Tu cuenta aún no está verificada. Ingresa el código de 6 dígitos que te enviamos a <strong id="pendingVerifyEmail" style="color:#2dd4bf;"></strong>.</p>
+                    <div class="mb-3">
+                        <label class="form-label">Código de Verificación</label>
+                        <input type="text" class="form-control text-center" id="pendingVerifyCode"
+                               placeholder="000000" maxlength="6" style="font-size: 1.5em; letter-spacing: 0.5em;" inputmode="numeric">
+                        <small class="form-text">El código expira en 15 minutos.</small>
+                    </div>
+                    <div id="pendingVerifyError" class="alert alert-danger" style="display: none;"></div>
+                    <div id="pendingVerifySuccess" class="alert alert-success" style="display: none;"></div>
+                </div>
+                <div class="modal-footer flex-column gap-2">
+                    <button type="button" class="btn btn-primary w-100" id="pendingVerifyBtn">
+                        <span class="btn-text"><i class="bi bi-check-circle"></i> Verificar</span>
+                        <span class="btn-spinner" style="display: none;"><span class="spinner-border spinner-border-sm me-2"></span>Verificando...</span>
+                    </button>
+                    <button type="button" class="btn btn-link btn-sm" id="pendingResendBtn">
+                        ¿No recibiste el código? Reenviar
+                    </button>
+                    <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">Cancelar</button>
                 </div>
             </div>
         </div>
@@ -292,7 +634,7 @@
                     }
                 });
             }
-            
+
             // Verificar token de cliente
             const customerToken = localStorage.getItem('customerToken');
             if (customerToken) {
@@ -314,42 +656,38 @@
         // Toggle mostrar/ocultar contraseña
         $('#togglePassword').click(function() {
             const passwordInput = $('#password');
-            const icon = $(this).find('i');
-            
+            const icon = document.getElementById('eyeIcon');
             if (passwordInput.attr('type') === 'password') {
                 passwordInput.attr('type', 'text');
-                icon.removeClass('bi-eye').addClass('bi-eye-slash');
+                icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
             } else {
                 passwordInput.attr('type', 'password');
-                icon.removeClass('bi-eye-slash').addClass('bi-eye');
+                icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
             }
         });
 
         // Manejar submit del formulario
         $('#loginForm').submit(function(e) {
             e.preventDefault();
-            
+
             const email = $('#email').val().trim();
             const password = $('#password').val();
-            
+
             if (!email || !password) {
                 showAlert('Por favor ingresa email y contraseña', 'warning');
                 return;
             }
-            
-            // Deshabilitar botón mientras procesa
+
             $('#loginBtn').prop('disabled', true).html(
                 '<span class="spinner-border spinner-border-sm me-2"></span>Verificando...'
             );
-            
-            // Login unificado
+
             $.ajax({
                 url: '/api/auth/login',
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({ email, password }),
                 success: function(response) {
-                    // Determinar tipo de usuario y guardar datos correspondientes
                     if (response.userType === 'admin') {
                         localStorage.setItem('adminToken', response.token);
                         localStorage.setItem('adminUser', JSON.stringify(response.user));
@@ -360,35 +698,40 @@
                         localStorage.setItem('customer', JSON.stringify(response.user));
                         showAlert('¡Bienvenido, ' + response.user.name + '!', 'success');
                     }
-                    
-                    // Redirigir según tipo de usuario (replace para que Atrás no vuelva al login)
                     setTimeout(() => {
                         window.location.replace(response.redirectTo);
                     }, 1000);
                 },
                 error: function(xhr) {
-                    const error = xhr.responseJSON?.error || 'Error al iniciar sesión';
-                    showAlert(error, 'danger');
-                    
+                    const resp = xhr.responseJSON || {};
+
+                    if (resp.code === 'EMAIL_NOT_VERIFIED') {
+                        $('#pendingVerifyEmail').text(resp.email || email);
+                        $('#pendingVerifyCode').val('');
+                        $('#pendingVerifyError').hide();
+                        $('#pendingVerifySuccess').hide();
+                        window._pendingVerifyEmail = resp.email || email;
+                        const verifyModal = new bootstrap.Modal(document.getElementById('emailVerificationModal'));
+                        verifyModal.show();
+                        setTimeout(() => $('#pendingVerifyCode').focus(), 400);
+                    } else {
+                        showAlert(resp.error || 'Error al iniciar sesión', 'danger');
+                    }
+
                     $('#loginBtn').prop('disabled', false).html(
-                        '<i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión'
+                        '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Iniciar Sesión'
                     );
                 }
             });
         });
 
-        // Si vuelven con Atrás y ya están logueados, redirigir de inmediato (evita pantalla "Verificando...")
+        // Si vuelven con Atrás y ya están logueados, redirigir de inmediato
         window.addEventListener('pageshow', function(event) {
             if (event.persisted) {
                 var customerToken = localStorage.getItem('customerToken');
                 var adminToken = localStorage.getItem('adminToken');
-                if (adminToken) {
-                    window.location.replace('/dashboard');
-                    return;
-                }
-                if (customerToken) {
-                    window.location.replace('/customer/catalog');
-                }
+                if (adminToken) { window.location.replace('/dashboard'); return; }
+                if (customerToken) { window.location.replace('/customer/catalog'); }
             }
         });
 
@@ -402,10 +745,67 @@
             $('#alertContainer').html(alertHtml);
         }
 
+        // ── Verificación de email pendiente ────────────────────────────────────
+        $('#pendingVerifyBtn').click(function() {
+            const code = $('#pendingVerifyCode').val().trim();
+            if (!code || code.length !== 6) {
+                $('#pendingVerifyError').text('Ingresa el código de 6 dígitos').show();
+                return;
+            }
+            $('#pendingVerifyError').hide();
+            const $btn = $(this);
+            $btn.find('.btn-text').hide();
+            $btn.find('.btn-spinner').show();
+
+            $.ajax({
+                url: '/api/auth/verify-registration-code',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ email: window._pendingVerifyEmail, code }),
+                success: function(response) {
+                    localStorage.setItem('customerToken', response.token);
+                    localStorage.setItem('customer', JSON.stringify(response.customer));
+                    $('#pendingVerifySuccess').text('¡Verificado! Redirigiendo...').show();
+                    setTimeout(() => { window.location.replace('/customer/catalog'); }, 1000);
+                },
+                error: function(xhr) {
+                    const msg = xhr.responseJSON?.error || 'Código incorrecto o expirado';
+                    $('#pendingVerifyError').text(msg).show();
+                    $btn.find('.btn-text').show();
+                    $btn.find('.btn-spinner').hide();
+                }
+            });
+        });
+
+        $('#pendingVerifyCode').on('keypress', function(e) {
+            if (e.which === 13) $('#pendingVerifyBtn').click();
+        });
+
+        $('#pendingResendBtn').click(function() {
+            const $btn = $(this);
+            $btn.prop('disabled', true).text('Reenviando...');
+            $.ajax({
+                url: '/api/auth/resend-verification-code',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ email: window._pendingVerifyEmail }),
+                complete: function() { $btn.prop('disabled', false).text('¿No recibiste el código? Reenviar'); },
+                success: function() {
+                    $('#pendingVerifyError').hide();
+                    $('#pendingVerifySuccess').text('Código reenviado. Revisa tu correo.').show();
+                    setTimeout(() => $('#pendingVerifySuccess').hide(), 4000);
+                },
+                error: function() {
+                    $('#pendingVerifyError').text('No se pudo reenviar el código. Intenta de nuevo.').show();
+                }
+            });
+        });
+        // ─────────────────────────────────────────────────────────────────────
+
         // Variables para el flujo de recuperación de contraseña
         let resetEmail = '';
 
-        // Abrir modal de recuperación de contraseña
+        // Abrir modal de recuperación
         $('#forgotPasswordLink').click(function(e) {
             e.preventDefault();
             resetEmail = '';
@@ -424,13 +824,11 @@
         // Enviar código de verificación
         $('#sendCodeBtn').click(function() {
             const email = $('#forgotPasswordEmail').val().trim();
-            
+
             if (!email) {
                 $('#forgotPasswordError').text('Por favor ingresa tu correo electrónico').show();
                 return;
             }
-
-            // Validar formato de email
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
                 $('#forgotPasswordError').text('Por favor ingresa un correo electrónico válido').show();
@@ -441,7 +839,7 @@
             const btn = $(this);
             const btnText = btn.find('.btn-text');
             const btnSpinner = btn.find('.btn-spinner');
-            
+
             btn.prop('disabled', true);
             btnText.hide();
             btnSpinner.show();
@@ -464,7 +862,6 @@
                 },
                 error: function(xhr) {
                     let error = xhr.responseJSON?.error || 'Error al enviar código';
-                    // Si el error es "Not found" o similar, mostrar mensaje más amigable
                     if (xhr.status === 404 || error.toLowerCase().includes('not found')) {
                         error = 'No se encontró una cuenta con este correo electrónico. Verifica que el email sea correcto.';
                     }
@@ -479,7 +876,7 @@
         // Validar código de verificación
         $('#verifyCodeBtn').click(function() {
             const code = $('#forgotPasswordCode').val().trim();
-            
+
             if (!code || code.length !== 6) {
                 $('#forgotPasswordCodeError').text('Por favor ingresa el código de 6 dígitos').show();
                 return;
@@ -488,7 +885,7 @@
             const btn = $(this);
             const btnText = btn.find('.btn-text');
             const btnSpinner = btn.find('.btn-spinner');
-            
+
             btn.prop('disabled', true);
             btnText.hide();
             btnSpinner.show();
@@ -499,10 +896,7 @@
                 contentType: 'application/json',
                 data: JSON.stringify({ email: resetEmail, code, tenantId: 1 }),
                 success: function(response) {
-                    // Cerrar modal de código
                     bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal')).hide();
-                    
-                    // Abrir modal de cambio de contraseña
                     $('#resetTempPassword').val('');
                     $('#resetNewPassword').val('');
                     $('#resetConfirmPassword').val('');
@@ -510,7 +904,6 @@
                     $('#passwordMatchError').hide();
                     const resetModal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
                     resetModal.show();
-                    
                     btn.prop('disabled', false);
                     btnText.show();
                     btnSpinner.hide();
@@ -525,22 +918,10 @@
             });
         });
 
-        // Validar que las contraseñas coincidan mientras se escribe
-        $('#resetConfirmPassword').on('input', function() {
+        // Validar que las contraseñas coincidan
+        $('#resetConfirmPassword, #resetNewPassword').on('input', function() {
             const newPassword = $('#resetNewPassword').val();
-            const confirmPassword = $(this).val();
-            
-            if (confirmPassword && newPassword !== confirmPassword) {
-                $('#passwordMatchError').show();
-            } else {
-                $('#passwordMatchError').hide();
-            }
-        });
-
-        $('#resetNewPassword').on('input', function() {
-            const newPassword = $(this).val();
             const confirmPassword = $('#resetConfirmPassword').val();
-            
             if (confirmPassword && newPassword !== confirmPassword) {
                 $('#passwordMatchError').show();
             } else {
@@ -548,11 +929,10 @@
             }
         });
 
-        // Toggle mostrar/ocultar nueva contraseña
+        // Toggle nueva contraseña
         $('#toggleNewPassword').click(function() {
             const passwordInput = $('#resetNewPassword');
             const icon = $(this).find('i');
-            
             if (passwordInput.attr('type') === 'password') {
                 passwordInput.attr('type', 'text');
                 icon.removeClass('bi-eye').addClass('bi-eye-slash');
@@ -562,11 +942,10 @@
             }
         });
 
-        // Toggle mostrar/ocultar confirmación de contraseña
+        // Toggle confirmar contraseña
         $('#toggleConfirmPassword').click(function() {
             const passwordInput = $('#resetConfirmPassword');
             const icon = $(this).find('i');
-            
             if (passwordInput.attr('type') === 'password') {
                 passwordInput.attr('type', 'text');
                 icon.removeClass('bi-eye').addClass('bi-eye-slash');
@@ -582,26 +961,14 @@
             const newPassword = $('#resetNewPassword').val();
             const confirmPassword = $('#resetConfirmPassword').val();
 
-            // Validaciones
-            if (!tempPassword) {
-                $('#resetPasswordError').text('Por favor ingresa la clave temporal').show();
-                return;
-            }
-
-            if (!newPassword || newPassword.length < 6) {
-                $('#resetPasswordError').text('La contraseña debe tener al menos 6 caracteres').show();
-                return;
-            }
-
-            if (newPassword !== confirmPassword) {
-                $('#resetPasswordError').text('Las contraseñas no coinciden').show();
-                return;
-            }
+            if (!tempPassword) { $('#resetPasswordError').text('Por favor ingresa la clave temporal').show(); return; }
+            if (!newPassword || newPassword.length < 6) { $('#resetPasswordError').text('La contraseña debe tener al menos 6 caracteres').show(); return; }
+            if (newPassword !== confirmPassword) { $('#resetPasswordError').text('Las contraseñas no coinciden').show(); return; }
 
             const btn = $(this);
             const btnText = btn.find('.btn-text');
             const btnSpinner = btn.find('.btn-spinner');
-            
+
             btn.prop('disabled', true);
             btnText.hide();
             btnSpinner.show();
@@ -610,23 +977,11 @@
                 url: '/api/auth/reset-password',
                 method: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify({
-                    email: resetEmail,
-                    tempPassword,
-                    newPassword,
-                    confirmPassword,
-                    tenantId: 1
-                }),
+                data: JSON.stringify({ email: resetEmail, tempPassword, newPassword, confirmPassword, tenantId: 1 }),
                 success: function(response) {
                     showAlert('Contraseña actualizada exitosamente. Redirigiendo al login...', 'success');
-                    
-                    // Cerrar modal
                     bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal')).hide();
-                    
-                    // Refrescar página después de 2 segundos
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
+                    setTimeout(() => { window.location.reload(); }, 2000);
                 },
                 error: function(xhr) {
                     const error = xhr.responseJSON?.error || 'Error al actualizar contraseña';
@@ -638,25 +993,15 @@
             });
         });
 
-        // Permitir Enter para enviar código
+        // Enter para enviar código
         $('#forgotPasswordEmail').on('keypress', function(e) {
-            if (e.which === 13) {
-                e.preventDefault();
-                $('#sendCodeBtn').click();
-            }
+            if (e.which === 13) { e.preventDefault(); $('#sendCodeBtn').click(); }
         });
-
-        // Permitir Enter para validar código
         $('#forgotPasswordCode').on('keypress', function(e) {
-            if (e.which === 13) {
-                e.preventDefault();
-                $('#verifyCodeBtn').click();
-            }
+            if (e.which === 13) { e.preventDefault(); $('#verifyCodeBtn').click(); }
         });
 
-        // Limpiar campos del modal al cerrar
-        // Nota: NO reiniciamos resetEmail aquí para conservar el correo
-        // durante el flujo de cambio de contraseña (evita errores de "Todos los campos son requeridos").
+        // Limpiar modal al cerrar
         $('#forgotPasswordModal').on('hidden.bs.modal', function() {
             $('#forgotPasswordEmail').val('');
             $('#forgotPasswordCode').val('');

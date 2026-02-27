@@ -1,7 +1,15 @@
-const { CustomerCredit, GroupPurchaseParticipant } = require('../models');
+const { CustomerCredit } = require('../models');
 const { Op } = require('sequelize');
 
 class CreditService {
+  /**
+   * Returns 'YYYY-MM-DD' in the server's local timezone (avoids UTC-parse bugs).
+   * toLocaleDateString('en-CA') produces YYYY-MM-DD in local time.
+   */
+  static localDateStr(date = new Date()) {
+    return new Date(date).toLocaleDateString('en-CA');
+  }
+
   /**
    * Calculate interest for a credit
    * @param {Object} credit - Credit object
@@ -12,25 +20,37 @@ class CreditService {
       return 0;
     }
 
-    // Interest runs from the last calculation date (or creation date) to asOfDate
-    const startDate = credit.lastInterestCalculationDate
-      ? new Date(credit.lastInterestCalculationDate)
-      : new Date(credit.createdAt);
+    // Interest runs from the last calculation date (or creation date) to asOfDate.
+    // We use local-date strings (YYYY-MM-DD) to avoid UTC-vs-local offset issues:
+    // new Date('2026-02-26') is midnight UTC, but new Date().setHours(0,0,0,0) is
+    // midnight LOCAL → after ~7 PM in UTC-5 they differ by one day, breaking the guard.
+    const startStr = credit.lastInterestCalculationDate
+      ? credit.lastInterestCalculationDate          // already 'YYYY-MM-DD'
+      : this.localDateStr(credit.createdAt);        // localise createdAt
 
-    const calculationDate = new Date(asOfDate);
-    calculationDate.setHours(0, 0, 0, 0);
-    startDate.setHours(0, 0, 0, 0);
+    const asOfStr = this.localDateStr(asOfDate);
 
-    const daysDiff = Math.floor((calculationDate - startDate) / (1000 * 60 * 60 * 24));
+    // Parse both as UTC dates (safe: both are local-tz YYYY-MM-DD strings now)
+    const startMs = new Date(startStr + 'T00:00:00Z').getTime();
+    const asOfMs  = new Date(asOfStr  + 'T00:00:00Z').getTime();
+
+    const daysDiff = Math.floor((asOfMs - startMs) / (1000 * 60 * 60 * 24));
     if (daysDiff <= 0) {
       return 0;
     }
 
-    // Daily interest: principal * daily_rate * days
-    const principal = parseFloat(credit.currentBalance || credit.initialAmount);
+    // Interés compuesto diario con truncamiento (igual que PayPhone).
+    // Trabajamos en centavos enteros para evitar errores de punto flotante
+    // (ej: 20.80 + 0.20 = 20.999... en JS → arruina el truncamiento del día siguiente)
     const rate = parseFloat(credit.interestRate);
+    let balanceCents = Math.round(parseFloat(credit.currentBalance || credit.initialAmount) * 100);
+    const originalCents = balanceCents;
 
-    return Math.max(0, principal * rate * daysDiff);
+    for (let i = 0; i < daysDiff; i++) {
+      balanceCents += Math.floor(balanceCents * rate); // floor = truncar, nunca cobrar de más
+    }
+
+    return Math.max(0, (balanceCents - originalCents) / 100);
   }
 
   /**
@@ -43,26 +63,22 @@ class CreditService {
       return credit;
     }
 
-    const lastCalcDate = credit.lastInterestCalculationDate 
-      ? new Date(credit.lastInterestCalculationDate) 
-      : new Date(credit.createdAt);
+    // Compare as local-timezone date strings to avoid UTC-offset day-boundary bugs
+    const asOfStr = this.localDateStr(asOfDate);
+    const lastStr = credit.lastInterestCalculationDate
+      || this.localDateStr(credit.createdAt);
 
-    const calcDate = new Date(asOfDate);
-    calcDate.setHours(0, 0, 0, 0);
-    lastCalcDate.setHours(0, 0, 0, 0);
-
-    // Only recalculate if date has changed
-    if (calcDate <= lastCalcDate) {
+    // Only recalculate if today (local) is strictly after the last calculation date
+    if (asOfStr <= lastStr) {
       return credit;
     }
 
-    // Calculate new interest
+    // Calculate new interest for this period
     const newInterest = this.calculateInterest(credit, asOfDate);
-    
-    // Update credit
-    credit.interestAmount = parseFloat(credit.interestAmount || 0) + newInterest;
-    credit.currentBalance = parseFloat(credit.initialAmount) + credit.interestAmount;
-    credit.lastInterestCalculationDate = calcDate.toISOString().split('T')[0];
+
+    // Acumular interés y truncar a 2 decimales (igual que PayPhone)
+    credit.currentBalance = Math.floor((parseFloat(credit.currentBalance) + newInterest) * 100) / 100;
+    credit.lastInterestCalculationDate = asOfStr;
 
     // No due-date based overdue logic — interest accumulates from day 1
 

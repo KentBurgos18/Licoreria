@@ -35,6 +35,18 @@ module.exports = (sequelize) => {
       defaultValue: true,
       field: 'is_active'
     },
+    themeId: {
+      type: DataTypes.SMALLINT,
+      allowNull: false,
+      defaultValue: 1,
+      field: 'theme_id'
+    },
+    themeMode: {
+      type: DataTypes.STRING(10),
+      allowNull: false,
+      defaultValue: 'auto',
+      field: 'theme_mode'
+    },
     lastLogin: {
       type: DataTypes.DATE,
       allowNull: true,

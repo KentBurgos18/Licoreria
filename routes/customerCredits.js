@@ -63,14 +63,6 @@ router.get('/', async (req, res) => {
       order: [['dueDate', 'ASC'], ['createdAt', 'DESC']]
     });
 
-    // Update balances with interest for active credits
-    for (const credit of rows) {
-      if (credit.status === 'ACTIVE') {
-        await CreditService.updateCreditBalance(credit.id);
-        await credit.reload({ include: [{ association: 'customer' }, { association: 'groupPurchaseParticipant' }] });
-      }
-    }
-
     res.json({
       credits: rows,
       pagination: {
@@ -124,12 +116,6 @@ router.get('/:id', async (req, res) => {
         error: 'Credit not found',
         code: 'CREDIT_NOT_FOUND'
       });
-    }
-
-    // Update balance with interest if active
-    if (credit.status === 'ACTIVE') {
-      await CreditService.updateCreditBalance(credit.id);
-      await credit.reload();
     }
 
     res.json(credit);

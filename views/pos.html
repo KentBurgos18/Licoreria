@@ -150,10 +150,38 @@
             border: 1px solid #9c27b0;
         }
         
-        .quantity-controls {
+        .qty-pill {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 20px;
+            border: 1px solid #dee2e6;
+            overflow: hidden;
+            background: #fff;
+        }
+        .qty-pill .qty-btn {
+            background: transparent;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            line-height: 1;
+            transition: background 0.15s;
+        }
+        .qty-pill .qty-btn:hover:not(:disabled) { background: #f0f0f0; }
+        .qty-pill .qty-btn:disabled { opacity: 0.4; cursor: default; }
+        .qty-pill .qty-btn.qty-remove { color: #dc3545; }
+        .qty-pill .qty-btn.qty-add    { color: #198754; }
+        .qty-pill .qty-num {
+            min-width: 30px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-left: 1px solid #dee2e6;
+            border-right: 1px solid #dee2e6;
+            padding: 0 4px;
+            user-select: none;
         }
         
         .cart-summary {
@@ -785,34 +813,33 @@
                     
                     itemsHtml += `
                         <div class="${itemClass} mb-3">
-                            <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-1" 
-                                    onclick="removeFromCart(${item.productId}); updateCartModal();">
-                                <i class="bi bi-x"></i>
-                            </button>
-                            <div class="row">
-                                <div class="col-8">
+                            <div class="d-flex align-items-start gap-2">
+                                <div class="flex-fill min-width-0">
                                     <div class="fw-bold">${item.productName}</div>
                                     <div class="text-muted small">${item.productSku}</div>
-                                    ${item.productType === 'COMBO' ? 
+                                    ${item.productType === 'COMBO' ?
                                         '<div class="text-muted small">🎁 Combo Virtual</div>' : ''}
                                 </div>
-                                <div class="col-4 text-end">
+                                <div class="text-end flex-shrink-0">
                                     <div class="fw-bold">$${(item.unitPrice * item.quantity).toFixed(2)}</div>
                                     <div class="text-muted small">$${item.unitPrice.toFixed(2)} c/u</div>
                                 </div>
                             </div>
-                            <div class="quantity-controls mt-2">
-                                <button class="btn btn-sm btn-outline-secondary" 
-                                        onclick="updateQuantity(${item.productId}, ${item.quantity - 1}); updateCartModal();"
-                                        ${item.quantity <= 1 ? 'disabled' : ''}>
-                                    <i class="bi bi-dash"></i>
-                                </button>
-                                <span class="mx-2">${item.quantity}</span>
-                                <button class="btn btn-sm btn-outline-secondary" 
-                                        onclick="updateQuantity(${item.productId}, ${item.quantity + 1}); updateCartModal();"
-                                        ${item.quantity >= item.maxAvailable ? 'disabled' : ''}>
-                                    <i class="bi bi-plus"></i>
-                                </button>
+                            <div class="mt-2">
+                                <div class="qty-pill">
+                                    <button class="qty-btn qty-remove"
+                                            onclick="removeFromCart(${item.productId}); updateCartModal();"
+                                            title="Eliminar">
+                                        <i class="bi bi-trash3-fill" style="font-size:0.75em;"></i>
+                                    </button>
+                                    <span class="qty-num">${item.quantity}</span>
+                                    <button class="qty-btn qty-add"
+                                            onclick="updateQuantity(${item.productId}, ${item.quantity + 1}); updateCartModal();"
+                                            ${item.quantity >= item.maxAvailable ? 'disabled' : ''}
+                                            title="Agregar uno">
+                                        <i class="bi bi-plus-lg" style="font-size:0.85em;"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     `;

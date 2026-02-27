@@ -16,6 +16,21 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    firstName: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      field: 'first_name'
+    },
+    lastName: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      field: 'last_name'
+    },
+    birthDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      field: 'birth_date'
+    },
     cedula: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -44,6 +59,12 @@ module.exports = (sequelize) => {
       allowNull: false,
       defaultValue: true,
       field: 'is_active'
+    },
+    emailVerified: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+      field: 'email_verified'
     },
     createdAt: {
       type: DataTypes.DATE,

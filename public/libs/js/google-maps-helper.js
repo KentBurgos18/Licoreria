@@ -324,7 +324,7 @@ const GoogleMapsHelper = (function() {
     }
 
     /**
-     * Inicializar Places Autocomplete usando PlaceAutocompleteElement (nueva API)
+     * Inicializar Places Autocomplete usando PlaceAutocompleteElement con bias de ubicación
      */
     async function initPlacesAutocomplete() {
         const container = document.getElementById('placesAutocompleteContainer');
@@ -333,55 +333,81 @@ const GoogleMapsHelper = (function() {
         try {
             const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
 
-            // Limpiar contenedor
+            // Quitar placeholder de carga y limpiar contenedor
+            const ph = document.getElementById('mapSearchPlaceholder');
+            if (ph) ph.remove();
             container.innerHTML = '';
 
-            // Configuración del autocomplete
             const autocompleteOptions = {};
-            
+
             // Restringir a país si está configurado
             if (config.countryRestriction) {
                 autocompleteOptions.includedRegionCodes = [config.countryRestriction.toUpperCase()];
             }
 
-            // Crear PlaceAutocompleteElement
+            // Bias: construir LatLngBounds real para que Google lo respete correctamente
+            if (config.locationBias && config.locationBias.north !== undefined) {
+                autocompleteOptions.locationBias = new google.maps.LatLngBounds(
+                    { lat: config.locationBias.south, lng: config.locationBias.west },
+                    { lat: config.locationBias.north, lng: config.locationBias.east }
+                );
+            }
+
             const placeAutocomplete = new PlaceAutocompleteElement(autocompleteOptions);
-            
-            // Aplicar estilos al componente
             placeAutocomplete.style.width = '100%';
             placeAutocomplete.style.display = 'block';
-            
+            placeAutocomplete.style.colorScheme = 'light';
+            placeAutocomplete.style.backgroundColor = 'white';
+            placeAutocomplete.setAttribute('placeholder', 'Buscar dirección, negocio o lugar...');
+
             container.appendChild(placeAutocomplete);
 
-            // Escuchar evento de selección (gmp-select es el evento correcto)
+            // Inyectar estilos en Shadow DOM cuando esté listo (reintenta hasta 20 veces)
+            function injectShadowStyles(attempts) {
+                try {
+                    const sr = placeAutocomplete.shadowRoot;
+                    const inp = sr && sr.querySelector('input');
+                    if (inp) {
+                        inp.setAttribute('placeholder', 'Buscar dirección, negocio o lugar...');
+                        const style = document.createElement('style');
+                        style.textContent = `
+                            input {
+                                height: 48px !important;
+                                line-height: normal !important;
+                                padding-top: 0 !important;
+                                padding-bottom: 0 !important;
+                                vertical-align: middle !important;
+                            }
+                        `;
+                        sr.appendChild(style);
+                    } else if (attempts > 0) {
+                        setTimeout(() => injectShadowStyles(attempts - 1), 100);
+                    }
+                } catch(e) {}
+            }
+            injectShadowStyles(20);
+
             placeAutocomplete.addEventListener('gmp-select', async ({ placePrediction }) => {
                 try {
-                    // Convertir predicción a Place y obtener detalles
                     const place = placePrediction.toPlace();
-                    await place.fetchFields({
-                        fields: ['displayName', 'formattedAddress', 'location']
-                    });
+                    await place.fetchFields({ fields: ['displayName', 'formattedAddress', 'location'] });
 
                     if (!place.location) {
-                        if (typeof showAlert === 'function') {
-                            showAlert('No se encontró la ubicación. Intenta con otra búsqueda.', 'warning');
-                        }
+                        if (typeof showAlert === 'function') showAlert('No se encontró la ubicación.', 'warning');
                         return;
                     }
 
                     const lat = place.location.lat();
                     const lng = place.location.lng();
 
-                    // Mover mapa y marcador
                     googleMap.setCenter(place.location);
                     googleMap.setZoom(18);
                     if (googleMarker.setPosition) {
-                        googleMarker.setPosition({ lat: lat, lng: lng });
+                        googleMarker.setPosition({ lat, lng });
                     } else {
-                        googleMarker.position = { lat: lat, lng: lng };
+                        googleMarker.position = { lat, lng };
                     }
 
-                    // Actualizar ubicación
                     const address = place.formattedAddress || place.displayName || `${lat}, ${lng}`;
                     updateSelectedLocation(address, lat, lng);
                 } catch (err) {

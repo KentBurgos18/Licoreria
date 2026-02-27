@@ -2,203 +2,705 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <script>(function(){var h=new Date().getHours();document.documentElement.setAttribute('data-mode',(h>=7&&h<19)?'light':'dark');})();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
     <title>Registro - LOCOBAR</title>
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
-    <!-- Google Maps API (carga optimizada) -->
-    <script>(g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]);for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.googleapis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
-        key: "AIzaSyA2QRfT8cdYlLfnzeLOA7HTzqOCibzfBt8",
-        v: "weekly"
-    });</script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Google Maps API -->
+    <script>(g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]);for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.googleapis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({key:"AIzaSyA2QRfT8cdYlLfnzeLOA7HTzqOCibzfBt8",v:"weekly"});</script>
     <style>
-        body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .register-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            padding: 40px;
-            max-width: 500px;
-            width: 100%;
-        }
-        .logo {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-        .logo-icon {
-            max-width: 140px;
-            height: auto;
-            display: block;
-            margin: 0 auto 4px auto;
-        }
-        .login-title-wrap {
-            display: inline-block;
-            text-align: center;
-        }
-        .login-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1a1a2e;
-            margin: 0;
-            letter-spacing: 0.02em;
-        }
-        .login-separator {
-            width: 100%;
-            height: 2px;
-            background: #0f3460;
-            margin: 2px 0;
-            border: none;
-        }
-        .login-slogan {
-            font-size: 0.95rem;
-            color: #6c757d;
-            margin: 0;
-        }
-        
-        /* Estilos para el contenedor del autocomplete */
-        .places-autocomplete-wrapper {
-            width: 100%;
-            position: relative;
-        }
-        
-        /* Estilos para el componente PlaceAutocompleteElement */
-        .places-autocomplete-wrapper gmp-place-autocomplete {
-            width: 100%;
-            display: block;
-        }
-        
-        /* Estilos para el input del fallback */
-        #mapSearchInput,
-        #mapSearchInputFallback {
-            width: 100% !important;
-            padding: 10px 15px !important;
-            border: 1px solid #ced4da !important;
-            border-radius: 6px !important;
-            font-size: 14px !important;
-            background-color: white !important;
-            color: #212529 !important;
-        }
-        
-        #mapSearchInput:focus,
-        #mapSearchInputFallback:focus {
-            border-color: #86b7fe !important;
-            outline: 0 !important;
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
-        }
-        
-        /* Asegurar que el modal-body permita overflow visible para el dropdown */
-        #mapModal .modal-body {
-            overflow: visible !important;
-        }
-        
-        #mapModal .p-3.border-bottom {
-            overflow: visible !important;
-            position: relative;
-            z-index: 1060;
-        }
-        
-        /* Botón de detectar ubicación */
-        .btn-detect-location {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
-        }
-        
-        .btn-detect-location:hover {
-            background-color: #218838;
-            color: white;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
-        }
-        
-        .btn-detect-location:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
-        }
-        
-        .btn-detect-location i {
-            font-size: 16px;
-        }
+    *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex; align-items: flex-start; justify-content: center;
+      background: #060b0b;
+      padding: 32px 20px;
+      position: relative; overflow-x: hidden;
+    }
+
+    /* ── Fondo ── */
+    .lb-bg { position: fixed; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 60% 50% at 18% 10%, rgba(13,148,136,.14) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 45% at 82% 90%, rgba(45,212,191,.07) 0%, transparent 55%),
+        radial-gradient(ellipse 30% 28% at 75% 8%,  rgba(217,119,6,.07)  0%, transparent 50%);
+    }
+    .lb-grid { position: fixed; inset: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(13,148,136,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(13,148,136,.035) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    /* ── Card ── */
+    .lb-card {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 460px;
+      background: #0e1a1a;
+      border: 1px solid rgba(13,148,136,.2);
+      border-radius: 22px; overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(13,148,136,.06), 0 24px 64px rgba(0,0,0,.6);
+      animation: lb-fadeUp .5s ease both;
+    }
+    @keyframes lb-fadeUp { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:none } }
+    @keyframes lb-shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+
+    .lb-card-line {
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #0d9488 25%, #2dd4bf 55%, rgba(217,119,6,.5) 80%, transparent);
+    }
+
+    /* ── Logo ── */
+    .lb-logo-area {
+      padding: 24px 28px 18px;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid rgba(13,148,136,.1);
+    }
+    .lb-logo-img {
+      width: 52px; height: 52px; flex-shrink: 0;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 10px rgba(13,148,136,.2)) drop-shadow(0 2px 8px rgba(217,119,6,.2));
+    }
+    .lb-brand { font-size: 18px; font-weight: 800; letter-spacing: .12em; color: #e8f5f5; line-height: 1; }
+    .lb-brand span { color: #2dd4bf; }
+    .lb-brand-dot { display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: #d97706; margin: 0 2px; vertical-align: middle; box-shadow: 0 0 6px rgba(217,119,6,.6); }
+    .lb-tagline { font-size: 11px; color: #2e5555; margin-top: 3px; }
+
+    /* ── Form header ── */
+    .lb-form-header {
+      padding: 18px 28px 0;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .lb-form-title { font-size: 19px; font-weight: 800; color: #e8f5f5; letter-spacing: .04em; }
+    .lb-step-indicator { display: flex; align-items: center; gap: 5px; }
+    .lb-step-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(13,148,136,.2); transition: all .3s;
+    }
+    .lb-step-dot.active { background: #0d9488; box-shadow: 0 0 6px rgba(13,148,136,.5); }
+    .lb-step-dot.done { background: #2dd4bf; }
+
+    /* ── Form body ── */
+    .lb-form-body { padding: 0 28px 24px; }
+
+    .lb-step { display: none; }
+    .lb-step.active { display: block; animation: lb-fadeUp .3s ease both; }
+
+    /* Dos columnas */
+    .lb-frow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    @media(max-width: 400px) { .lb-frow { grid-template-columns: 1fr; } }
+    .lb-fgroup { margin-bottom: 12px; }
+    .lb-frow .lb-fgroup { margin-bottom: 0; }
+
+    /* Labels */
+    .lb-lbl {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 700; color: #4a8585;
+      letter-spacing: .08em; text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .lb-req { color: #d97706; font-size: 10px; }
+
+    /* Input wrapper */
+    .lb-iw { position: relative; display: flex; align-items: center; }
+    .lb-ico { position: absolute; left: 11px; color: #1e4040; pointer-events: none; display: flex; align-items: center; }
+
+    /* Inputs del formulario (scope a .lb-form-body) */
+    .lb-form-body input[type=text],
+    .lb-form-body input[type=email],
+    .lb-form-body input[type=password],
+    .lb-form-body input[type=tel],
+    .lb-form-body input[type=date] {
+      width: 100%;
+      background: rgba(6,11,11,.75);
+      border: 1px solid rgba(13,148,136,.14);
+      border-radius: 9px;
+      padding: 10px 12px 10px 36px;
+      font-size: 13px; font-family: 'Outfit', sans-serif;
+      color: #e8f5f5; outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .lb-form-body input[type=date] { padding-right: 36px; color-scheme: dark; }
+    .lb-form-body input::placeholder { color: #193535; }
+    .lb-form-body input:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,.1); }
+    .lb-form-body input.lb-error { border-color: #fb7185 !important; box-shadow: 0 0 0 3px rgba(251,113,133,.1) !important; }
+    .lb-form-body input.lb-ok { border-color: rgba(45,212,191,.4) !important; }
+
+    /* Campo dirección con botón mapa */
+    .lb-dir-wrap { display: flex; gap: 8px; }
+    .lb-dir-wrap .lb-iw { flex: 1; }
+    .lb-map-btn {
+      flex-shrink: 0;
+      display: flex; align-items: center; gap: 5px;
+      padding: 0 12px;
+      background: rgba(13,148,136,.08);
+      border: 1px solid rgba(13,148,136,.2);
+      border-radius: 9px;
+      font-size: 12px; font-weight: 600; font-family: 'Outfit', sans-serif;
+      color: #2dd4bf; cursor: pointer;
+      transition: all .15s; white-space: nowrap;
+    }
+    .lb-map-btn:hover { background: rgba(13,148,136,.15); border-color: rgba(13,148,136,.4); }
+
+    /* Password strength */
+    .lb-pwd-strength { margin-top: 6px; display: flex; gap: 4px; height: 3px; }
+    .lb-pwd-bar { flex: 1; border-radius: 2px; background: rgba(13,148,136,.08); transition: background .3s; }
+    .lb-pwd-hint { font-size: 10.5px; color: #2e5555; margin-top: 4px; }
+
+    /* Eye button */
+    .lb-eye {
+      position: absolute; right: 10px;
+      background: none; border: none; cursor: pointer;
+      color: #1e4040; padding: 4px;
+      display: flex; align-items: center;
+      transition: color .15s; border-radius: 5px;
+    }
+    .lb-eye:hover { color: #4a8585; }
+
+    /* Error inline */
+    .lb-err-msg { font-size: 10.5px; color: #fb7185; margin-top: 4px; display: none; align-items: center; gap: 4px; }
+    .lb-err-msg.show { display: flex; }
+
+    /* Email feedback */
+    #emailFeedback { font-size: 10.5px; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+    #emailFeedback.text-success { color: #2dd4bf; }
+    #emailFeedback.text-danger { color: #fb7185; }
+
+    /* Error de step general */
+    .lb-step-error {
+      display: none;
+      margin-top: 10px; padding: 8px 12px;
+      background: rgba(251,113,133,.1);
+      border: 1px solid rgba(251,113,133,.2);
+      border-radius: 8px;
+      font-size: 12px; color: #fb7185;
+    }
+
+    /* Divider */
+    .lb-section-div {
+      display: flex; align-items: center; gap: 10px;
+      margin: 16px 0 14px;
+      font-size: 10.5px; font-weight: 700; color: #2e5555;
+      letter-spacing: .08em; text-transform: uppercase;
+    }
+    .lb-section-div::before, .lb-section-div::after { content: ''; flex: 1; height: 1px; background: rgba(13,148,136,.1); }
+
+    /* Navigation buttons */
+    .lb-nav-row { display: flex; gap: 10px; margin-top: 20px; }
+    .lb-btn-back {
+      flex-shrink: 0;
+      padding: 11px 18px; border-radius: 9px;
+      font-size: 13px; font-weight: 700; font-family: 'Outfit', sans-serif;
+      background: rgba(13,148,136,.08); color: #4a8585;
+      border: 1px solid rgba(13,148,136,.15); cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: all .2s;
+    }
+    .lb-btn-back:hover { background: rgba(13,148,136,.15); color: #e8f5f5; }
+
+    .lb-btn-next, .lb-btn-submit {
+      flex: 1;
+      padding: 11px 16px; border-radius: 9px;
+      background: linear-gradient(135deg, #0a7870, #0d9488 40%, #2dd4bf);
+      color: #030d0d; font-size: 14px; font-weight: 800; font-family: 'Outfit', sans-serif;
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      letter-spacing: .03em;
+      box-shadow: 0 4px 16px rgba(13,148,136,.32);
+      transition: all .2s; position: relative; overflow: hidden;
+    }
+    .lb-btn-next::after, .lb-btn-submit::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent 40%, rgba(217,119,6,.1) 100%);
+      opacity: 0; transition: opacity .2s;
+    }
+    .lb-btn-next:hover::after, .lb-btn-submit:hover::after { opacity: 1; }
+    .lb-btn-next:hover, .lb-btn-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(13,148,136,.42); }
+    .lb-btn-next:active, .lb-btn-submit:active { transform: translateY(0); }
+    .lb-btn-next:disabled, .lb-btn-submit:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    /* ── Card footer ── */
+    .lb-card-footer {
+      padding: 12px 28px 18px;
+      border-top: 1px solid rgba(13,148,136,.08);
+      text-align: center;
+    }
+    .lb-footer-txt { font-size: 12.5px; color: #2e5555; }
+    .lb-footer-txt a { color: #2dd4bf; font-weight: 700; text-decoration: none; transition: color .15s; }
+    .lb-footer-txt a:hover { color: #5eead4; }
+
+    /* ── Modales — tema oscuro ── */
+    .modal-content {
+      background: #0e1a1a !important;
+      border: 1px solid rgba(13,148,136,.2) !important;
+      border-radius: 16px !important;
+      color: #e8f5f5 !important;
+    }
+    .modal-header {
+      border-bottom: 1px solid rgba(13,148,136,.12) !important;
+      padding: 16px 20px !important;
+    }
+    .modal-header .modal-title { font-size: 15px; font-weight: 700; color: #e8f5f5; }
+    .modal-header .btn-close { filter: invert(1); opacity: .4; }
+    .modal-header .btn-close-white { filter: none; opacity: .7; }
+    .modal-body { padding: 20px !important; }
+    .modal-footer { border-top: 1px solid rgba(13,148,136,.08) !important; padding: 14px 20px !important; }
+    .modal-body p, .modal-body small { color: #4a8585; font-size: 13px; }
+    .modal-body .form-label { font-size: 11px; font-weight: 700; color: #4a8585; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+    .modal-body .form-control {
+      background: rgba(6,11,11,.75) !important;
+      border: 1px solid rgba(13,148,136,.15) !important;
+      border-radius: 9px !important;
+      color: #e8f5f5 !important;
+      font-family: 'Outfit', sans-serif; font-size: 13px;
+    }
+    .modal-body .form-control:focus {
+      border-color: #0d9488 !important;
+      box-shadow: 0 0 0 3px rgba(13,148,136,.12) !important;
+    }
+    .modal-body .form-control::placeholder { color: #193535; }
+    .modal-body .form-text { color: #2e5555 !important; font-size: 11px; }
+    .modal-body .alert-danger { background: rgba(244,63,94,.1); color: #fb7185; border: 1px solid rgba(244,63,94,.2); font-size: 12.5px; border-radius: 8px; }
+    .modal-body .alert-success { background: rgba(13,148,136,.1); color: #2dd4bf; border: 1px solid rgba(13,148,136,.2); font-size: 12.5px; border-radius: 8px; }
+    .modal .btn-primary {
+      background: linear-gradient(135deg, #0a7870, #0d9488 40%, #2dd4bf) !important;
+      color: #030d0d !important; font-weight: 700 !important;
+      border: none !important; border-radius: 9px !important;
+      font-family: 'Outfit', sans-serif;
+    }
+    .modal .btn-primary:hover { box-shadow: 0 4px 14px rgba(13,148,136,.35) !important; }
+    .modal .btn-secondary {
+      background: rgba(13,148,136,.08) !important; color: #4a8585 !important;
+      border: 1px solid rgba(13,148,136,.15) !important; border-radius: 9px !important;
+      font-family: 'Outfit', sans-serif;
+    }
+    .modal .btn-success {
+      background: linear-gradient(135deg, #0a7870, #0d9488 40%, #2dd4bf) !important;
+      color: #030d0d !important; font-weight: 700 !important;
+      border: none !important; border-radius: 9px !important;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    /* Modal del mapa — buscador y mapa */
+    #mapModal .modal-header {
+      background: rgba(13,148,136,.08) !important;
+      border-bottom: 1px solid rgba(13,148,136,.15) !important;
+    }
+    #mapModal .modal-body { padding: 0 !important; }
+    #mapModal .map-search-area { padding: 12px 16px; }
+    #mapModal .map-info-area {
+      padding: 12px 16px;
+      border-top: 1px solid rgba(13,148,136,.1);
+      background: rgba(6,11,11,.5);
+    }
+    #mapModal .map-info-area .form-label { color: #4a8585; font-size: 11px; font-weight: 600; }
+    .btn-detect-location {
+      background: rgba(13,148,136,.12);
+      color: #2dd4bf; border: 1px solid rgba(13,148,136,.25);
+      padding: 6px 14px; border-radius: 8px;
+      font-size: 12px; font-weight: 600; font-family: 'Outfit', sans-serif;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: all .2s; cursor: pointer;
+    }
+    .btn-detect-location:hover { background: rgba(13,148,136,.22); color: #2dd4bf; }
+    .pac-container { z-index: 99999 !important; border-radius: 0 0 8px 8px; box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+    .places-autocomplete-wrapper { width: 100%; position: relative; }
+    .places-autocomplete-wrapper gmp-place-autocomplete {
+      width: 100%; display: block; color-scheme: dark;
+      background: rgba(6,11,11,.75); border-radius: 9px;
+      min-height: 44px; line-height: 44px;
+    }
+    #mapSearchInput, #mapSearchInputFallback {
+      width: 100% !important; padding: 10px 15px !important;
+      border: 1px solid rgba(13,148,136,.15) !important; border-radius: 9px !important;
+      font-size: 13px !important; background: rgba(6,11,11,.75) !important;
+      color: #e8f5f5 !important; font-family: 'Outfit', sans-serif !important;
+    }
+    #mapSearchInput:focus, #mapSearchInputFallback:focus {
+      border-color: #0d9488 !important;
+      box-shadow: 0 0 0 3px rgba(13,148,136,.12) !important; outline: none !important;
+    }
+    #placesAutocompleteContainer { overflow: visible !important; position: relative; z-index: 1060; }
+
+    /* ════════════════════════════════════════
+       MODO CLARO  (7:00 – 19:00)
+    ════════════════════════════════════════ */
+    html[data-mode="light"] body { background: #eef6f6; }
+
+    html[data-mode="light"] .lb-bg {
+      background:
+        radial-gradient(ellipse 60% 50% at 18% 10%, rgba(13,148,136,.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 45% at 82% 90%, rgba(45,212,191,.05) 0%, transparent 55%),
+        radial-gradient(ellipse 30% 28% at 75% 8%,  rgba(217,119,6,.05)  0%, transparent 50%);
+    }
+    html[data-mode="light"] .lb-grid {
+      background-image:
+        linear-gradient(rgba(15,118,110,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15,118,110,.06) 1px, transparent 1px);
+    }
+
+    /* Card: blanca */
+    html[data-mode="light"] .lb-card {
+      background: #ffffff;
+      border-color: rgba(15,118,110,.2);
+      box-shadow: 0 0 0 1px rgba(15,118,110,.06), 0 20px 60px rgba(0,0,0,.1);
+    }
+
+    /* Logo area */
+    html[data-mode="light"] .lb-logo-area  { border-bottom-color: rgba(15,118,110,.1); }
+    html[data-mode="light"] .lb-brand       { color: #041414; }
+    html[data-mode="light"] .lb-tagline     { color: #5a9a9a; }
+
+    /* Header del form */
+    html[data-mode="light"] .lb-form-title  { color: #041414; }
+    html[data-mode="light"] .lb-step-dot            { background: rgba(15,118,110,.15); }
+    html[data-mode="light"] .lb-step-dot.active     { background: #0f766e; box-shadow: 0 0 6px rgba(15,118,110,.4); }
+    html[data-mode="light"] .lb-step-dot.done       { background: #0d9488; }
+
+    /* Labels y iconos */
+    html[data-mode="light"] .lb-lbl  { color: #2d6e6e; }
+    html[data-mode="light"] .lb-req  { color: #b45309; }
+    html[data-mode="light"] .lb-ico  { color: #88bcbc; }
+
+    /* Inputs del form body */
+    html[data-mode="light"] .lb-form-body input[type=text],
+    html[data-mode="light"] .lb-form-body input[type=email],
+    html[data-mode="light"] .lb-form-body input[type=password],
+    html[data-mode="light"] .lb-form-body input[type=tel],
+    html[data-mode="light"] .lb-form-body input[type=date] {
+      background: rgba(240,252,252,.9);
+      border-color: rgba(15,118,110,.2);
+      color: #041414;
+      color-scheme: light;
+    }
+    html[data-mode="light"] .lb-form-body input::placeholder { color: #88bcbc; }
+    html[data-mode="light"] .lb-form-body input:focus {
+      border-color: #0f766e;
+      box-shadow: 0 0 0 3px rgba(15,118,110,.12);
+    }
+    html[data-mode="light"] .lb-form-body input.lb-error {
+      border-color: #e11d48 !important;
+      box-shadow: 0 0 0 3px rgba(225,29,72,.1) !important;
+    }
+    html[data-mode="light"] .lb-form-body input.lb-ok { border-color: rgba(15,118,110,.4) !important; }
+
+    /* Botón mapa */
+    html[data-mode="light"] .lb-map-btn {
+      background: rgba(15,118,110,.08); border-color: rgba(15,118,110,.2); color: #0f766e;
+    }
+    html[data-mode="light"] .lb-map-btn:hover {
+      background: rgba(15,118,110,.15); border-color: rgba(15,118,110,.35);
+    }
+
+    /* Password strength */
+    html[data-mode="light"] .lb-pwd-bar  { background: rgba(15,118,110,.1); }
+    html[data-mode="light"] .lb-pwd-hint { color: #5a9a9a; }
+
+    /* Ojo y mensajes */
+    html[data-mode="light"] .lb-eye          { color: #88bcbc; }
+    html[data-mode="light"] .lb-eye:hover    { color: #2d6e6e; }
+    html[data-mode="light"] .lb-err-msg      { color: #e11d48; }
+    html[data-mode="light"] #emailFeedback.text-success { color: #0f766e; }
+    html[data-mode="light"] #emailFeedback.text-danger  { color: #e11d48; }
+    html[data-mode="light"] .lb-step-error {
+      background: rgba(225,29,72,.07); border-color: rgba(225,29,72,.2); color: #be123c;
+    }
+
+    /* Summary (paso 3) */
+    html[data-mode="light"] #summaryBox {
+      background: rgba(240,252,252,.9); border-color: rgba(15,118,110,.15);
+    }
+
+    /* Botones de navegación */
+    html[data-mode="light"] .lb-btn-back {
+      background: rgba(15,118,110,.08); color: #2d6e6e; border-color: rgba(15,118,110,.15);
+    }
+    html[data-mode="light"] .lb-btn-back:hover { background: rgba(15,118,110,.15); color: #041414; }
+
+    /* Footer */
+    html[data-mode="light"] .lb-card-footer       { border-top-color: rgba(15,118,110,.1); }
+    html[data-mode="light"] .lb-footer-txt         { color: #5a9a9a; }
+    html[data-mode="light"] .lb-footer-txt a       { color: #0d9488; }
+    html[data-mode="light"] .lb-footer-txt a:hover { color: #0f766e; }
+
+    /* Modales en modo claro */
+    html[data-mode="light"] .modal-content {
+      background: #ffffff !important; border-color: rgba(15,118,110,.2) !important; color: #041414 !important;
+    }
+    html[data-mode="light"] .modal-header           { border-bottom-color: rgba(15,118,110,.1) !important; }
+    html[data-mode="light"] .modal-header .modal-title { color: #041414; }
+    html[data-mode="light"] .modal-header .btn-close    { filter: none; opacity: .5; }
+    html[data-mode="light"] .modal-header .btn-close-white { filter: none; opacity: .6; }
+    html[data-mode="light"] .modal-footer           { border-top-color: rgba(15,118,110,.08) !important; }
+    html[data-mode="light"] .modal-body p,
+    html[data-mode="light"] .modal-body small       { color: #2d6e6e; }
+    html[data-mode="light"] .modal-body .form-label { color: #2d6e6e; }
+    html[data-mode="light"] .modal-body .form-control {
+      background: rgba(240,252,252,.9) !important; border-color: rgba(15,118,110,.2) !important; color: #041414 !important;
+    }
+    html[data-mode="light"] .modal-body .form-control::placeholder { color: #88bcbc; }
+    html[data-mode="light"] .modal-body .form-text  { color: #5a9a9a !important; }
+    html[data-mode="light"] .modal .btn-secondary {
+      background: rgba(15,118,110,.08) !important; color: #2d6e6e !important; border-color: rgba(15,118,110,.15) !important;
+    }
+    html[data-mode="light"] #mapModal .modal-header {
+      background: rgba(15,118,110,.06) !important;
+    }
+    html[data-mode="light"] .btn-detect-location {
+      background: rgba(15,118,110,.1); color: #0f766e; border-color: rgba(15,118,110,.25);
+    }
+    html[data-mode="light"] #mapModal .map-info-area {
+      background: rgba(240,252,252,.95); border-top-color: rgba(15,118,110,.1);
+    }
+    html[data-mode="light"] #mapModal .map-info-area .form-label { color: #2d6e6e; }
+    html[data-mode="light"] #mapSearchInput, html[data-mode="light"] #mapSearchInputFallback {
+      background: rgba(240,252,252,.95) !important; border-color: rgba(15,118,110,.2) !important; color: #041414 !important;
+    }
     </style>
 </head>
 <body>
-    <div class="register-container">
-        <div class="logo">
-            <img src="/public/img/icono-LB.png" alt="LOCOBAR" class="logo-icon">
-            <div class="login-title-wrap">
-                <h1 class="login-title">LOCOBAR</h1>
-                <hr class="login-separator">
+    <div class="lb-bg"></div>
+    <div class="lb-grid"></div>
+
+    <div class="lb-card" id="mainCard">
+        <div class="lb-card-line"></div>
+
+        <!-- Logo -->
+        <div class="lb-logo-area">
+            <img class="lb-logo-img" src="/public/img/icono-LB.png" alt="LOCOBAR">
+            <div>
+                <div class="lb-brand">LOCO<span class="lb-brand-dot"></span><span>BAR</span></div>
+                <div class="lb-tagline" id="brandSloganText">Donde el sabor se vuelve locura</div>
             </div>
-            <p class="login-slogan" id="brandSloganText">Donde el sabor se vuelve locura</p>
         </div>
-        <h2 class="text-center mb-4">REGISTRO</h2>
-        <div id="alertContainer"></div>
-        
-        <form id="registerForm">
-            <div class="mb-3">
-                <label class="form-label">Nombre Completo <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="name" required>
+
+        <!-- Header con título y dots de progreso -->
+        <div class="lb-form-header">
+            <div class="lb-form-title" id="formTitle">Datos personales</div>
+            <div class="lb-step-indicator">
+                <div class="lb-step-dot active" id="dot1"></div>
+                <div class="lb-step-dot" id="dot2"></div>
+                <div class="lb-step-dot" id="dot3"></div>
             </div>
-            <div class="mb-3">
-                <label class="form-label">Número de Cédula <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="cedula" required pattern="[A-Za-z0-9-]+" 
-                       placeholder="Ej: 1234567890" maxlength="50">
-                <small class="form-text text-muted">Solo letras, números y guiones. Debe ser único.</small>
+        </div>
+
+        <!-- Cuerpo del formulario -->
+        <div class="lb-form-body">
+
+            <!-- PASO 1: Datos personales -->
+            <div class="lb-step active" id="step1">
+                <div class="lb-frow">
+                    <div class="lb-fgroup">
+                        <div class="lb-lbl">
+                            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            Nombres <span class="lb-req">*</span>
+                        </div>
+                        <div class="lb-iw">
+                            <span class="lb-ico"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                            <input type="text" id="firstName" placeholder="Ej: Juan Carlos">
+                        </div>
+                        <div class="lb-err-msg" id="err-firstName">
+                            <svg width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                            Campo requerido
+                        </div>
+                    </div>
+                    <div class="lb-fgroup">
+                        <div class="lb-lbl">
+                            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            Apellidos <span class="lb-req">*</span>
+                        </div>
+                        <div class="lb-iw">
+                            <span class="lb-ico"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                            <input type="text" id="lastName" placeholder="Ej: Pérez López">
+                        </div>
+                        <div class="lb-err-msg" id="err-lastName">
+                            <svg width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                            Campo requerido
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lb-fgroup">
+                    <div class="lb-lbl">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                        Número de Cédula <span class="lb-req">*</span>
+                    </div>
+                    <div class="lb-iw">
+                        <span class="lb-ico"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
+                        <input type="text" id="cedula" placeholder="Ej: 1234567890" maxlength="13">
+                    </div>
+                    <div class="lb-err-msg" id="err-cedula">
+                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                        Cédula inválida (mínimo 10 dígitos)
+                    </div>
+                </div>
+
+                <div class="lb-fgroup">
+                    <div class="lb-lbl">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+                        Teléfono
+                    </div>
+                    <div class="lb-iw">
+                        <span class="lb-ico"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.1 19.79 19.79 0 0 1 1.61 4.5 2 2 0 0 1 3.6 2.32h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.06 6.06l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
+                        <input type="tel" id="phone" placeholder="Ej: 0987654321">
+                    </div>
+                </div>
+
+                <div class="lb-fgroup">
+                    <div class="lb-lbl">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        Dirección
+                    </div>
+                    <div class="lb-dir-wrap">
+                        <div class="lb-iw">
+                            <span class="lb-ico"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+                            <input type="text" id="address" placeholder="Seleccione en el mapa" readonly style="cursor:pointer;" onclick="openMapModal()">
+                        </div>
+                        <button class="lb-map-btn" type="button" onclick="openMapModal()">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                            Mapa
+                        </button>
+                    </div>
+                    <input type="hidden" id="latitude">
+                    <input type="hidden" id="longitude">
+                </div>
+
+                <div class="lb-fgroup">
+                    <div class="lb-lbl">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        Fecha de Nacimiento <span class="lb-req">*</span>
+                    </div>
+                    <div class="lb-iw">
+                        <span class="lb-ico"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+                        <input type="date" id="birthDate" style="padding-left:36px;">
+                    </div>
+                    <div class="lb-err-msg" id="err-birthDate">
+                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                        Debes ser mayor de 18 años
+                    </div>
+                </div>
+
+                <button class="lb-btn-next" type="button" onclick="nextStep(1)" style="width:100%;margin-top:8px;">
+                    Continuar
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
             </div>
-            <div class="mb-3">
-                <label class="form-label">Email <span class="text-danger">*</span></label>
-                <input type="email" class="form-control" id="email" required autocomplete="email">
-                <div id="emailFeedback" class="form-text" style="display: none;"></div>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Teléfono</label>
-                <input type="tel" class="form-control" id="phone">
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Dirección</label>
-                <div class="input-group">
-                    <input type="text" class="form-control" id="address" readonly placeholder="Seleccione ubicación en el mapa">
-                    <button type="button" class="btn btn-outline-primary" onclick="openMapModal()">
-                        <i class="bi bi-geo-alt-fill"></i> Mapa
+
+            <!-- PASO 2: Credenciales -->
+            <div class="lb-step" id="step2">
+                <div class="lb-fgroup">
+                    <div class="lb-lbl">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        Email <span class="lb-req">*</span>
+                    </div>
+                    <div class="lb-iw">
+                        <span class="lb-ico"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+                        <input type="email" id="email" placeholder="tu@email.com" autocomplete="email">
+                    </div>
+                    <div id="emailFeedback" style="display:none;"></div>
+                    <div class="lb-err-msg" id="err-email">
+                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                        Email inválido
+                    </div>
+                </div>
+
+                <div class="lb-fgroup">
+                    <div class="lb-lbl">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Contraseña <span class="lb-req">*</span>
+                    </div>
+                    <div class="lb-iw">
+                        <span class="lb-ico"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                        <input type="password" id="password" placeholder="Mínimo 6 caracteres" oninput="checkStrength()" style="padding-right:40px;">
+                        <button class="lb-eye" type="button" onclick="togglePwd('password','eyeP')">
+                            <svg id="eyeP" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                    <div class="lb-pwd-strength">
+                        <div class="lb-pwd-bar" id="ps1"></div>
+                        <div class="lb-pwd-bar" id="ps2"></div>
+                        <div class="lb-pwd-bar" id="ps3"></div>
+                        <div class="lb-pwd-bar" id="ps4"></div>
+                    </div>
+                    <div class="lb-pwd-hint" id="pwdHint">Ingresa tu contraseña</div>
+                    <div class="lb-err-msg" id="err-password">
+                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                        Mínimo 6 caracteres
+                    </div>
+                </div>
+
+                <div class="lb-fgroup">
+                    <div class="lb-lbl">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Confirmar Contraseña <span class="lb-req">*</span>
+                    </div>
+                    <div class="lb-iw">
+                        <span class="lb-ico"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                        <input type="password" id="confirmPassword" placeholder="Repite tu contraseña" style="padding-right:40px;">
+                        <button class="lb-eye" type="button" onclick="togglePwd('confirmPassword','eyeP2')">
+                            <svg id="eyeP2" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                    <div class="lb-err-msg" id="err-confirmPassword">
+                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                        Las contraseñas no coinciden
+                    </div>
+                </div>
+
+                <div class="lb-nav-row">
+                    <button class="lb-btn-back" type="button" onclick="goStep(1)">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                        Atrás
+                    </button>
+                    <button class="lb-btn-next" type="button" onclick="nextStep(2)">
+                        Continuar
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                     </button>
                 </div>
-                <input type="hidden" id="latitude">
-                <input type="hidden" id="longitude">
-                <small class="form-text text-muted">Haz clic en "Mapa" para seleccionar la ubicación.</small>
             </div>
-            <div class="mb-3">
-                <label class="form-label">Contraseña <span class="text-danger">*</span></label>
-                <input type="password" class="form-control" id="password" minlength="6" required>
-                <small class="form-text text-muted">Mínimo 6 caracteres</small>
+
+            <!-- PASO 3: Confirmar datos -->
+            <div class="lb-step" id="step3">
+                <div style="text-align:center;padding:10px 0 20px;">
+                    <div style="width:56px;height:56px;border-radius:16px;background:rgba(13,148,136,.1);border:1px solid rgba(13,148,136,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+                        <svg width="26" height="26" fill="none" stroke="#2dd4bf" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <div style="font-size:15px;font-weight:700;color:#e8f5f5;margin-bottom:4px;">Confirma tus datos</div>
+                    <div style="font-size:12px;color:#2e5555;">Verifica que todo sea correcto antes de registrarte</div>
+                </div>
+
+                <div id="summaryBox" style="background:rgba(6,11,11,.6);border:1px solid rgba(13,148,136,.14);border-radius:10px;padding:14px;margin-bottom:16px;"></div>
+
+                <div style="background:rgba(217,119,6,.05);border:1px solid rgba(217,119,6,.12);border-radius:9px;padding:10px 14px;margin-bottom:4px;display:flex;align-items:flex-start;gap:8px;">
+                    <svg style="flex-shrink:0;margin-top:1px;" width="13" height="13" fill="none" stroke="#d97706" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <div style="font-size:11.5px;color:#c4943c;line-height:1.5;">Al registrarte aceptas nuestros <a href="#" style="color:#f0c040;font-weight:700;">Términos de Uso</a> y confirmas que tienes al menos 18 años de edad.</div>
+                </div>
+
+                <div class="lb-step-error" id="submitError"></div>
+
+                <div class="lb-nav-row">
+                    <button class="lb-btn-back" type="button" onclick="goStep(2)">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                        Atrás
+                    </button>
+                    <button class="lb-btn-submit" type="button" id="submitBtn" onclick="submitForm()">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                        Registrarse
+                    </button>
+                </div>
             </div>
-            <div class="mb-3">
-                <label class="form-label">Confirmar Contraseña <span class="text-danger">*</span></label>
-                <input type="password" class="form-control" id="confirmPassword" minlength="6" required>
-            </div>
-            <button type="submit" class="btn btn-primary w-100 mb-3">
-                <i class="bi bi-person-plus"></i> Registrarse
-            </button>
-            <div class="text-center">
-                <p class="mb-0">¿Ya tienes cuenta? <a href="/customer/login">Inicia sesión aquí</a></p>
-            </div>
-        </form>
+
+        </div><!-- end form-body -->
+
+        <div class="lb-card-footer">
+            <div class="lb-footer-txt">¿Ya tienes cuenta? <a href="/customer/login">Inicia sesión aquí</a></div>
+        </div>
     </div>
 
     <!-- Modal de Verificación de Código -->
@@ -206,17 +708,15 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-shield-check"></i> Verificación de Correo Electrónico
-                    </h5>
+                    <h5 class="modal-title"><i class="bi bi-shield-check"></i> Verificación de Correo Electrónico</h5>
                 </div>
                 <div class="modal-body">
                     <p class="mb-3">Se ha enviado un código de verificación a tu correo electrónico. Por favor ingrésalo a continuación:</p>
                     <div class="mb-3">
                         <label class="form-label">Código de Verificación</label>
-                        <input type="text" class="form-control text-center" id="verificationCode" 
+                        <input type="text" class="form-control text-center" id="verificationCode"
                                placeholder="000000" maxlength="6" style="font-size: 1.5em; letter-spacing: 0.5em;" required>
-                        <small class="form-text text-muted">El código expira en 15 minutos</small>
+                        <small class="form-text">El código expira en 15 minutos</small>
                     </div>
                     <div id="verificationError" class="alert alert-danger" style="display: none;"></div>
                 </div>
@@ -232,45 +732,41 @@
         </div>
     </div>
 
-    <!-- Modal de Selección de Ubicación en Mapa (Google Maps) -->
+    <!-- Modal de Selección de Ubicación en Mapa -->
     <div class="modal fade" id="mapModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <div class="modal-header">
                     <h5 class="modal-title mb-0"><i class="bi bi-geo-alt-fill"></i> Seleccionar Ubicación</h5>
                     <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn-detect-location" onclick="obtenerUbicacionActual()" title="Detectar mi ubicación">
-                            <i class="bi bi-geo-alt"></i> Detectar mi ubicación
+                        <button type="button" class="btn-detect-location" onclick="obtenerUbicacionActual()">
+                            <i class="bi bi-geo-alt"></i> Mi ubicación
                         </button>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                 </div>
                 <div class="modal-body p-0">
-                    <!-- Buscador de direcciones -->
-                    <div class="p-3 border-bottom">
+                    <div class="map-search-area">
                         <div id="placesAutocompleteContainer" class="places-autocomplete-wrapper">
-                            <!-- El PlaceAutocompleteElement se insertará aquí -->
-                        </div>
-                        <small class="text-muted mt-2 d-block">Escribe para buscar (ej: "Locobar") o haz clic en el mapa.</small>
-                    </div>
-                    <!-- Contenedor del mapa Google Maps -->
-                    <div id="googleMap" style="height: 400px; width: 100%;"></div>
-                    <!-- Info de ubicación seleccionada -->
-                    <div class="p-3 border-top bg-light">
-                        <div class="row">
-                            <div class="col-12">
-                                <label class="form-label fw-bold"><i class="bi bi-pin-map"></i> Dirección seleccionada:</label>
-                                <input type="text" class="form-control" id="selectedAddress" readonly 
-                                       placeholder="Haz clic en el mapa o busca una dirección">
+                            <div id="mapSearchPlaceholder" style="height:44px;border-radius:9px;background:rgba(6,11,11,.75);border:1px solid rgba(13,148,136,.15);display:flex;align-items:center;padding:0 16px;color:#193535;gap:10px;">
+                                <i class="bi bi-search" style="color:#1e4040;"></i>
+                                <span style="font-size:13px;">Buscar dirección, negocio o lugar...</span>
                             </div>
                         </div>
-                        <div class="row mt-2">
+                    </div>
+                    <div id="googleMap" style="height: 380px; width: 100%;"></div>
+                    <div class="map-info-area">
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label"><i class="bi bi-pin-map"></i> Dirección seleccionada:</label>
+                                <input type="text" class="form-control" id="selectedAddress" readonly placeholder="Haz clic en el mapa o busca una dirección">
+                            </div>
                             <div class="col-6">
-                                <label class="form-label small text-muted">Latitud:</label>
+                                <label class="form-label small">Latitud:</label>
                                 <input type="text" class="form-control form-control-sm" id="selectedLatitude" readonly>
                             </div>
                             <div class="col-6">
-                                <label class="form-label small text-muted">Longitud:</label>
+                                <label class="form-label small">Longitud:</label>
                                 <input type="text" class="form-control form-control-sm" id="selectedLongitude" readonly>
                             </div>
                         </div>
@@ -291,258 +787,306 @@
     <script src="/libs/js/jquery.min.js"></script>
     <script src="/libs/js/bootstrap.bundle.min.js"></script>
     <script src="/libs/js/google-maps-helper.js"></script>
-    
+
     <script>
-        // Configurar Google Maps Helper para el formulario de registro
+        // ── Inicialización ────────────────────────────────────────────────────
         $(document).ready(function() {
+            // Cargar slogan
             $.get('/api/public/brand-slogan', function(r) {
                 if (r) {
                     if (r.brandSlogan) $('#brandSloganText').text(r.brandSlogan);
                     if (r.pageTitleRegister) document.title = r.pageTitleRegister;
                 }
             });
-            // Configurar el helper con los campos específicos del registro
+
+            // Max fecha: hace 18 años
+            const d = new Date();
+            d.setFullYear(d.getFullYear() - 18);
+            document.getElementById('birthDate').setAttribute('max', d.toISOString().split('T')[0]);
+
+            // Google Maps Helper
             GoogleMapsHelper.config({
                 addressFieldId: '#address',
                 latitudeFieldId: '#latitude',
                 longitudeFieldId: '#longitude',
                 mapId: 'REGISTER_MAP',
-                defaultLocation: { lat: 19.4326, lng: -99.1332 }, // México City
-                countryRestriction: null // Sin restricción de país
+                defaultLocation: { lat: -0.9538, lng: -80.7117 },
+                countryRestriction: null,
+                locationBias: { north: 1.5, south: -5.1, east: -75.0, west: -92.0 }
             });
-
-            // Precargar librerías de Google Maps
             GoogleMapsHelper.preload();
         });
 
-        // Función para abrir el modal del mapa (llamada desde el botón)
-        function openMapModal() {
-            GoogleMapsHelper.openMapModal();
+        // ── Google Maps helpers ───────────────────────────────────────────────
+        function openMapModal() { GoogleMapsHelper.openMapModal(); }
+        function obtenerUbicacionActual() { GoogleMapsHelper.getCurrentLocation(); }
+        function confirmMapLocation() { GoogleMapsHelper.confirmMapLocation(); }
+
+        // ── Toggle password ───────────────────────────────────────────────────
+        function togglePwd(inputId, svgId) {
+            const input = document.getElementById(inputId);
+            const svg = document.getElementById(svgId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                svg.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+            } else {
+                input.type = 'password';
+                svg.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+            }
         }
 
-        // Función para obtener ubicación actual (llamada desde el botón del modal)
-        function obtenerUbicacionActual() {
-            GoogleMapsHelper.getCurrentLocation();
+        // ── Password strength ─────────────────────────────────────────────────
+        function checkStrength() {
+            const v = document.getElementById('password').value;
+            const bars = ['ps1','ps2','ps3','ps4'].map(id => document.getElementById(id));
+            const hint = document.getElementById('pwdHint');
+            let score = 0;
+            if (v.length >= 6) score++;
+            if (v.length >= 10) score++;
+            if (/[A-Z]/.test(v) && /[0-9]/.test(v)) score++;
+            if (/[^A-Za-z0-9]/.test(v)) score++;
+            const colors = ['#fb7185','#fbbf24','#34d399','#2dd4bf'];
+            const labels = ['Muy débil','Débil','Buena','Fuerte'];
+            bars.forEach((b, i) => { b.style.background = i < score ? colors[score-1] : 'rgba(13,148,136,.08)'; });
+            hint.textContent = v.length ? (labels[score-1] || 'Muy débil') : 'Ingresa tu contraseña';
+            hint.style.color = v.length ? (colors[score-1] || '#fb7185') : '#2e5555';
         }
 
-        // Función para confirmar ubicación (llamada desde el botón del modal)
-        function confirmMapLocation() {
-            GoogleMapsHelper.confirmMapLocation();
+        // ── Validación por campo ──────────────────────────────────────────────
+        function validateField(field) {
+            const el = document.getElementById(field);
+            const err = document.getElementById('err-' + field);
+            let ok = true;
+            switch (field) {
+                case 'firstName': case 'lastName': ok = el.value.trim().length >= 2; break;
+                case 'cedula': ok = /^[A-Za-z0-9-]{10,13}$/.test(el.value.trim()); break;
+                case 'email': ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value); break;
+                case 'password': ok = el.value.length >= 6; break;
+                case 'confirmPassword': ok = el.value === document.getElementById('password').value; break;
+                case 'birthDate': {
+                    if (!el.value) { ok = false; break; }
+                    const age = (new Date() - new Date(el.value)) / (365.25 * 24 * 3600 * 1000);
+                    ok = age >= 18 && !isNaN(age);
+                    break;
+                }
+            }
+            if (err) err.classList.toggle('show', !ok);
+            el.classList.toggle('lb-error', !ok);
+            el.classList.toggle('lb-ok', ok && el.value.length > 0);
+            return ok;
         }
 
-        // Validación de email en tiempo real
+        // ── Navegación entre pasos ────────────────────────────────────────────
+        function goStep(n) {
+            document.querySelectorAll('.lb-step').forEach(s => s.classList.remove('active'));
+            document.getElementById('step' + n).classList.add('active');
+            const titles = ['', 'Datos personales', 'Credenciales', 'Confirmar'];
+            document.getElementById('formTitle').textContent = titles[n];
+            for (let i = 1; i <= 3; i++) {
+                const dot = document.getElementById('dot' + i);
+                dot.classList.remove('active', 'done');
+                if (i < n) dot.classList.add('done');
+                else if (i === n) dot.classList.add('active');
+            }
+            document.getElementById('mainCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function nextStep(from) {
+            let fields = [];
+            if (from === 1) fields = ['firstName', 'lastName', 'cedula', 'birthDate'];
+            if (from === 2) fields = ['email', 'password', 'confirmPassword'];
+
+            // Verificar email duplicado antes de avanzar del paso 2
+            if (from === 2 && document.getElementById('email').dataset.emailExists === 'true') {
+                document.getElementById('err-email').querySelector('span:last-child') && null;
+                document.getElementById('err-email').lastElementChild && null;
+                const errEl = document.getElementById('err-email');
+                errEl.querySelector('svg').nextSibling.textContent = ' Este email ya está registrado';
+                errEl.classList.add('show');
+                document.getElementById('email').classList.add('lb-error');
+                document.getElementById('email').focus();
+                return;
+            }
+
+            const valid = fields.map(f => validateField(f));
+            if (valid.some(v => !v)) {
+                const card = document.getElementById('mainCard');
+                card.style.animation = 'none';
+                requestAnimationFrame(() => {
+                    card.style.animation = 'lb-shake .4s ease';
+                    setTimeout(() => card.style.animation = '', 500);
+                });
+                const firstBad = fields.findIndex((f, i) => !valid[i]);
+                if (firstBad >= 0) document.getElementById(fields[firstBad]).focus();
+                return;
+            }
+            if (from === 2) buildSummary();
+            goStep(from + 1);
+        }
+
+        // ── Resumen de datos ──────────────────────────────────────────────────
+        function buildSummary() {
+            const g = id => document.getElementById(id).value || '—';
+            const items = [
+                ['Nombre completo', g('firstName') + ' ' + g('lastName')],
+                ['Cédula',          g('cedula')],
+                ['Teléfono',        g('phone') || 'No ingresado'],
+                ['Dirección',       g('address') || 'No ingresada'],
+                ['Fecha nacimiento',g('birthDate')],
+                ['Email',           g('email')],
+            ];
+            document.getElementById('summaryBox').innerHTML =
+                items.map(([k, v]) => `
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(13,148,136,.07);gap:10px;">
+                        <span style="font-size:11.5px;color:#4a8585;white-space:nowrap;">${k}</span>
+                        <span style="font-size:12px;color:#e8f5f5;font-weight:600;text-align:right;word-break:break-all;">${v}</span>
+                    </div>`).join('') +
+                `<div style="padding:5px 0 0;display:flex;align-items:center;justify-content:space-between;">
+                    <span style="font-size:11.5px;color:#4a8585;">Contraseña</span>
+                    <span style="font-size:12px;color:#2dd4bf;font-weight:600;">••••••••</span>
+                </div>`;
+        }
+
+        // ── Email check en tiempo real ─────────────────────────────────────────
         let emailCheckTimeout;
-        $('#email').on('input', function() {
-            const email = $(this).val().trim();
-            const emailFeedback = $('#emailFeedback');
-            
-            // Limpiar timeout anterior
+        document.getElementById('email').addEventListener('input', function() {
+            const email = this.value.trim();
+            const feedback = document.getElementById('emailFeedback');
+            this.dataset.emailExists = 'false';
             clearTimeout(emailCheckTimeout);
-            
-            // Ocultar feedback si el campo está vacío
-            if (!email) {
-                emailFeedback.hide();
-                $(this).removeClass('is-invalid is-valid');
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                feedback.style.display = 'none';
                 return;
             }
-            
-            // Validar formato básico primero
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                emailFeedback.hide();
-                $(this).removeClass('is-invalid is-valid');
-                return;
-            }
-            
-            // Esperar 500ms después de que el usuario deje de escribir
-            emailCheckTimeout = setTimeout(function() {
+            emailCheckTimeout = setTimeout(() => {
                 $.ajax({
                     url: '/api/auth/check-email',
                     method: 'GET',
-                    data: { email: email, tenantId: 1 },
-                    success: function(response) {
-                        if (response.exists) {
-                            $('#email').addClass('is-invalid').removeClass('is-valid');
-                            emailFeedback.removeClass('text-success').addClass('text-danger')
-                                .html('<i class="bi bi-exclamation-circle"></i> ' + response.message)
-                                .show();
+                    data: { email, tenantId: 1 },
+                    success: (r) => {
+                        feedback.style.display = 'flex';
+                        if (r.exists) {
+                            document.getElementById('email').dataset.emailExists = 'true';
+                            feedback.className = 'text-danger';
+                            feedback.innerHTML = `<svg width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg> ${r.message}`;
                         } else {
-                            $('#email').addClass('is-valid').removeClass('is-invalid');
-                            emailFeedback.removeClass('text-danger').addClass('text-success')
-                                .html('<i class="bi bi-check-circle"></i> ' + response.message)
-                                .show();
+                            document.getElementById('email').dataset.emailExists = 'false';
+                            feedback.className = 'text-success';
+                            feedback.innerHTML = `<svg width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg> ${r.message}`;
                         }
                     },
-                    error: function() {
-                        // En caso de error, no mostrar feedback pero permitir continuar
-                        $('#email').removeClass('is-invalid is-valid');
-                        emailFeedback.hide();
-                    }
+                    error: () => { feedback.style.display = 'none'; }
                 });
             }, 500);
         });
 
-        $(document).ready(function() {
-            $('#registerForm').submit(function(e) {
-                e.preventDefault();
-                
-                const password = $('#password').val();
-                const confirmPassword = $('#confirmPassword').val();
+        // ── Envío del formulario ──────────────────────────────────────────────
+        function submitForm() {
+            const btn = document.getElementById('submitBtn');
+            const errEl = document.getElementById('submitError');
+            errEl.style.display = 'none';
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" style="width:14px;height:14px;border-width:2px;"></span>Registrando...';
 
-                if (password !== confirmPassword) {
-                    showAlert('Las contraseñas no coinciden', 'danger');
-                    return;
-                }
+            const formData = {
+                firstName: document.getElementById('firstName').value.trim(),
+                lastName:  document.getElementById('lastName').value.trim(),
+                birthDate: document.getElementById('birthDate').value,
+                cedula:    document.getElementById('cedula').value.trim(),
+                email:     document.getElementById('email').value.trim(),
+                phone:     document.getElementById('phone').value || null,
+                address:   document.getElementById('address').value || null,
+                latitude:  document.getElementById('latitude').value || null,
+                longitude: document.getElementById('longitude').value || null,
+                password:  document.getElementById('password').value
+            };
 
-                if (password.length < 6) {
-                    showAlert('La contraseña debe tener al menos 6 caracteres', 'danger');
-                    return;
-                }
-
-                const cedula = $('#cedula').val().trim();
-                if (!cedula) {
-                    showAlert('El número de cédula es requerido', 'danger');
-                    return;
-                }
-
-                const email = $('#email').val().trim();
-                if (!email) {
-                    showAlert('El correo electrónico es requerido', 'danger');
-                    return;
-                }
-
-                // Validar formato de email
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(email)) {
-                    showAlert('Por favor ingresa un correo electrónico válido', 'danger');
-                    return;
-                }
-
-                // Verificar si el email tiene clase is-invalid (ya existe)
-                if ($('#email').hasClass('is-invalid')) {
-                    showAlert('Este correo electrónico ya está registrado. Por favor usa otro correo.', 'danger');
-                    return;
-                }
-
-                const formData = {
-                    name: $('#name').val(),
-                    cedula: cedula,
-                    email: email, // Email con trim aplicado
-                    phone: $('#phone').val() || null,
-                    address: $('#address').val() || null,
-                    latitude: $('#latitude').val() || null,
-                    longitude: $('#longitude').val() || null,
-                    password: password
-                };
-
-                $.ajax({
-                    url: '/api/auth/register',
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(formData),
-                    success: function(response) {
-                        if (response.requiresVerification) {
-                            // Guardar email para verificación
-                            window.registrationEmail = email;
-                            
-                            // Mostrar modal de verificación
-                            $('#verificationCode').val('');
-                            $('#verificationError').hide();
-                            const verificationModal = new bootstrap.Modal(document.getElementById('verificationModal'));
-                            verificationModal.show();
-                            
-                            // Enfocar el campo de código
-                            setTimeout(() => {
-                                $('#verificationCode').focus();
-                            }, 500);
-                        } else {
-                            // Si no requiere verificación (caso antiguo)
-                            localStorage.setItem('customerToken', response.token);
-                            localStorage.setItem('customer', JSON.stringify(response.customer));
-                            
-                            showAlert('Registro exitoso. Redirigiendo...', 'success');
-                            setTimeout(() => {
-                                window.location.href = '/customer/catalog';
-                            }, 1500);
-                        }
-                    },
-                    error: function(xhr) {
-                        const error = xhr.responseJSON?.error || 'Error al registrarse';
-                        showAlert(error, 'danger');
+            $.ajax({
+                url: '/api/auth/register',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    if (response.requiresVerification) {
+                        window.registrationEmail = formData.email;
+                        $('#verificationCode').val('');
+                        $('#verificationError').hide();
+                        const modal = new bootstrap.Modal(document.getElementById('verificationModal'));
+                        modal.show();
+                        setTimeout(() => $('#verificationCode').focus(), 500);
+                        btn.disabled = false;
+                        btn.innerHTML = '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg> Registrarse';
+                    } else {
+                        localStorage.setItem('customerToken', response.token);
+                        localStorage.setItem('customer', JSON.stringify(response.customer));
+                        showSuccessCard();
                     }
-                });
+                },
+                error: function(xhr) {
+                    const error = xhr.responseJSON?.error || 'Error al registrarse';
+                    errEl.textContent = error;
+                    errEl.style.display = 'block';
+                    btn.disabled = false;
+                    btn.innerHTML = '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg> Registrarse';
+                }
             });
-        });
+        }
 
-        // Verificar código de registro
+        // ── Pantalla de éxito ─────────────────────────────────────────────────
+        function showSuccessCard() {
+            const card = document.getElementById('mainCard');
+            card.style.transition = 'all .4s';
+            card.innerHTML = `
+                <div style="padding:48px 32px;text-align:center;">
+                    <div style="width:64px;height:64px;border-radius:18px;background:rgba(13,148,136,.1);border:1px solid rgba(13,148,136,.25);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+                        <svg width="30" height="30" fill="none" stroke="#2dd4bf" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <div style="font-size:18px;font-weight:800;color:#e8f5f5;margin-bottom:6px;">¡Cuenta creada!</div>
+                    <div style="font-size:13px;color:#4a8585;margin-bottom:24px;">Tu cuenta en LOCOBAR fue creada exitosamente.</div>
+                    <a href="/customer/catalog" style="display:inline-flex;align-items:center;gap:7px;padding:11px 24px;border-radius:9px;background:linear-gradient(135deg,#0a7870,#0d9488 40%,#2dd4bf);color:#030d0d;font-size:13px;font-weight:800;font-family:'Outfit',sans-serif;text-decoration:none;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                        Ir al catálogo
+                    </a>
+                </div>`;
+        }
+
+        // ── Verificar código de registro ──────────────────────────────────────
         $('#verifyCodeBtn').click(function() {
             const code = $('#verificationCode').val().trim();
-            
             if (!code || code.length !== 6) {
                 $('#verificationError').text('Por favor ingresa el código de 6 dígitos').show();
                 return;
             }
-
-            const btn = $(this);
-            const btnText = btn.find('.btn-text');
-            const btnSpinner = btn.find('.btn-spinner');
-            
-            btn.prop('disabled', true);
-            btnText.hide();
-            btnSpinner.show();
+            const $btn = $(this);
+            $btn.find('.btn-text').hide();
+            $btn.find('.btn-spinner').show();
+            $btn.prop('disabled', true);
 
             $.ajax({
                 url: '/api/auth/verify-registration-code',
                 method: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify({ 
-                    email: window.registrationEmail, 
-                    code: code,
-                    tenantId: 1 
-                }),
+                data: JSON.stringify({ email: window.registrationEmail, code, tenantId: 1 }),
                 success: function(response) {
-                    // Guardar token y datos del cliente
                     localStorage.setItem('customerToken', response.token);
                     localStorage.setItem('customer', JSON.stringify(response.customer));
-                    
-                    // Cerrar modal
                     bootstrap.Modal.getInstance(document.getElementById('verificationModal')).hide();
-                    
-                    // Mostrar mensaje de éxito
-                    showAlert('¡Código verificado exitosamente! Redirigiendo...', 'success');
-                    
-                    // Redirigir al catálogo
-                    setTimeout(() => {
-                        window.location.href = '/customer/catalog';
-                    }, 1500);
+                    showSuccessCard();
+                    setTimeout(() => { window.location.href = '/customer/catalog'; }, 1500);
                 },
                 error: function(xhr) {
                     const error = xhr.responseJSON?.error || 'Error al verificar código';
                     $('#verificationError').text(error).show();
-                    btn.prop('disabled', false);
-                    btnText.show();
-                    btnSpinner.hide();
+                    $btn.find('.btn-text').show();
+                    $btn.find('.btn-spinner').hide();
+                    $btn.prop('disabled', false);
                 }
             });
         });
 
-        // Permitir Enter para verificar código
         $('#verificationCode').on('keypress', function(e) {
-            if (e.which === 13) {
-                e.preventDefault();
-                $('#verifyCodeBtn').click();
-            }
+            if (e.which === 13) { e.preventDefault(); $('#verifyCodeBtn').click(); }
         });
-
-        function showAlert(message, type) {
-            const alertHtml = `
-                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-            $('#alertContainer').html(alertHtml);
-        }
     </script>
 </body>
 </html>
