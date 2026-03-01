@@ -984,6 +984,54 @@ async function initializeApp() {
       console.warn('⚠️ Migración expenses:', e.message);
     }
 
+    // Migración: customer_credits y customer_payments (producción sin sync automático)
+    try {
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS customer_credits (
+          id                              BIGSERIAL PRIMARY KEY,
+          tenant_id                       BIGINT NOT NULL DEFAULT 1,
+          customer_id                     BIGINT NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
+          group_purchase_participant_id   BIGINT REFERENCES group_purchase_participants(id) ON DELETE SET NULL,
+          initial_amount                  DECIMAL(12,2) NOT NULL,
+          current_balance                 DECIMAL(12,2) NOT NULL,
+          interest_rate                   DECIMAL(5,4)  NOT NULL DEFAULT 0,
+          interest_amount                 DECIMAL(12,2) NOT NULL DEFAULT 0,
+          due_date                        DATE,
+          status                          VARCHAR(20) NOT NULL DEFAULT 'ACTIVE'
+                                            CHECK (status IN ('ACTIVE','PAID','CANCELLED')),
+          created_at                      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          paid_at                         TIMESTAMP WITH TIME ZONE,
+          last_interest_calculation_date  DATE
+        )
+      `);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_customer_credits_tenant    ON customer_credits(tenant_id)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_customer_credits_customer  ON customer_credits(customer_id)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_customer_credits_status    ON customer_credits(status)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_customer_credits_due_date  ON customer_credits(due_date)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_customer_credits_participant ON customer_credits(group_purchase_participant_id)`);
+
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS customer_payments (
+          id                              BIGSERIAL PRIMARY KEY,
+          tenant_id                       BIGINT NOT NULL DEFAULT 1,
+          customer_id                     BIGINT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+          group_purchase_participant_id   BIGINT REFERENCES group_purchase_participants(id) ON DELETE SET NULL,
+          amount                          DECIMAL(12,2) NOT NULL,
+          payment_method                  VARCHAR(20) NOT NULL DEFAULT 'CASH',
+          payment_date                    DATE NOT NULL,
+          notes                           TEXT,
+          created_at                      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_customer_payments_tenant      ON customer_payments(tenant_id)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_customer_payments_customer    ON customer_payments(customer_id)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_customer_payments_participant ON customer_payments(group_purchase_participant_id)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_customer_payments_date        ON customer_payments(payment_date)`);
+      console.log('✅ Migración customer_credits/customer_payments completada');
+    } catch (e) {
+      console.warn('⚠️ Migración customer_credits/customer_payments:', e.message);
+    }
+
     // Sync models (create tables if they don't exist)
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: true });
