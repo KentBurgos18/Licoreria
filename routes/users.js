@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
     const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
     const { count, rows } = await User.findAndCountAll({
       where: whereClause,
-      attributes: ['id', 'tenantId', 'name', 'email', 'role', 'isActive', 'lastLogin', 'createdAt'],
+      attributes: ['id', 'tenantId', 'name', 'email', 'role', 'customRoleId', 'isActive', 'lastLogin', 'createdAt'],
       limit: Math.min(parseInt(limit, 10) || 50, 100),
       offset,
       order: [['name', 'ASC']]
@@ -78,7 +78,7 @@ router.get('/:id', async (req, res) => {
 
     const user = await User.findOne({
       where: { id: Number(id), tenantId: Number(tenantId) },
-      attributes: ['id', 'tenantId', 'name', 'email', 'role', 'isActive', 'lastLogin', 'createdAt']
+      attributes: ['id', 'tenantId', 'name', 'email', 'role', 'customRoleId', 'isActive', 'lastLogin', 'createdAt']
     });
 
     if (!user) {
@@ -101,7 +101,7 @@ router.get('/:id', async (req, res) => {
 // POST /users - Create user (en base de datos; así puede iniciar sesión y usar "Olvidé contraseña")
 router.post('/', async (req, res) => {
   try {
-    const { tenantId = 1, name, email, password, role = 'USER', isActive = true } = req.body;
+    const { tenantId = 1, name, email, password, role = 'USER', customRoleId, isActive = true } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -131,6 +131,7 @@ router.post('/', async (req, res) => {
       email: emailTrimmed,
       password: passwordHash,
       role: dbRole,
+      customRoleId: customRoleId ? Number(customRoleId) : null,
       isActive: isActive !== false
     });
 
@@ -148,7 +149,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { tenantId = 1, name, email, password, role, isActive } = req.body;
+    const { tenantId = 1, name, email, password, role, customRoleId, isActive } = req.body;
 
     const user = await User.findOne({
       where: { id: Number(id), tenantId: Number(tenantId) }
@@ -180,6 +181,7 @@ router.put('/:id', async (req, res) => {
     if (name !== undefined) updates.name = String(name).trim();
     if (email !== undefined) updates.email = String(email).trim().toLowerCase();
     if (role !== undefined) updates.role = roleToDb(role);
+    if (customRoleId !== undefined) updates.customRoleId = customRoleId ? Number(customRoleId) : null;
     if (isActive !== undefined) updates.isActive = isActive !== false;
     if (password && String(password).length > 0) {
       updates.password = await bcrypt.hash(password, 10);

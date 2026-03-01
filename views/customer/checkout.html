@@ -23,8 +23,8 @@
         .timer-banner {
             background: var(--accentbg);
             border: 1px solid var(--border);
-            border-radius: 12px; padding: 12px 16px;
-            display: flex; align-items: center; gap: 12px;
+            border-radius: 12px; padding: 12px 18px;
+            display: flex; align-items: center; justify-content: space-between;
             margin-bottom: 20px;
             position: relative; overflow: hidden;
             transition: all .3s;
@@ -36,22 +36,35 @@
             background: linear-gradient(90deg, var(--accentbg), transparent);
             transition: width 1s linear;
         }
-        .timer-banner.alert-warning { background: var(--ambg); border-color: rgba(251,191,36,.25); }
-        .timer-banner.alert-warning .timer-icon-wrap { background: var(--ambg); color: var(--amber); }
-        .timer-banner.alert-warning .timer-display { color: var(--amber); }
-        .timer-icon-wrap {
-            width: 34px; height: 34px; border-radius: 8px;
-            background: var(--accentbg); border: 1px solid var(--border);
+        .timer-banner.warn { background: var(--ambg); border-color: rgba(251,191,36,.25); }
+        .timer-banner.warn .timer-icon { background: var(--ambg); color: var(--amber); }
+        .timer-banner.warn .timer-display { color: var(--amber); }
+        .timer-banner.warn .timer-ring-fill { stroke: var(--amber); }
+        .timer-left { display: flex; align-items: center; gap: 10px; position: relative; z-index: 1; }
+        .timer-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            background: var(--accentbg);
             display: flex; align-items: center; justify-content: center;
-            color: var(--accent2); flex-shrink: 0; position: relative; z-index: 1;
+            color: var(--accent2); flex-shrink: 0;
         }
-        .timer-text { flex: 1; font-size: 13px; color: var(--text2); position: relative; z-index: 1; }
-        .timer-text strong { color: var(--text); }
+        .timer-msg { font-size: 13px; color: var(--text2); }
+        .timer-msg strong { color: var(--text); }
+        .timer-right { display: flex; align-items: center; gap: 8px; position: relative; z-index: 1; }
+        .timer-label { font-size: 10.5px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; }
         .timer-display {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 20px; font-weight: 700;
-            color: var(--accent2); min-width: 65px; text-align: center;
-            position: relative; z-index: 1;
+            font-size: 20px; font-weight: 700; letter-spacing: .05em;
+            color: var(--accent2); min-width: 80px; text-align: center;
+            transition: color .3s;
+        }
+        .timer-ring { position: relative; width: 44px; height: 44px; flex-shrink: 0; }
+        .timer-ring svg { transform: rotate(-90deg); }
+        .timer-ring-track { stroke: var(--border); }
+        .timer-ring-fill {
+            stroke: var(--accent2);
+            stroke-dasharray: 120;
+            stroke-dashoffset: var(--ring-offset, 0);
+            transition: stroke-dashoffset 1s linear, stroke .3s;
         }
 
         /* ── Checkout grid ── */
@@ -258,6 +271,98 @@
             margin-bottom: 14px;
         }
 
+        /* ── Transfer bank list ── */
+        .transfer-info { margin-top: 14px; animation: coSlideDown .3s ease both; }
+        .transfer-info-header {
+            font-size: 12px; font-weight: 700; color: var(--text);
+            display: flex; align-items: center; gap: 6px; margin-bottom: 10px;
+        }
+        .bank-list { display: flex; flex-direction: column; gap: 8px; }
+        .bank-row {
+            background: var(--surf2); border: 1.5px solid var(--border);
+            border-radius: 10px; overflow: hidden; cursor: pointer;
+            transition: border-color .2s;
+        }
+        .bank-row.selected {
+            border-color: var(--bank-p, var(--accent));
+            box-shadow: 0 0 0 2.5px var(--bank-bg, var(--accentbg));
+        }
+        .bank-row-head {
+            display: flex; align-items: center; gap: 10px;
+            padding: 11px 14px; transition: background .2s;
+        }
+        .bank-row.open .bank-row-head { background: var(--bank-bg, transparent); }
+        .bank-row-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: var(--accentbg); display: flex; align-items: center; justify-content: center;
+            color: var(--accent2); flex-shrink: 0; overflow: hidden;
+            transition: background .2s, color .2s, box-shadow .2s;
+        }
+        /* Logo del banco — se muestra cuando carga correctamente */
+        .bank-logo-img { width: 32px; height: 32px; object-fit: contain; display: none; image-rendering: auto; }
+        .bank-row-icon.has-logo { background: #fff; }
+        .bank-row-icon.has-logo .bank-logo-img { display: block; }
+        .bank-row-icon.has-logo .bank-icon-fb { display: none; }
+        /* Seleccionado sin logo: fondo del color del banco */
+        .bank-row.selected .bank-row-icon:not(.has-logo) { background: var(--bank-p, var(--accent)); color: var(--bank-icon-fg, #fff); }
+        /* Seleccionado con logo: sin borde adicional, solo el borde del .bank-row */
+        .bank-row-info { flex: 1; min-width: 0; }
+        .bank-row-name {
+            font-size: 13px; font-weight: 700; color: var(--text);
+            transition: color .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        /* Al seleccionar: el nombre queda blanco para máximo contraste sobre cualquier fondo de banco */
+        .bank-row.selected .bank-row-name { color: var(--text); }
+        .bank-row-type { font-size: 11px; color: var(--text3); }
+        .bank-row-chevron { color: var(--text3); transition: transform .2s, color .2s; flex-shrink: 0; }
+        .bank-row.selected .bank-row-chevron { color: var(--bank-p, var(--accent)); }
+        .bank-row.open .bank-row-chevron { transform: rotate(180deg); }
+        .bank-row-body {
+            display: none; padding: 0 14px 14px;
+            border-top: 1px solid rgba(128,128,128,.15);
+            background: var(--bank-bg, transparent);
+        }
+        .bank-row.open .bank-row-body { display: block; }
+        /* Tabla de datos bancarios — 2 columnas fijas */
+        .bank-detail { display: grid; gap: 1px 0; margin-top: 8px; }
+        .bank-detail-row {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            gap: 0 10px;
+            font-size: 12px;
+            align-items: baseline;
+            padding: 2px 0;
+        }
+        .bank-detail-row .dk { color: var(--text2); white-space: nowrap; }
+        .bank-detail-row .dv {
+            font-weight: 700; color: var(--text); text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+            word-break: break-word; overflow-wrap: anywhere;
+        }
+        .bank-detail-row .dv.dv-plain { font-family: inherit; font-size: 12.5px; }
+        .dv-copyable {
+            cursor: pointer; position: relative;
+            transition: color .15s;
+            display: inline-flex; align-items: center; gap: 5px; justify-content: flex-end;
+        }
+        .dv-copyable::after {
+            content: '⧉'; font-size: 10px; opacity: .35;
+            transition: opacity .15s; font-family: inherit;
+        }
+        .dv-copyable:hover::after { opacity: .8; }
+        .dv-copyable:hover { color: var(--bank-p, var(--accent)); }
+        .dv-copyable.copied { color: var(--green, #22c55e) !important; }
+        .dv-copyable.copied::after { content: '✓'; opacity: 1; }
+        .transfer-notice {
+            margin-top: 10px; padding: 9px 12px;
+            background: var(--ambg); border: 1px solid rgba(251,191,36,.2);
+            border-radius: 8px; font-size: 11.5px; color: var(--text2);
+            display: flex; align-items: flex-start; gap: 6px;
+        }
+        .transfer-empty {
+            text-align: center; padding: 18px 0; font-size: 13px; color: var(--text3);
+        }
+
         /* ── Notes textarea ── */
         .notes-ta {
             width: 100%; background: var(--surf2);
@@ -374,6 +479,38 @@
         /* user name responsive */
         #userMenu .user-name-text { display: none; }
         @media (min-width: 576px) { #userMenu .user-name-text { display: inline; } }
+        /* ── Custom Toast ── */
+        .lb-toast {
+            background: var(--surf); border: 1px solid var(--border);
+            border-radius: 12px; padding: 11px 14px;
+            display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.1);
+            font-size: 13px; font-weight: 500; color: var(--text);
+            min-width: 280px; max-width: 420px;
+            position: fixed; top: 80px; right: 20px; z-index: 9999;
+            opacity: 0; transform: translateY(-8px);
+            transition: opacity .22s, transform .22s;
+        }
+        .lb-toast.lb-toast-show { opacity: 1; transform: translateY(0); }
+        .lb-toast.lb-toast-hide { opacity: 0; transform: translateY(-8px); }
+        .lb-toast-icon { display: flex; align-items: center; flex-shrink: 0; }
+        .lb-toast-msg  { flex: 1; }
+        .lb-toast-close {
+            margin-left: auto; background: none; border: none;
+            padding: 2px 5px; cursor: pointer; color: var(--text3);
+            border-radius: 5px; flex-shrink: 0; font-size: 16px; line-height: 1;
+        }
+        .lb-toast-close:hover { color: var(--text); background: var(--surf2); }
+        @media (max-width: 576px) {
+            .lb-toast {
+                top: auto; bottom: 24px; right: auto; left: 50%;
+                transform: translateX(-50%) translateY(16px);
+                min-width: min(340px, calc(100vw - 32px));
+                max-width: calc(100vw - 32px);
+            }
+            .lb-toast.lb-toast-show { transform: translateX(-50%) translateY(0); }
+            .lb-toast.lb-toast-hide { transform: translateX(-50%) translateY(16px); }
+        }
     </style>
 </head>
 <body>
@@ -392,7 +529,6 @@
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item spa-link" href="/customer/orders"><i class="bi bi-receipt"></i> Mis Pedidos</a></li>
                         <li><a class="dropdown-item spa-link" href="/customer/credits"><i class="bi bi-credit-card"></i> Mi Crédito</a></li>
-                        <li><a class="dropdown-item spa-link" href="/customer/group-purchases"><i class="bi bi-people"></i> Compras Grupales</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
                     </ul>
@@ -415,13 +551,27 @@
 
         <!-- Timer Banner -->
         <div id="cartExpiryBanner" class="timer-banner d-none" role="alert">
-            <div class="timer-icon-wrap">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div class="timer-left">
+                <div class="timer-icon">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div>
+                    <div class="timer-msg">Los ítems del carrito se reservan por <strong>30 min</strong></div>
+                    <div style="font-size:11px;color:var(--text3);margin-top:1px;">Completa tu compra antes de que expire</div>
+                </div>
             </div>
-            <div class="timer-text">
-                Los ítems del carrito se reservan por <strong>30 min</strong>
+            <div class="timer-right">
+                <div>
+                    <div class="timer-label">Tiempo restante</div>
+                    <div class="timer-display" id="cartExpiryCountdown">--:--</div>
+                </div>
+                <div class="timer-ring">
+                    <svg width="44" height="44" viewBox="0 0 44 44">
+                        <circle class="timer-ring-track" cx="22" cy="22" r="19" fill="none" stroke-width="3"/>
+                        <circle class="timer-ring-fill" id="cartTimerRing" cx="22" cy="22" r="19" fill="none" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                </div>
             </div>
-            <div class="timer-display" id="cartExpiryCountdown">--:--</div>
         </div>
 
         <!-- Checkout Grid -->
@@ -469,6 +619,21 @@
                                 </div>
                                 <div class="pay-name">Transferencia</div>
                                 <div class="pay-sub">Transferencia bancaria</div>
+                            </div>
+                        </div>
+
+                        <!-- Transfer info (shown when TRANSFER selected) -->
+                        <div id="transferInfoSection" class="transfer-info d-none">
+                            <div class="transfer-info-header">
+                                <svg width="13" height="13" fill="none" stroke="var(--accent2)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                Selecciona la cuenta a la que realizarás la transferencia
+                            </div>
+                            <div class="bank-list" id="bankList">
+                                <div class="transfer-empty"><span class="spinner-border spinner-border-sm"></span> Cargando...</div>
+                            </div>
+                            <div class="transfer-notice">
+                                <svg width="14" height="14" fill="none" stroke="var(--amber)" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                Luego de realizar la transferencia, confirma tu pedido. Un representante validará el pago.
                             </div>
                         </div>
 
@@ -728,17 +893,201 @@
             var method = $('#paymentMethod').val();
             if (method === 'CARD') {
                 $('#payphone-inline-section').removeClass('d-none');
+                $('#transferInfoSection').addClass('d-none');
                 $('#processBtn').addClass('d-none');
                 $('#payphoneConfirmNote').removeClass('d-none');
                 showPayphoneInline();
+            } else if (method === 'TRANSFER') {
+                $('#payphone-inline-section').addClass('d-none');
+                $('#pp-button-inline').empty();
+                $('#payphoneConfirmNote').addClass('d-none');
+                $('#processBtn').removeClass('d-none');
+                $('#transferInfoSection').removeClass('d-none');
+                payphonePPB = null;
+                loadBankAccounts();
             } else {
                 $('#payphone-inline-section').addClass('d-none');
+                $('#transferInfoSection').addClass('d-none');
                 $('#pp-button-inline').empty();
                 $('#processBtn').removeClass('d-none');
                 $('#payphoneConfirmNote').addClass('d-none');
                 payphonePPB = null;
             }
             updateTotals();
+        }
+
+        var _bankAccountsCache = null;
+        function loadBankAccounts() {
+            if (_bankAccountsCache !== null) { renderBankList(_bankAccountsCache); return; }
+            $('#bankList').html('<div class="transfer-empty"><span class="spinner-border spinner-border-sm"></span> Cargando...</div>');
+            $.get('/api/public/bank-accounts', function(r) {
+                _bankAccountsCache = r.accounts || [];
+                renderBankList(_bankAccountsCache);
+            }).fail(function() {
+                _bankAccountsCache = [];
+                renderBankList([]);
+            });
+        }
+
+        // p = color principal (borde, icono-bg)    — fuente: brandfetch / logo oficial
+        // pd = color para texto/chevron (versión oscura si p es muy claro)
+        // bg = tinte de fondo translúcido
+        // iconFg = color del ícono dentro del badge (para fondos claros: usar oscuro)
+        var BANK_THEMES = {
+            // ── Bancos privados ───────────────────────────────────────────────────────────
+            pichincha:     { p:'#ffdd00', pd:'#7a6500', bg:'rgba(255,221,0,.13)',   iconFg:'#3d3200', domain:'pichincha.com'               },
+            pacifico:      { p:'#009fd4', pd:'#006e94', bg:'rgba(0,159,212,.12)',                     domain:'bancodelpacifico.com'         },
+            guayaquil:     { p:'#d2006e', pd:'#d2006e', bg:'rgba(210,0,110,.12)',                     domain:'bancoguayaquil.com'           },
+            internacional: { p:'#f98f16', pd:'#c06800', bg:'rgba(249,143,22,.12)',                    domain:'bancointernacional.com.ec'    },
+            produbanco:    { p:'#69bd27', pd:'#3d7000', bg:'rgba(105,189,39,.12)',                    domain:'produbanco.com.ec'            },
+            bolivariano:   { p:'#006576', pd:'#006576', bg:'rgba(0,101,118,.12)',                     domain:'bolivariano.com'              },
+            austro:        { p:'#c8102e', pd:'#c8102e', bg:'rgba(200,16,46,.12)',                     domain:'bancoaustro.com'              },
+            bgr:           { p:'#003f87', pd:'#003f87', bg:'rgba(0,63,135,.12)',                      domain:'bgr.com.ec'                   },
+            solidario:     { p:'#e87722', pd:'#a84f00', bg:'rgba(232,119,34,.12)',                    domain:'banco-solidario.com'          },
+            dmiro:         { p:'#00897b', pd:'#00897b', bg:'rgba(0,137,123,.12)',                     domain:'bancodmiro.com'               },
+            bancodesarrollo:{ p:'#1565c0', pd:'#1565c0', bg:'rgba(21,101,192,.12)',                   domain:'bancodesarrollo.fin.ec'       },
+            procredit:     { p:'#e30613', pd:'#e30613', bg:'rgba(227,6,19,.12)',                      domain:'bancoprocredit.com.ec'        },
+            finca:         { p:'#f77f00', pd:'#a85500', bg:'rgba(247,127,0,.12)',                     domain:'bancofinca.com.ec'            },
+            capital:       { p:'#0d47a1', pd:'#0d47a1', bg:'rgba(13,71,161,.12)',                     domain:'bancocapital.com.ec'          },
+            // ── Bancos públicos ───────────────────────────────────────────────────────────
+            bde:           { p:'#004f9f', pd:'#004f9f', bg:'rgba(0,79,159,.12)',                      domain:'bde.fin.ec'                   },
+            banecuador:    { p:'#007a3d', pd:'#007a3d', bg:'rgba(0,122,61,.12)',                      domain:'banecuador.fin.ec'            },
+            cfn:           { p:'#1a237e', pd:'#1a237e', bg:'rgba(26,35,126,.12)',                     domain:'cfn.fin.ec'                   },
+            // ── Cooperativas ─────────────────────────────────────────────────────────────
+            jep:           { p:'#5c2d91', pd:'#5c2d91', bg:'rgba(92,45,145,.12)',                     domain:'jep.fin.ec'                   },
+            jardinazuayo:  { p:'#1a6faf', pd:'#1a6faf', bg:'rgba(26,111,175,.12)',                    domain:'jardineazuayo.fin.ec'         },
+            cacpeco:       { p:'#009639', pd:'#006626', bg:'rgba(0,150,57,.12)',                       domain:'cacpeco.fin.ec'               },
+            octubre29:     { p:'#c62828', pd:'#c62828', bg:'rgba(198,40,40,.12)',                      domain:'29deoctubre.fin.ec'           },
+            cooprogreso:   { p:'#2e7d32', pd:'#2e7d32', bg:'rgba(46,125,50,.12)',                     domain:'cooprogreso.fin.ec'           },
+            munozvega:     { p:'#1565c0', pd:'#1565c0', bg:'rgba(21,101,192,.12)',                    domain:'pablomunozvega.fin.ec'        },
+            mego:          { p:'#ad1457', pd:'#ad1457', bg:'rgba(173,20,87,.12)',                     domain:'mego.fin.ec'                  },
+            erco:          { p:'#00796b', pd:'#00796b', bg:'rgba(0,121,107,.12)',                     domain:'erco.fin.ec'                  },
+            policia:       { p:'#1a237e', pd:'#1a237e', bg:'rgba(26,35,126,.12)',                     domain:'coopnacional.fin.ec'          },
+            riobamba:      { p:'#b71c1c', pd:'#b71c1c', bg:'rgba(183,28,28,.12)',                     domain:'riobamba.fin.ec'              },
+            oscus:         { p:'#004d40', pd:'#004d40', bg:'rgba(0,77,64,.12)',                       domain:'oscus.fin.ec'                 },
+            mushucruna:    { p:'#e65100', pd:'#e65100', bg:'rgba(230,81,0,.12)',                       domain:'mushucrunapastaza.fin.ec'     },
+            sanfrancisco:  { p:'#1976d2', pd:'#1976d2', bg:'rgba(25,118,210,.12)',                    domain:'coopsanfrancisco.fin.ec'      },
+            andina:        { p:'#880e4f', pd:'#880e4f', bg:'rgba(136,14,79,.12)',                     domain:'andina.fin.ec'                }
+        };
+
+        function getBankTheme(name) {
+            var l = (name || '').toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '');  // quitar tildes para matching
+            // Bancos privados
+            if (/pichincha/.test(l))              return BANK_THEMES.pichincha;
+            if (/pac[i]fico/.test(l))             return BANK_THEMES.pacifico;
+            if (/guayaquil/.test(l))              return BANK_THEMES.guayaquil;
+            if (/internacion/.test(l))            return BANK_THEMES.internacional;
+            if (/produ/.test(l))                  return BANK_THEMES.produbanco;
+            if (/bolivar/.test(l))                return BANK_THEMES.bolivariano;
+            if (/austro/.test(l))                 return BANK_THEMES.austro;
+            if (/rumi[nñ]ahui|bgr/.test(l))       return BANK_THEMES.bgr;
+            if (/solidar/.test(l))                return BANK_THEMES.solidario;
+            if (/d.miro|dmiro/.test(l))           return BANK_THEMES.dmiro;
+            if (/desarrollo/.test(l))             return BANK_THEMES.bancodesarrollo;
+            if (/procredit/.test(l))              return BANK_THEMES.procredit;
+            if (/\bfinca\b/.test(l))              return BANK_THEMES.finca;
+            if (/capital/.test(l))                return BANK_THEMES.capital;
+            // Bancos públicos
+            if (/\bbde\b|banco del estado/.test(l)) return BANK_THEMES.bde;
+            if (/banecuador/.test(l))             return BANK_THEMES.banecuador;
+            if (/\bcfn\b/.test(l))                return BANK_THEMES.cfn;
+            // Cooperativas
+            if (/\bjep\b/.test(l))                return BANK_THEMES.jep;
+            if (/jardin\s*azuayo/.test(l))        return BANK_THEMES.jardinazuayo;
+            if (/cacpeco/.test(l))                return BANK_THEMES.cacpeco;
+            if (/29\s*de\s*octubre/.test(l))      return BANK_THEMES.octubre29;
+            if (/cooprogreso/.test(l))            return BANK_THEMES.cooprogreso;
+            if (/mu[nñ]oz\s*vega/.test(l))        return BANK_THEMES.munozvega;
+            if (/\bmego\b/.test(l))               return BANK_THEMES.mego;
+            if (/\berco\b/.test(l))               return BANK_THEMES.erco;
+            if (/polic[i]a/.test(l))              return BANK_THEMES.policia;
+            if (/riobamba/.test(l))               return BANK_THEMES.riobamba;
+            if (/\boscus\b/.test(l))              return BANK_THEMES.oscus;
+            if (/mushuc\s*runa/.test(l))          return BANK_THEMES.mushucruna;
+            if (/san\s*francisco/.test(l))        return BANK_THEMES.sanfrancisco;
+            if (/andina/.test(l))                 return BANK_THEMES.andina;
+            return null;
+        }
+
+        function renderBankList(accounts) {
+            var list = document.getElementById('bankList');
+            if (!list) return;
+            if (!accounts.length) {
+                list.innerHTML = '<div class="transfer-empty">No hay cuentas bancarias configuradas. Contacta con el negocio.</div>';
+                return;
+            }
+            list.innerHTML = accounts.map(function(acc, i) {
+                var theme = getBankTheme(acc.bankName);
+                var styleAttr = '';
+                if (theme) {
+                    styleAttr = ' style="--bank-p:' + theme.p + ';--bank-bg:' + theme.bg +
+                        ';--bank-pd:' + (theme.pd || theme.p) +
+                        (theme.iconFg ? ';--bank-icon-fg:' + theme.iconFg : '') + ';"';
+                }
+                var fbSvg = '<svg class="bank-icon-fb" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="7"/><rect x="10" y="8" width="4" height="11"/><rect x="17" y="4" width="4" height="15"/><line x1="1" y1="21" x2="23" y2="21"/></svg>';
+                var iconHtml = '';
+                if (theme && theme.domain) {
+                    // Brandfetch CDN — logos vectoriales de alta calidad, sin API key
+                    // Fallback: si falla, intenta con Google Favicon; si falla, quita el img
+                    var d = theme.domain;
+                    var primary  = 'https://cdn.brandfetch.io/' + d + '/w/256/h/256';
+                    var fallback = 'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://' + d + '&size=256';
+                    iconHtml = '<img class="bank-logo-img" src="' + primary + '" ' +
+                        'onload="var ic=this.parentElement;if(ic)ic.classList.add(\'has-logo\')" ' +
+                        'onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src=\'' + fallback + '\';}else{this.remove();}" ' +
+                        'alt="' + escCheckout(acc.bankName) + '">' + fbSvg;
+                } else {
+                    iconHtml = fbSvg.replace('class="bank-icon-fb" ', '');
+                }
+                return '<div class="bank-row" id="bankRow'+i+'"' + styleAttr + ' onclick="toggleBankRow('+i+')">' +
+                    '<div class="bank-row-head">' +
+                        '<div class="bank-row-icon">' + iconHtml + '</div>' +
+                        '<div class="bank-row-info"><div class="bank-row-name">' + escCheckout(acc.bankName) + '</div>' +
+                        '<div class="bank-row-type">' + escCheckout(acc.accountType || '') + '</div></div>' +
+                        '<svg class="bank-row-chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>' +
+                    '</div>' +
+                    '<div class="bank-row-body">' +
+                        '<div class="bank-detail">' +
+                            '<div class="bank-detail-row"><span class="dk">Banco</span><span class="dv dv-plain">' + escCheckout(acc.bankName) + '</span></div>' +
+                            '<div class="bank-detail-row"><span class="dk">Tipo</span><span class="dv dv-plain">' + escCheckout(acc.accountType || '') + '</span></div>' +
+                            '<div class="bank-detail-row"><span class="dk">N° Cuenta</span><span class="dv dv-copyable" onclick="copyBankField(this,\'' + escCheckout(acc.accountNumber) + '\',event)" title="Clic para copiar">' + escCheckout(acc.accountNumber) + '</span></div>' +
+                            '<div class="bank-detail-row"><span class="dk">Beneficiario</span><span class="dv dv-plain">' + escCheckout(acc.beneficiary) + '</span></div>' +
+                            (acc.identification ? '<div class="bank-detail-row"><span class="dk">RUC / Cédula</span><span class="dv dv-copyable" onclick="copyBankField(this,\'' + escCheckout(acc.identification) + '\',event)" title="Clic para copiar">' + escCheckout(acc.identification) + '</span></div>' : '') +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
+
+        function escCheckout(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+        function copyBankField(el, text, e) {
+            if (e) e.stopPropagation();
+            navigator.clipboard.writeText(text).then(function() {
+                el.classList.add('copied');
+                setTimeout(function() { el.classList.remove('copied'); }, 1800);
+            }).catch(function() {
+                // Fallback para navegadores sin clipboard API
+                var ta = document.createElement('textarea');
+                ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta); ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                el.classList.add('copied');
+                setTimeout(function() { el.classList.remove('copied'); }, 1800);
+            });
+        }
+
+        function toggleBankRow(i) {
+            var row = document.getElementById('bankRow'+i);
+            if (!row) return;
+            var wasOpen = row.classList.contains('open');
+            // Cerrar todos
+            document.querySelectorAll('.bank-row').forEach(function(r) { r.classList.remove('open','selected'); });
+            if (!wasOpen) {
+                row.classList.add('open', 'selected');
+            }
         }
 
         function showPayphoneInline() {
@@ -1238,13 +1587,33 @@
         }
 
         function showAlert(message, type) {
-            const alertHtml = `
-                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                    ${message.replace(/\n/g, '<br>')}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-            $('#alertContainer').html(alertHtml);
+            var colorMap = { success:'var(--green)', warning:'var(--amber)', danger:'var(--red)', info:'var(--accent)' };
+            var svgMap = {
+                success: '<svg width="17" height="17" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg>',
+                warning: '<svg width="17" height="17" fill="currentColor" viewBox="0 0 16 16"><path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>',
+                danger:  '<svg width="17" height="17" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg>',
+                info:    '<svg width="17" height="17" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>'
+            };
+            var color = colorMap[type] || colorMap.info;
+            var svgIcon = svgMap[type] || svgMap.info;
+            var existing = document.getElementById('lbToastGlobal');
+            if (existing) existing.remove();
+            var toast = document.createElement('div');
+            toast.id = 'lbToastGlobal';
+            toast.className = 'lb-toast';
+            toast.innerHTML =
+                '<span class="lb-toast-icon" style="color:' + color + '">' + svgIcon + '</span>' +
+                '<span class="lb-toast-msg">' + message.replace(/\n/g, '<br>') + '</span>' +
+                '<button class="lb-toast-close" onclick="this.closest(\'.lb-toast\').remove()" aria-label="Cerrar">&times;</button>';
+            (document.getElementById('app-content') || document.body).appendChild(toast);
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() { toast.classList.add('lb-toast-show'); });
+            });
+            setTimeout(function() {
+                toast.classList.remove('lb-toast-show');
+                toast.classList.add('lb-toast-hide');
+                setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 250);
+            }, 4500);
         }
 
         var waitingCashModalShown = false;
@@ -1327,10 +1696,12 @@
                 clearInterval(window._cartTimerInterval);
                 window._cartTimerInterval = null;
             }
+            var totalDuration = 30 * 60 * 1000; // 30 min
             function tick() {
                 var currentCart = JSON.parse(localStorage.getItem('customerCart')) || [];
                 var banner = document.getElementById('cartExpiryBanner');
                 var countdownEl = document.getElementById('cartExpiryCountdown');
+                var ringEl = document.getElementById('cartTimerRing');
                 if (currentCart.length === 0) {
                     if (banner) banner.classList.add('d-none');
                     clearInterval(window._cartTimerInterval);
@@ -1352,19 +1723,25 @@
                 }
                 if (banner) {
                     banner.classList.remove('d-none');
-                    if (remaining < 5 * 60 * 1000) {
-                        banner.classList.remove('alert-info');
-                        banner.classList.add('alert-warning');
-                    } else {
-                        banner.classList.remove('alert-warning');
-                        banner.classList.add('alert-info');
-                    }
+                    banner.classList.toggle('warn', remaining < 5 * 60 * 1000);
                 }
                 if (countdownEl) {
                     var totalSeconds = Math.floor(remaining / 1000);
                     var mins = Math.floor(totalSeconds / 60);
                     var secs = totalSeconds % 60;
                     countdownEl.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+                }
+                // Ring animation: circumference ≈ 2π×19 ≈ 119.4 (dasharray=120)
+                if (ringEl) {
+                    var pct = Math.min(1, Math.max(0, remaining / totalDuration));
+                    var offset = 120 * (1 - pct);
+                    ringEl.style.strokeDasharray = '120';
+                    ringEl.style.strokeDashoffset = offset;
+                }
+                // Progress bar bg
+                if (banner) {
+                    var pctBg = Math.min(1, Math.max(0, remaining / totalDuration));
+                    banner.style.setProperty('--progress', (pctBg * 100) + '%');
                 }
             }
             tick();
@@ -1390,7 +1767,9 @@
             document.querySelectorAll('.payment-method-card').forEach(function(c) { c.classList.remove('active'); });
             document.getElementById('paymentMethod').value = '';
             document.getElementById('payphone-inline-section').classList.add('d-none');
+            document.getElementById('transferInfoSection').classList.add('d-none');
             document.getElementById('processBtn').classList.remove('d-none');
+            _bankAccountsCache = null; // forzar recarga de cuentas en siguiente visita
             // Mostrar productos y totales inmediatamente, sin esperar AJAX
             currentDiscountRate = 0;
             displayOrderSummary();

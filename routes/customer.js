@@ -1,5 +1,6 @@
 const express = require('express');
-const { Product, ProductCategory, ProductPresentation, InventoryMovement, Sale, SaleItem, Customer, GroupPurchase, GroupPurchaseParticipant, Setting, User, Notification, PayphonePendingPayment } = require('../models');
+const { Product, ProductCategory, ProductPresentation, InventoryMovement, Sale, SaleItem, Customer, GroupPurchase, GroupPurchaseParticipant, Setting, User, Notification, PayphonePendingPayment, CustomerCredit, CustomerPayment } = require('../models');
+const CreditService = require('../services/CreditService');
 const ComboService = require('../services/ComboService');
 const WebPushService = require('../services/WebPushService');
 const { getSimpleProductAvailability, validateSimpleSaleQuantity, resolveMovement } = require('../services/InventoryPoolHelper');
@@ -1075,6 +1076,209 @@ router.get('/orders', authenticateCustomer, async (req, res) => {
       error: 'Internal server error',
       code: 'INTERNAL_ERROR'
     });
+  }
+});
+
+// ── COMPRAS GRUPALES DEL CLIENTE ──────────────────────────────────
+
+// GET /customer/group-purchase-participations — participaciones del cliente autenticado
+router.get('/group-purchase-participations', authenticateCustomer, async (req, res) => {
+  try {
+    const customerId = parseInt(req.customerId, 10);
+    const tenantId = parseInt(req.tenantId, 10);
+
+    console.log('[group-participations] customerId:', customerId, 'tenantId:', tenantId);
+
+    const participations = await GroupPurchaseParticipant.findAll({
+      where: { customerId },
+      include: [
+        {
+          association: 'groupPurchase',
+          required: true,
+          where: { tenantId },
+          include: [
+            { association: 'product', attributes: ['id', 'name'] }
+          ]
+        },
+        {
+          association: 'credit',
+          required: false,
+          attributes: ['id', 'currentBalance', 'status', 'dueDate']
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    console.log('[group-participations] found:', participations.length);
+
+    // Obtener conteo total de participantes por compra grupal en query separada
+    const groupPurchaseIds = [...new Set(participations.map(p => p.groupPurchaseId))];
+    let countsByGroupId = {};
+    if (groupPurchaseIds.length > 0) {
+      const counts = await GroupPurchaseParticipant.findAll({
+        where: { groupPurchaseId: { [Op.in]: groupPurchaseIds } },
+        attributes: ['groupPurchaseId', [sequelize.fn('COUNT', sequelize.col('id')), 'cnt']],
+        group: ['groupPurchaseId'],
+        raw: true
+      });
+      counts.forEach(c => { countsByGroupId[c.groupPurchaseId] = parseInt(c.cnt, 10); });
+    }
+
+    const result = participations.map(p => {
+      const plain = p.toJSON();
+      if (plain.groupPurchase) {
+        plain.groupPurchase.participantCount = countsByGroupId[p.groupPurchaseId] || 1;
+      }
+      return plain;
+    });
+
+    res.json({ participations: result });
+  } catch (error) {
+    console.error('Error getting group purchase participations:', error);
+    res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
+  }
+});
+
+// ── CRÉDITOS DEL CLIENTE ──────────────────────────────────────────
+
+// GET /customer/credits  — lista los créditos del cliente autenticado
+router.get('/credits', authenticateCustomer, async (req, res) => {
+  try {
+    const { customerId, tenantId } = req;
+    const { status } = req.query;
+
+    const where = { customerId, tenantId };
+    if (status) where.status = status;
+
+    const credits = await CustomerCredit.findAll({
+      where,
+      include: [
+        {
+          association: 'groupPurchaseParticipant',
+          include: [
+            { association: 'groupPurchase', include: [{ association: 'product' }] }
+          ]
+        }
+      ],
+      order: [['dueDate', 'ASC'], ['createdAt', 'DESC']]
+    });
+
+    res.json({ credits });
+  } catch (error) {
+    console.error('Error listing customer credits:', error);
+    res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
+  }
+});
+
+// GET /customer/credits/summary  — resumen de créditos del cliente autenticado
+router.get('/credits/summary', authenticateCustomer, async (req, res) => {
+  try {
+    const { customerId, tenantId } = req;
+    const { includeInterest = 'true' } = req.query;
+
+    const summary = await CreditService.getCustomerCreditSummary(
+      tenantId,
+      customerId,
+      includeInterest === 'true'
+    );
+
+    res.json(summary);
+  } catch (error) {
+    console.error('Error getting credit summary:', error);
+    res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
+  }
+});
+
+// GET /customer/credits/:id  — detalle de un crédito (solo si pertenece al cliente)
+router.get('/credits/:id', authenticateCustomer, async (req, res) => {
+  try {
+    const { customerId, tenantId } = req;
+    const { id } = req.params;
+
+    const credit = await CustomerCredit.findOne({
+      where: { id, customerId, tenantId },
+      include: [
+        {
+          association: 'groupPurchaseParticipant',
+          include: [
+            {
+              association: 'groupPurchase',
+              include: [{ association: 'product', attributes: ['id', 'name'] }]
+            },
+            { association: 'payments' }
+          ]
+        }
+      ]
+    });
+
+    if (!credit) {
+      return res.status(404).json({ error: 'Crédito no encontrado', code: 'NOT_FOUND' });
+    }
+
+    res.json(credit);
+  } catch (error) {
+    console.error('Error getting credit:', error);
+    res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
+  }
+});
+
+// POST /customer/credits/:id/payment — registrar pago de un crédito
+router.post('/credits/:id/payment', authenticateCustomer, async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { customerId, tenantId } = req;
+    const { id } = req.params;
+    const { amount, paymentMethod, paymentDate, notes } = req.body;
+
+    if (!amount || amount <= 0 || !paymentMethod || !paymentDate) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'amount, paymentMethod y paymentDate son requeridos', code: 'MISSING_FIELDS' });
+    }
+
+    const validMethods = ['CASH', 'CARD', 'TRANSFER'];
+    if (!validMethods.includes(paymentMethod)) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Método de pago inválido', code: 'INVALID_PAYMENT_METHOD' });
+    }
+
+    // Verificar que el crédito pertenece al cliente autenticado
+    const credit = await CustomerCredit.findOne({ where: { id, customerId, tenantId } });
+    if (!credit) {
+      await transaction.rollback();
+      return res.status(404).json({ error: 'Crédito no encontrado', code: 'NOT_FOUND' });
+    }
+    if (credit.status !== 'ACTIVE') {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Este crédito ya está pagado o cancelado', code: 'CREDIT_NOT_ACTIVE' });
+    }
+
+    const payAmt = parseFloat(amount);
+    if (payAmt > parseFloat(credit.currentBalance)) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'El monto supera el saldo actual del crédito', code: 'AMOUNT_EXCEEDS_BALANCE' });
+    }
+
+    // Registrar pago en customer_payments
+    const payment = await CustomerPayment.create({
+      tenantId,
+      customerId,
+      groupPurchaseParticipantId: credit.groupPurchaseParticipantId || null,
+      amount: payAmt,
+      paymentMethod,
+      paymentDate,
+      notes: notes || null
+    }, { transaction });
+
+    // Aplicar pago al crédito (actualiza saldo e intereses; también actualiza participante si aplica)
+    await CreditService.applyPayment(credit.id, payAmt, transaction);
+
+    await transaction.commit();
+
+    res.status(201).json({ ok: true, paymentId: payment.id });
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error registering credit payment:', error);
+    res.status(500).json({ error: error.message || 'Internal server error', code: 'INTERNAL_ERROR' });
   }
 });
 

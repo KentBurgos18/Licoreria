@@ -1,213 +1,785 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
-    <title>Mis Pedidos - LOCOBAR</title>
-    <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
-    <link href="/public/css/theme.css" rel="stylesheet">
-    <style>
-        .navbar-custom {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-        }
-        #userMenu .user-name-text {
-            display: none;
-        }
-        @media (min-width: 576px) {
-            #userMenu .user-name-text {
-                display: inline;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
+<title>Mis Pedidos - LOCOBAR</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="/libs/css/bootstrap.min.css" rel="stylesheet">
+<link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+<link href="/public/css/theme.css" rel="stylesheet">
+<link href="/public/css/customer-themes.css" rel="stylesheet">
+<style>
+
+/* ── ORDERS PAGE WRAPPER ── */
+.orders-page {
+  background: var(--bg);
+  min-height: calc(100vh - 56px);
+  font-family: 'Outfit', sans-serif;
+  transition: background .3s;
+}
+.orders-inner {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 18px 14px 56px;
+}
+
+/* ── PAGE HEADER ── */
+.ord-ph {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+  gap: 10px;
+}
+.pticon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--accentbg); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent2); flex-shrink: 0;
+}
+.page-title h1 { font-size: 18px; font-weight: 800; color: var(--text); margin: 0; }
+.page-title-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+/* ── STATS ── */
+.stats-row { display: flex; gap: 7px; margin-bottom: 14px; flex-wrap: wrap; }
+.stat-pill {
+  flex: 1; min-width: 90px; display: flex; align-items: center; gap: 6px;
+  background: var(--surf); border: 1px solid var(--border); border-radius: 9px;
+  padding: 7px 10px; transition: background .3s;
+}
+.stat-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.stat-lbl { font-size: 10px; color: var(--text2); }
+.stat-val {
+  font-size: 13px; font-weight: 800;
+  font-family: 'JetBrains Mono', monospace; color: var(--text); margin-left: auto;
+}
+
+/* ── FILTER BAR ── */
+.filter-bar { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.fb {
+  padding: 5px 11px; border-radius: 20px; font-size: 11px; font-weight: 700;
+  font-family: 'Outfit', sans-serif; border: 1.5px solid var(--border);
+  background: var(--surf); color: var(--text2); cursor: pointer;
+  transition: all .15s; white-space: nowrap;
+}
+.fb:hover { border-color: var(--border2); color: var(--text); }
+.fb.active { background: var(--accentbg); border-color: var(--accent); color: var(--accent2); }
+.fcnt {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; border-radius: 50%; background: var(--accent);
+  color: #fff; font-size: 8px; font-weight: 800; margin-left: 3px; vertical-align: middle;
+}
+.sw { position: relative; flex: 1; min-width: 130px; }
+.si {
+  position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+  color: var(--text3); pointer-events: none;
+}
+.sinput {
+  width: 100%; background: var(--surf); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px 6px 29px; font-size: 12px;
+  font-family: 'Outfit', sans-serif; color: var(--text); outline: none;
+  transition: border-color .2s;
+}
+.sinput::placeholder { color: var(--text3); }
+.sinput:focus { border-color: var(--accent); }
+
+/* ── TICKET ── */
+.ticket-wrap {
+  margin-bottom: 14px;
+  animation: tIn .35s ease both;
+  transition: transform .18s;
+  cursor: pointer;
+}
+.ticket-wrap:hover { transform: translateY(-2px); }
+@keyframes tIn { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:none } }
+
+.ticket {
+  background: var(--surf); border-radius: 8px; overflow: visible; position: relative;
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+  transition: background .3s, box-shadow .18s, border-color .18s;
+}
+.ticket-wrap:hover .ticket { border-color: var(--accent); box-shadow: 0 6px 24px rgba(0,0,0,.18); }
+
+.tsec { padding: 10px 16px; }
+
+.perf { height: 16px; display: flex; align-items: center; position: relative; }
+.perf::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 50%;
+  border-top: 1.5px dashed var(--border);
+}
+
+/* Header */
+.tk-head-sec {
+  background: var(--accentbg); border-radius: 8px 8px 0 0;
+  padding: 10px 16px; border-bottom: 1.5px dashed var(--border);
+}
+.tk-head { position: relative; text-align: center; padding-bottom: 10px; }
+.tk-date {
+  position: absolute; top: 0; left: 0;
+  font-size: 9.5px; color: var(--text2); font-weight: 600;
+  display: flex; align-items: center; gap: 3px;
+}
+.tk-brand { font-size: 11.5px; font-weight: 900; letter-spacing: .2em; color: var(--text); margin-bottom: 4px; }
+.tk-dot {
+  display: inline-block; width: 3px; height: 3px; border-radius: 50%;
+  background: var(--amber); box-shadow: 0 0 5px var(--amber);
+  margin: 0 1px; vertical-align: middle;
+}
+.tk-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px; font-weight: 700; color: var(--accent2);
+  letter-spacing: .05em; margin-bottom: 2px;
+}
+.tk-status {
+  position: absolute; top: 0; right: 0; padding: 3px 8px; border-radius: 5px;
+  border: 1.5px solid currentColor; font-size: 8.5px; font-weight: 900;
+  letter-spacing: .1em; text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace; line-height: 1.4;
+}
+.s-completado { color: var(--green); }
+.s-pendiente  { color: var(--amber); }
+.s-anulado    { color: var(--red); }
+
+.tsl { font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; }
+
+/* Product rows */
+.tpr { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 4px 0; }
+.tpr + .tpr { border-top: 1px dotted var(--border); }
+.tpn { font-size: 12.5px; font-weight: 600; color: var(--text); flex: 1; }
+.tps { font-size: 10px; color: var(--text3); margin-top: 1px; }
+.tpp { font-size: 12.5px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--text); min-width: 52px; text-align: right; flex-shrink: 0; }
+
+/* Totals */
+.td { border: none; border-top: 1.5px dashed var(--border); margin: 8px 0; }
+.ttrow { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--text2); padding: 2px 0; }
+.ttrow span:last-child { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+/* Grand total */
+.tgrand { display: flex; justify-content: space-between; align-items: center; padding: 4px 0 2px; }
+.tglbl { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--text); }
+.tgval { font-size: 22px; font-weight: 900; font-family: 'JetBrains Mono', monospace; color: var(--accent2); line-height: 1; }
+.tgval.anulado { color: var(--red); text-decoration: line-through; opacity: .65; }
+
+/* Summary row */
+.tk-summary-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 6px; }
+.tpay-left { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text2); }
+.tpay-icon {
+  width: 22px; height: 22px; border-radius: 5px; background: var(--accentbg);
+  border: 1px solid var(--border); display: flex; align-items: center;
+  justify-content: center; color: var(--accent); flex-shrink: 0;
+}
+
+/* Expand row */
+.texp {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  font-size: 10.5px; font-weight: 700; color: var(--text3);
+  padding: 4px 0 10px; border-top: 1px dashed var(--border); margin-top: 4px;
+  transition: color .14s; user-select: none;
+}
+.texp:hover { color: var(--accent2); }
+.echev { transition: transform .22s; }
+.ticket-wrap.expanded .echev { transform: rotate(180deg); }
+
+/* Detail */
+.tdetail { display: none; padding: 8px 0 4px; animation: dIn .2s ease; }
+.ticket-wrap.expanded .tdetail { display: block; }
+@keyframes dIn { from { opacity:0; transform:translateY(-4px) } to { opacity:1; transform:none } }
+
+/* Info grid */
+.dgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px; }
+@media(max-width:360px) { .dgrid { grid-template-columns: 1fr; } }
+.di { background: var(--surf2); border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px; }
+.di-lbl { font-size: 9px; color: var(--text3); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 2px; }
+.di-val { font-size: 11.5px; font-weight: 700; color: var(--text); line-height: 1.3; }
+
+/* Empty */
+.empty { text-align: center; padding: 52px 20px; }
+.empty-icon {
+  width: 50px; height: 50px; border-radius: 13px; background: var(--surf);
+  border: 1px solid var(--border); display: flex; align-items: center;
+  justify-content: center; color: var(--text3); margin: 0 auto 12px;
+}
+.empty-t { font-size: 14px; font-weight: 700; color: var(--text2); margin-bottom: 4px; }
+.empty-s { font-size: 12px; color: var(--text3); }
+.btn-go {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 14px;
+  padding: 8px 18px; border-radius: 8px; background: var(--accentbg);
+  border: 1px solid var(--accent); color: var(--accent2); font-size: 12px;
+  font-weight: 700; font-family: 'Outfit', sans-serif; cursor: pointer;
+  transition: all .15s; text-decoration: none;
+}
+.btn-go:hover { background: var(--accent); color: #fff; }
+
+/* ── GRUPO BADGE & FIELDS ── */
+.tk-group-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 8px; border-radius: 5px;
+  font-size: 8px; font-weight: 900; letter-spacing: .12em;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent); background: var(--accentbg);
+  border: 1.5px solid var(--accent);
+}
+.tk-group-product {
+  font-size: 13px; font-weight: 800; color: var(--text);
+  letter-spacing: .04em; margin-bottom: 2px;
+}
+.s-pagado   { color: var(--green); }
+.s-parcial  { color: var(--amber); }
+.s-vencido  { color: var(--red); }
+.tk-gp-fields {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 6px 0;
+}
+.tk-gp-field { background: var(--surf2); border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px; }
+.tk-gp-lbl { font-size: 9px; color: var(--text3); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 2px; }
+.tk-gp-val { font-size: 12px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--text); }
+.tk-gp-val.green { color: var(--green); }
+.tk-gp-val.red   { color: var(--red); }
+.tk-gp-val.amber { color: var(--amber); }
+.tk-credit-row {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--rbg); border: 1px solid rgba(0,0,0,.05);
+  border-radius: 6px; padding: 5px 8px; margin: 4px 0;
+  font-size: 10px; color: var(--red); font-weight: 600;
+}
+.tk-pay-btn {
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  width: 100%; margin-top: 6px; padding: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent));
+  border: none; border-radius: 8px; color: #fff;
+  font-size: 12px; font-weight: 800; font-family: 'Outfit', sans-serif;
+  cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,.15);
+  transition: opacity .15s, transform .12s;
+}
+.tk-pay-btn:hover { opacity: .9; transform: translateY(-1px); }
+/* Modal */
+.modal-content { background: var(--surf) !important; border: 1px solid var(--border) !important; }
+.modal-header { border-bottom: 1px solid var(--border) !important; background: var(--accentbg) !important; }
+.modal-footer { border-top: 1px solid var(--border) !important; }
+.modal-title { color: var(--text) !important; font-weight: 700; }
+.form-label { color: var(--text2); font-size: 12px; font-weight: 600; }
+.form-control, .form-select { background: var(--surf2) !important; border: 1px solid var(--border) !important; color: var(--text) !important; border-radius: 8px !important; }
+.form-control:focus, .form-select:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px var(--accentbg) !important; }
+.form-control[readonly] { color: var(--text3) !important; }
+.btn-primary { background: var(--accent) !important; border-color: var(--accent) !important; font-weight: 700; }
+
+/* Pagination */
+.pagination-row { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 16px; }
+.pg {
+  width: 30px; height: 30px; border-radius: 7px; background: var(--surf);
+  border: 1px solid var(--border); display: flex; align-items: center;
+  justify-content: center; color: var(--text2); cursor: pointer;
+  font-size: 12px; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+  transition: all .14s;
+}
+.pg:hover { border-color: var(--accent); color: var(--text); }
+.pg.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pg[disabled] { opacity: .3; cursor: not-allowed; pointer-events: none; }
+</style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-dark navbar-custom navbar-lb">
-        <div class="container-fluid">
-            <a class="navbar-brand spa-link" href="/customer/catalog">
-                <i class="bi bi-shop"></i> LOCOBAR
-            </a>
-            <div class="d-flex align-items-center">
-                <div class="dropdown">
-                    <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false" title="Mi cuenta">
-                        <i class="bi bi-person-circle fs-4"></i>
-                        <span class="user-name-text ms-1" id="userName">Usuario</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item spa-link" href="/customer/orders"><i class="bi bi-receipt"></i> Mis Pedidos</a></li>
-                        <li><a class="dropdown-item spa-link" href="/customer/credits"><i class="bi bi-credit-card"></i> Crédito que está debiendo</a></li>
-                        <li><a class="dropdown-item spa-link" href="/customer/group-purchases"><i class="bi bi-people"></i> Compras Grupales</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </nav>
 
-    <div id="spa-view-content">
-    <!-- Main Content -->
-    <div class="container mt-4">
-        <h2 class="mb-4"><i class="bi bi-receipt"></i> Mis Pedidos</h2>
-        
-        <div id="ordersContent">
-            <div class="text-center">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Cargando...</span>
-                </div>
-            </div>
-        </div>
+<!-- Navbar (standalone mode) -->
+<nav class="navbar navbar-dark navbar-lb" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);">
+  <div class="container-fluid">
+    <a class="navbar-brand spa-link" href="/customer/catalog"><i class="bi bi-shop"></i> LOCOBAR</a>
+    <div class="dropdown">
+      <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown">
+        <i class="bi bi-person-circle fs-4"></i>
+        <span class="ms-1 d-none d-sm-inline" id="userNameNav">Usuario</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item spa-link" href="/customer/orders"><i class="bi bi-receipt"></i> Mis Pedidos</a></li>
+        <li><a class="dropdown-item spa-link" href="/customer/credits"><i class="bi bi-credit-card"></i> Mis Créditos</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item text-danger" href="#" onclick="ordersLogout(); return false;"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+      </ul>
     </div>
+  </div>
+</nav>
 
-    <script src="/libs/js/jquery.min.js"></script>
-    <script src="/libs/js/bootstrap.bundle.min.js"></script>
-    <script>
-        let customer = JSON.parse(localStorage.getItem('customer')) || null;
+<div id="spa-view-content">
+<div class="orders-page">
+<div class="orders-inner">
 
-        $(document).ready(function() {
-            $.get('/api/public/brand-slogan', function(r) { if (r && r.pageTitleOrders) document.title = r.pageTitleOrders; });
-            // Check authentication
-            const token = localStorage.getItem('customerToken');
-            if (!token) {
-                window.location.href = '/customer/login';
-                return;
-            }
+  <!-- Page header -->
+  <div class="ord-ph">
+    <div class="pticon">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    </div>
+    <div class="page-title">
+      <h1>Mis Pedidos</h1>
+      <div class="page-title-sub" id="ordSubTitle">Cargando…</div>
+    </div>
+  </div>
 
-            if (customer) {
-                $('#userName').text(customer.name);
-            }
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow"></div>
 
-            loadOrders();
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <button class="fb active" onclick="ordFilter('todos',this)">Todos <span class="fcnt" id="cnt-todos">0</span></button>
+    <button class="fb" onclick="ordFilter('COMPLETED',this)">Completados <span class="fcnt" id="cnt-COMPLETED" style="background:var(--green)">0</span></button>
+    <button class="fb" onclick="ordFilter('PENDING',this)">Pendientes <span class="fcnt" id="cnt-PENDING" style="background:var(--amber)">0</span></button>
+    <button class="fb" onclick="ordFilter('VOIDED',this)">Anulados <span class="fcnt" id="cnt-VOIDED" style="background:var(--red)">0</span></button>
+    <button class="fb" onclick="ordFilter('GRUPAL',this)">Grupales <span class="fcnt" id="cnt-GRUPAL" style="background:var(--accent)">0</span></button>
+    <div class="sw">
+      <svg class="si" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="sinput" type="text" placeholder="Buscar pedido…" oninput="ordSearch(this.value)">
+    </div>
+  </div>
+
+  <!-- Orders list -->
+  <div id="ordersList">
+    <div style="text-align:center;padding:40px 0;color:var(--text3,#888);">
+      <div class="spinner-border spinner-border-sm" role="status"></div>
+    </div>
+  </div>
+  <div id="paginationRow" class="pagination-row"></div>
+
+</div>
+</div>
+
+<script>
+window.initOrdersView = function() {
+  // Aplicar tema del cliente (mismo sistema que usa el resto de la app)
+  var theme = localStorage.getItem('lb_theme') || 'teal';
+  var mode  = localStorage.getItem('lb_mode')  || 'auto';
+  var h = new Date().getHours();
+  var resolvedMode = mode === 'auto' ? (h >= 7 && h < 19 ? 'light' : 'dark') : mode;
+  document.documentElement.setAttribute('data-lb-theme', theme);
+  document.documentElement.setAttribute('data-lb-mode', resolvedMode);
+  document.documentElement.classList.add('lb-themed');
+
+  var token = localStorage.getItem('customerToken');
+  if (!token) { window.location.href = '/customer/login'; return; }
+
+  var cust = JSON.parse(localStorage.getItem('customer') || 'null');
+  if (cust && cust.name) {
+    var nav = document.getElementById('userNameNav');
+    if (nav) nav.textContent = cust.name;
+  }
+
+  loadOrdersData();
+};
+
+var _ordAllOrders = [];        // pedidos normales (Sale)
+var _ordAllGroups = [];        // compras grupales (GroupPurchaseParticipant)
+var _ordMerged   = [];         // lista unificada ordenada por fecha
+var _ordFilter = 'todos';
+var _ordSearch = '';
+var _ordPage = 1;
+var _ordPER = 8;
+
+var ORD_PAY_ICONS = {
+  CASH:     '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>',
+  TRANSFER: '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
+  CARD:     '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
+  CREDIT:   '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>'
+};
+var ORD_PAY_NAMES    = { CASH:'Efectivo', TRANSFER:'Transferencia', CARD:'Tarjeta', CREDIT:'Crédito' };
+var ORD_STATUS_MAP   = { COMPLETED:'completado', VOIDED:'anulado', PENDING:'pendiente' };
+var ORD_STATUS_LABEL = { COMPLETED:'PAGADO', VOIDED:'ANULADO', PENDING:'PENDIENTE' };
+
+function ordFmtDate(iso) {
+  var d = new Date(iso);
+  return d.toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' }) +
+    ' · ' + d.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+}
+
+function loadOrdersData() {
+  var list = document.getElementById('ordersList');
+  if (list) list.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--text3,#888);"><div class="spinner-border spinner-border-sm" role="status"></div></div>';
+  var tok = localStorage.getItem('customerToken');
+  var headers = { 'Authorization': 'Bearer ' + tok };
+
+  Promise.all([
+    fetch('/api/customer/orders', { headers: headers })
+      .then(function(r) { if (r.status === 401) { window.location.href='/customer/login'; throw new Error('unauth'); } return r.json(); }),
+    fetch('/api/customer/group-purchase-participations', { headers: headers })
+      .then(function(r) {
+        if (r.status === 401) { window.location.href='/customer/login'; throw new Error('unauth'); }
+        if (!r.ok) { console.warn('[Mis Pedidos] group-participations error:', r.status); return { participations: [] }; }
+        return r.json();
+      })
+      .catch(function(e) { if (e.message === 'unauth') throw e; console.warn('[Mis Pedidos] group-participations fetch error:', e); return { participations: [] }; })
+  ])
+  .then(function(results) {
+    _ordAllOrders = (results[0] && Array.isArray(results[0].orders)) ? results[0].orders : [];
+    _ordAllGroups = (results[1] && Array.isArray(results[1].participations)) ? results[1].participations : [];
+    console.log('[Mis Pedidos] pedidos:', _ordAllOrders.length, 'grupales:', _ordAllGroups.length);
+
+    // Marcar tipo y unificar por fecha
+    var tagged = _ordAllOrders.map(function(o) { return Object.assign({}, o, { _type: 'order' }); })
+      .concat(_ordAllGroups.map(function(p) { return Object.assign({}, p, { _type: 'group' }); }));
+    tagged.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+    _ordMerged = tagged;
+
+    ordRenderStats();
+    ordUpdateCounts();
+    ordRenderList();
+    var sub = document.getElementById('ordSubTitle');
+    if (sub) {
+      var total = _ordMerged.length;
+      sub.textContent = total + ' ' + (total === 1 ? 'pedido' : 'pedidos');
+    }
+  })
+  .catch(function(e) {
+    if (e.message === 'unauth') return;
+    var list2 = document.getElementById('ordersList');
+    if (list2) list2.innerHTML = '<div style="color:var(--red,#dc3545);text-align:center;padding:30px;font-size:13px;">Error al cargar los pedidos</div>';
+  });
+}
+
+function ordRenderStats() {
+  var completed  = _ordAllOrders.filter(function(o) { return o.status === 'COMPLETED'; });
+  var totalSpent = completed.reduce(function(s, o) { return s + parseFloat(o.totalAmount || 0); }, 0);
+  var grupales   = _ordAllGroups.length;
+  var stats = [
+    { l:'Total pedidos', v: _ordMerged.length, c:'var(--accent2)' },
+    { l:'Completados',   v: completed.length,  c:'var(--green)' },
+    { l:'Total gastado', v: '$' + totalSpent.toFixed(2), c:'var(--amber)' },
+    { l:'Grupales',      v: grupales,           c:'var(--accent)' }
+  ];
+  var row = document.getElementById('statsRow');
+  if (!row) return;
+  row.innerHTML = stats.map(function(s) {
+    return '<div class="stat-pill">' +
+      '<div class="stat-dot" style="background:' + s.c + ';box-shadow:0 0 5px ' + s.c + ';"></div>' +
+      '<span class="stat-lbl">' + s.l + '</span>' +
+      '<span class="stat-val" style="color:' + s.c + '">' + s.v + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+function ordUpdateCounts() {
+  var el = document.getElementById('cnt-todos');
+  if (el) el.textContent = _ordMerged.length;
+  ['COMPLETED','PENDING','VOIDED'].forEach(function(s) {
+    var e = document.getElementById('cnt-' + s);
+    if (e) e.textContent = _ordAllOrders.filter(function(o) { return o.status === s; }).length;
+  });
+  var eg = document.getElementById('cnt-GRUPAL');
+  if (eg) eg.textContent = _ordAllGroups.length;
+}
+
+function ordGetFiltered() {
+  return _ordMerged.filter(function(item) {
+    // Filtro por tipo/estado
+    var mf;
+    if (_ordFilter === 'todos') {
+      mf = true;
+    } else if (_ordFilter === 'GRUPAL') {
+      mf = item._type === 'group';
+    } else {
+      mf = item._type === 'order' && item.status === _ordFilter;
+    }
+
+    // Búsqueda
+    var q = _ordSearch.trim().toLowerCase();
+    var ms;
+    if (!q) {
+      ms = true;
+    } else if (item._type === 'order') {
+      ms = String(item.id).includes(q) ||
+        (ORD_PAY_NAMES[item.paymentMethod] || '').toLowerCase().includes(q) ||
+        (item.items || []).some(function(it) {
+          return it.product && it.product.name && it.product.name.toLowerCase().includes(q);
         });
+    } else {
+      var gp = item.groupPurchase;
+      ms = String(item.id).includes(q) ||
+        (gp && gp.product && gp.product.name && gp.product.name.toLowerCase().includes(q));
+    }
+    return mf && ms;
+  });
+}
 
-        function loadOrders() {
-            $.ajax({
-                url: '/api/customer/orders',
-                method: 'GET',
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('customerToken')
-                },
-                success: function(response) {
-                    const orders = response && Array.isArray(response.orders) ? response.orders : [];
-                    displayOrders(orders);
-                },
-                error: function(xhr) {
-                    if (xhr.status === 401) {
-                        window.location.href = '/customer/login';
-                    } else {
-                        const msg = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : 'Error al cargar los pedidos';
-                        $('#ordersContent').html(`
-                            <div class="alert alert-danger">
-                                ${msg}
-                            </div>
-                        `);
-                    }
-                }
-            });
-        }
+function ordRenderList() {
+  var filtered = ordGetFiltered();
+  var list = document.getElementById('ordersList');
+  var pgRow = document.getElementById('paginationRow');
+  if (!list) return;
 
-        function displayOrders(orders) {
-            const content = $('#ordersContent');
-            if (!Array.isArray(orders)) {
-                content.html('<div class="alert alert-warning">No se recibieron datos de pedidos.</div>');
-                return;
-            }
-            if (orders.length === 0) {
-                content.html(`
-                    <div class="text-center py-5">
-                        <i class="bi bi-inbox" style="font-size: 4em; color: #ccc;"></i>
-                        <h4 class="mt-3 text-muted">No tienes pedidos aún</h4>
-                        <a href="/customer/catalog" class="btn btn-primary mt-3 spa-link">
-                            <i class="bi bi-shop"></i> Ver Catálogo
-                        </a>
-                    </div>
-                `);
-                return;
-            }
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty">' +
+      '<div class="empty-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>' +
+      '<div class="empty-t">' + (_ordSearch || _ordFilter !== 'todos' ? 'Sin resultados' : 'No tienes pedidos aún') + '</div>' +
+      '<div class="empty-s">' + (_ordSearch || _ordFilter !== 'todos' ? 'Prueba cambiando el filtro' : 'Explora el catálogo y haz tu primer pedido') + '</div>' +
+      (!_ordSearch && _ordFilter === 'todos' ? '<a href="/customer/catalog" class="btn-go spa-link"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Ver Catálogo</a>' : '') +
+    '</div>';
+    if (pgRow) pgRow.innerHTML = '';
+    return;
+  }
 
-            let html = '';
-            orders.forEach(order => {
-                const date = new Date(order.createdAt).toLocaleDateString('es-ES', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
+  var pages = Math.ceil(filtered.length / _ordPER);
+  if (_ordPage > pages) _ordPage = 1;
+  var slice = filtered.slice((_ordPage - 1) * _ordPER, _ordPage * _ordPER);
+  list.innerHTML = slice.map(function(item, idx) {
+    return item._type === 'group' ? ordRenderGroupTicket(item, idx) : ordRenderTicket(item, idx);
+  }).join('');
 
-                const statusBadge = order.status === 'COMPLETED' ? 
-                    '<span class="badge bg-success">Completado</span>' :
-                    order.status === 'VOIDED' ?
-                    '<span class="badge bg-danger">Anulado</span>' :
-                    '<span class="badge bg-warning">Pendiente</span>';
+  if (!pgRow) return;
+  if (pages <= 1) { pgRow.innerHTML = ''; return; }
+  var ph = '<button class="pg" ' + (_ordPage === 1 ? 'disabled' : '') + ' onclick="ordGoPage(' + (_ordPage-1) + ')">‹</button>';
+  for (var p = 1; p <= pages; p++) {
+    ph += '<button class="pg' + (p === _ordPage ? ' active' : '') + '" onclick="ordGoPage(' + p + ')">' + p + '</button>';
+  }
+  ph += '<button class="pg" ' + (_ordPage === pages ? 'disabled' : '') + ' onclick="ordGoPage(' + (_ordPage+1) + ')">›</button>';
+  pgRow.innerHTML = ph;
+}
 
-                let itemsHtml = '';
-                const orderItems = Array.isArray(order.items) ? order.items : [];
-                orderItems.forEach(item => {
-                    const productName = (item.product && item.product.name) ? item.product.name : 'Producto';
-                    const totalPrice = parseFloat(item.totalPrice || 0).toFixed(2);
-                    const qty = item.quantity != null ? item.quantity : 0;
-                    itemsHtml += `
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>${productName} x ${qty}</span>
-                            <span>$${totalPrice}</span>
-                        </div>
-                    `;
-                });
+function ordRenderTicket(o, idx) {
+  var sk  = ORD_STATUS_MAP[o.status]   || 'pendiente';
+  var sl  = ORD_STATUS_LABEL[o.status] || o.status;
+  var pi  = ORD_PAY_ICONS[o.paymentMethod] || ORD_PAY_ICONS.CARD;
+  var pn  = ORD_PAY_NAMES[o.paymentMethod] || o.paymentMethod || '';
+  var items = Array.isArray(o.items) ? o.items : [];
+  var tot = parseFloat(o.totalAmount || 0);
+  var scol = o.status==='COMPLETED' ? 'green' : o.status==='VOIDED' ? 'red' : 'amber';
 
-                html += `
-                    <div class="card mb-3">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>Pedido #${order.id}</strong>
-                                <div class="small text-muted">${date}</div>
-                            </div>
-                            ${statusBadge}
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <h6>Productos:</h6>
-                                    ${itemsHtml}
-                                </div>
-                                <div class="col-md-4 text-end">
-                                    <div class="mb-2">
-                                        <small class="text-muted">Método de pago:</small><br>
-                                        <strong>${getPaymentMethodName(order.paymentMethod)}</strong>
-                                    </div>
-                                    <div>
-                                        <small class="text-muted">Total:</small><br>
-                                        <h4 class="text-primary mb-0">$${parseFloat(order.totalAmount).toFixed(2)}</h4>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
+  var productsHtml = items.map(function(it) {
+    var name = (it.product && it.product.name) ? it.product.name : 'Producto';
+    var qty  = it.quantity || 0;
+    var lt   = parseFloat(it.totalPrice || 0);
+    var up   = qty > 0 ? (lt / qty).toFixed(2) : '0.00';
+    return '<div class="tpr"><div><div class="tpn">' + name + '</div>' +
+      '<div class="tps">$' + up + ' × ' + qty + '</div></div>' +
+      '<span class="tpp">$' + lt.toFixed(2) + '</span></div>';
+  }).join('');
 
-            content.html(html);
-        }
+  var notesHtml = (o.notes && o.notes.trim())
+    ? '<div class="di"><div class="di-lbl">Notas</div><div class="di-val">' + o.notes + '</div></div>'
+    : '';
 
-        function getPaymentMethodName(method) {
-            const methods = {
-                'CASH': 'Efectivo',
-                'CARD': 'Tarjeta',
-                'TRANSFER': 'Transferencia',
-                'CREDIT': 'Crédito'
-            };
-            return methods[method] || (method || '');
-        }
+  return '<div class="ticket-wrap" id="tk-' + o.id + '" style="animation-delay:' + (idx*.06) + 's" onclick="ordToggle(' + o.id + ')">' +
+    '<div class="ticket">' +
+      '<div class="tsec tk-head-sec"><div class="tk-head">' +
+        '<div class="tk-date"><svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' + ordFmtDate(o.createdAt) + '</div>' +
+        '<div class="tk-brand">LOCO<span class="tk-dot"></span>BAR</div>' +
+        '<div class="tk-num">#' + String(o.id).padStart(4,'0') + '</div>' +
+        '<div class="tk-status s-' + sk + '">' + sl + '</div>' +
+      '</div></div>' +
+      '<div class="tsec" style="padding-top:8px;padding-bottom:0;">' +
+        '<div class="tk-summary-row">' +
+          '<div class="tpay-left"><div class="tpay-icon">' + pi + '</div><span>' + pn + '</span></div>' +
+          '<span class="tgval' + (o.status==='VOIDED'?' anulado':'') + '">$' + tot.toFixed(2) + '</span>' +
+        '</div>' +
+        '<div class="texp" onclick="event.stopPropagation();ordToggle(' + o.id + ')">' +
+          '<svg class="echev" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>' +
+          '<span id="elbl-' + o.id + '">Ver detalles</span>' +
+        '</div>' +
+        '<div class="tdetail" id="det-' + o.id + '" onclick="event.stopPropagation()">' +
+          '<hr class="td" style="margin:0 0 8px;">' +
+          '<div class="tsl">Productos</div>' + productsHtml +
+          '<hr class="td">' +
+          '<div class="tgrand"><span class="tglbl">Total</span>' +
+            '<span class="tgval' + (o.status==='VOIDED'?' anulado':'') + '">$' + tot.toFixed(2) + '</span>' +
+          '</div>' +
+          '<hr class="td">' +
+          '<div class="dgrid">' +
+            '<div class="di"><div class="di-lbl">Método de pago</div><div class="di-val">' + pn + '</div></div>' +
+            '<div class="di"><div class="di-lbl">Estado</div><div class="di-val" style="color:var(--' + scol + ')">' + sl + '</div></div>' +
+            notesHtml +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div></div>';
+}
 
-        function logout() {
-            localStorage.removeItem('customerToken');
-            localStorage.removeItem('customer');
-            localStorage.removeItem('customerCart');
-            window.location.href = '/customer/login';
-        }
-    </script>
-    </div><!-- #spa-view-content -->
+function ordToggle(id) {
+  var w = document.getElementById('tk-' + id);
+  if (!w) return;
+  var open = w.classList.toggle('expanded');
+  var lbl = document.getElementById('elbl-' + id);
+  if (lbl) lbl.textContent = open ? 'Cerrar' : 'Ver detalles';
+}
+
+// ── COMPRA GRUPAL TICKET ────────────────────────────────────────
+var GP_STATUS_MAP   = { PENDING:'pendiente', PARTIAL:'parcial', PAID:'pagado', OVERDUE:'vencido' };
+var GP_STATUS_LABEL = { PENDING:'PENDIENTE', PARTIAL:'PARCIAL', PAID:'PAGADO', OVERDUE:'VENCIDO' };
+var GP_STATUS_COL   = { PENDING:'amber', PARTIAL:'amber', PAID:'green', OVERDUE:'red' };
+
+function ordRenderGroupTicket(p, idx) {
+  var gp       = p.groupPurchase || {};
+  var prod     = gp.product || {};
+  var prodName = prod.name || 'Compra Grupal #' + (gp.id || '');
+  var amtDue   = parseFloat(p.amountDue  || 0);
+  var amtPaid  = parseFloat(p.amountPaid || 0);
+  var amtRem   = Math.max(0, amtDue - amtPaid);
+  var st       = p.status || 'PENDING';
+  var stKey    = GP_STATUS_MAP[st]   || 'pendiente';
+  var stLbl    = GP_STATUS_LABEL[st] || st;
+  var stCol    = GP_STATUS_COL[st]   || 'amber';
+  var uid      = 'g-' + p.id;
+  var parts    = gp.participantCount || (Array.isArray(gp.participants) ? gp.participants.length : '?');
+
+  // Crédito asociado
+  var credit    = p.credit;
+  var hasCred   = credit && credit.status === 'ACTIVE' && parseFloat(credit.currentBalance || 0) > 0.01;
+  var credBal   = hasCred ? parseFloat(credit.currentBalance).toFixed(2) : '0.00';
+
+  var creditRow = hasCred
+    ? '<div class="tk-credit-row"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> En crédito — saldo pendiente: <strong>$' + credBal + '</strong></div>'
+    : '';
+
+  var payBtn = (st !== 'PAID' && hasCred)
+    ? '<button class="tk-pay-btn" onclick="event.stopPropagation();ordPayGroup(' + credit.id + ',' + credBal + ')"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Pagar Ahora</button>'
+    : '';
+
+  return '<div class="ticket-wrap" id="tk-' + uid + '" style="animation-delay:' + (idx*.06) + 's" onclick="ordToggle(\'' + uid + '\')">' +
+    '<div class="ticket">' +
+      '<div class="tsec tk-head-sec"><div class="tk-head">' +
+        '<div class="tk-date"><svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' + ordFmtDate(p.createdAt) + '</div>' +
+        '<div class="tk-brand">LOCO<span class="tk-dot"></span>BAR</div>' +
+        '<div class="tk-group-badge"><svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> GRUPAL</div>' +
+        '<div class="tk-group-product">' + prodName + '</div>' +
+        '<div class="tk-status s-' + stKey + '">' + stLbl + '</div>' +
+      '</div></div>' +
+      '<div class="tsec" style="padding-top:8px;padding-bottom:0;">' +
+        '<div class="tk-summary-row">' +
+          '<div class="tpay-left"><div class="tpay-icon"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><span>' + parts + ' participantes</span></div>' +
+          '<span class="tgval" style="color:var(--' + stCol + ')">$' + amtRem.toFixed(2) + '</span>' +
+        '</div>' +
+        '<div class="texp" onclick="event.stopPropagation();ordToggle(\'' + uid + '\')">' +
+          '<svg class="echev" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>' +
+          '<span id="elbl-' + uid + '">Ver detalles</span>' +
+        '</div>' +
+        '<div class="tdetail" id="det-' + uid + '" onclick="event.stopPropagation()">' +
+          '<hr class="td" style="margin:0 0 8px;">' +
+          '<div class="tsl">Mi parte en la compra grupal</div>' +
+          '<div class="tk-gp-fields">' +
+            '<div class="tk-gp-field"><div class="tk-gp-lbl">Mi monto</div><div class="tk-gp-val">$' + amtDue.toFixed(2) + '</div></div>' +
+            '<div class="tk-gp-field"><div class="tk-gp-lbl">Pagado</div><div class="tk-gp-val green">$' + amtPaid.toFixed(2) + '</div></div>' +
+            '<div class="tk-gp-field"><div class="tk-gp-lbl">Pendiente</div><div class="tk-gp-val ' + (amtRem > 0 ? 'red' : 'green') + '">$' + amtRem.toFixed(2) + '</div></div>' +
+            '<div class="tk-gp-field"><div class="tk-gp-lbl">Participantes</div><div class="tk-gp-val">' + parts + '</div></div>' +
+          '</div>' +
+          creditRow +
+          payBtn +
+        '</div>' +
+      '</div>' +
+    '</div></div>';
+}
+
+function ordPayGroup(creditId, balance) {
+  document.getElementById('gpCreditId').value = creditId;
+  document.getElementById('gpBalance').value  = '$' + parseFloat(balance).toFixed(2);
+  document.getElementById('gpAmount').value   = parseFloat(balance).toFixed(2);
+  document.getElementById('gpMethod').value   = 'CASH';
+  document.getElementById('gpDate').value     = new Date().toISOString().split('T')[0];
+  document.getElementById('gpNotes').value    = '';
+  new bootstrap.Modal(document.getElementById('groupPayModal')).show();
+}
+
+function saveGroupPayment() {
+  var creditId = document.getElementById('gpCreditId').value;
+  var amount   = parseFloat(document.getElementById('gpAmount').value);
+  var method   = document.getElementById('gpMethod').value;
+  var date     = document.getElementById('gpDate').value;
+  var notes    = document.getElementById('gpNotes').value || null;
+  if (!creditId || !amount || amount <= 0 || !method || !date) {
+    alert('Complete todos los campos requeridos');
+    return;
+  }
+  fetch('/api/customer/credits/' + creditId + '/payment', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + localStorage.getItem('customerToken'),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ amount: amount, paymentMethod: method, paymentDate: date, notes: notes })
+  })
+  .then(function(r) {
+    if (r.status === 401) { window.location.href = '/customer/login'; return; }
+    return r.json();
+  })
+  .then(function(data) {
+    if (!data) return;
+    if (data.ok) {
+      bootstrap.Modal.getInstance(document.getElementById('groupPayModal')).hide();
+      loadOrdersData();
+    } else {
+      alert(data.error || 'Error al registrar pago');
+    }
+  })
+  .catch(function() { alert('Error al registrar pago'); });
+}
+
+function ordFilter(f, btn) {
+  _ordFilter = f; _ordPage = 1;
+  document.querySelectorAll('.fb').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  ordRenderList();
+}
+
+function ordSearch(q) { _ordSearch = q; _ordPage = 1; ordRenderList(); }
+function ordGoPage(n) { _ordPage = n; ordRenderList(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+function ordersLogout() {
+  localStorage.removeItem('customerToken');
+  localStorage.removeItem('customer');
+  localStorage.removeItem('customerCart');
+  window.location.href = '/customer/login';
+}
+
+// Auto-init (acceso directo, no SPA)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', window.initOrdersView);
+} else {
+  window.initOrdersView();
+}
+</script>
+<!-- Modal pago compra grupal -->
+<div class="modal fade" id="groupPayModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:6px;color:var(--accent)"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          Registrar Pago
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="gpCreditId">
+        <div class="mb-3">
+          <label class="form-label">Saldo Actual</label>
+          <input type="text" class="form-control" id="gpBalance" readonly>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Monto a Pagar <span class="text-danger">*</span></label>
+          <input type="number" class="form-control" id="gpAmount" step="0.01" min="0.01" required>
+          <div class="form-text" style="color:var(--text3);font-size:11px;">Puede ser un pago parcial</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Método de Pago <span class="text-danger">*</span></label>
+          <select class="form-select" id="gpMethod" required>
+            <option value="">Seleccione...</option>
+            <option value="CASH">Efectivo</option>
+            <option value="CARD">Tarjeta</option>
+            <option value="TRANSFER">Transferencia</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Fecha de Pago <span class="text-danger">*</span></label>
+          <input type="date" class="form-control" id="gpDate" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Notas</label>
+          <textarea class="form-control" id="gpNotes" rows="2" placeholder="Opcional..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="saveGroupPayment()">Registrar Pago</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- #spa-view-content -->
+
+<script src="/libs/js/jquery.min.js"></script>
+<script src="/libs/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

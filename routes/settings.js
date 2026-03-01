@@ -1,7 +1,30 @@
 const express = require('express');
 const { Setting } = require('../models');
 const crypto = require('crypto');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const { requireRole } = require('./adminAuth');
+
+// Mapeo tipo → nombre de archivo en /public/img/
+const BRAND_IMG_MAP = {
+  logo:    'icono-LB.png',
+  favicon: 'pestana-LB.png'
+};
+const PUBLIC_IMG_DIR = path.join(__dirname, '..', 'public', 'img');
+
+const uploadBrandImg = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, os.tmpdir()),
+    filename:    (req, file, cb) => cb(null, 'brand-' + Date.now() + path.extname(file.originalname))
+  }),
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) return cb(new Error('Solo se permiten imágenes'));
+    cb(null, true);
+  },
+  limits: { fileSize: 5 * 1024 * 1024 }
+});
 
 const router = express.Router();
 
@@ -192,6 +215,28 @@ router.post('/bulk', requireRole('ADMIN'), async (req, res) => {
       error: 'Internal server error',
       code: 'INTERNAL_ERROR'
     });
+  }
+});
+
+// POST /settings/upload-brand-image?type=logo|favicon|banner|login_bg
+router.post('/upload-brand-image', requireRole('ADMIN'), uploadBrandImg.single('image'), async (req, res) => {
+  const { type } = req.query;
+  const filename = BRAND_IMG_MAP[type];
+  if (!filename) {
+    return res.status(400).json({ error: 'Tipo inválido. Usa: logo, favicon, banner, login_bg' });
+  }
+  if (!req.file) {
+    return res.status(400).json({ error: 'No se proporcionó imagen' });
+  }
+  const destPath = path.join(PUBLIC_IMG_DIR, filename);
+  try {
+    fs.copyFileSync(req.file.path, destPath);
+    fs.unlinkSync(req.file.path);
+    const url = '/public/img/' + filename + '?v=' + Date.now();
+    res.json({ ok: true, url });
+  } catch (err) {
+    console.error('upload-brand-image:', err);
+    res.status(500).json({ error: 'Error al guardar imagen' });
   }
 });
 

@@ -47,6 +47,11 @@ module.exports = (sequelize) => {
       defaultValue: 'auto',
       field: 'theme_mode'
     },
+    customRoleId: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      field: 'custom_role_id'
+    },
     lastLogin: {
       type: DataTypes.DATE,
       allowNull: true,

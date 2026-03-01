@@ -1275,3 +1275,55 @@ code {
   .db-sg { grid-template-columns: repeat(2, 1fr); }
   .db-sv { font-size: 22px; }
 }
+
+/* ── SIDEBAR COLAPSABLE (solo desktop ≥ 769px) ── */
+@media (min-width: 769px) {
+  .sidebar { transition: width 0.25s ease; }
+  .topbar  { transition: left 0.25s ease, background-color 0.35s, border-color 0.35s; }
+  .main-content { transition: margin-left 0.25s ease; }
+
+  /* Estado contraído */
+  body.sidebar-collapsed .sidebar     { width: 64px; }
+  body.sidebar-collapsed .topbar      { left: 64px; }
+  body.sidebar-collapsed .main-content{ margin-left: 64px; }
+
+  /* Ocultar textos cuando está contraído */
+  body.sidebar-collapsed .sb-logo-text,
+  body.sidebar-collapsed .sb-theme-btn,
+  body.sidebar-collapsed .sb-group-label,
+  body.sidebar-collapsed .sidebar .nav-link > span:first-of-type,
+  body.sidebar-collapsed .sb-user-info,
+  body.sidebar-collapsed .sb-logout-btn > span,
+  body.sidebar-collapsed #supplierDebtsBadge { display: none !important; }
+
+  /* Centrar elementos */
+  body.sidebar-collapsed .sb-logo       { justify-content: center; padding: 18px 0 14px; }
+  body.sidebar-collapsed .sidebar .nav-link { justify-content: center; }
+  body.sidebar-collapsed .sidebar .nav-link.active::after { display: none; }
+  body.sidebar-collapsed .sb-user-card  { justify-content: center; padding: 9px; }
+  body.sidebar-collapsed .sb-logout-btn { justify-content: center; }
+  body.sidebar-collapsed .sidebar-logout { padding: 12px 8px !important; }
+
+  /* Tooltip nativo al hacer hover sobre cada enlace */
+  body.sidebar-collapsed .sidebar .nav-link { position: relative; }
+  body.sidebar-collapsed .sidebar .nav-link[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--th-surf);
+    color: var(--th-text);
+    border: 1px solid var(--th-border);
+    padding: 5px 12px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 9999;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    pointer-events: none;
+  }
+  /* No mostrar tooltip al nav-link activo para que no tape el contenido */
+  body.sidebar-collapsed .sidebar .nav-link.active[title]:hover::after { display: none; }
+}

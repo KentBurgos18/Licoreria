@@ -2,437 +2,721 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
     <title>Mis Créditos - LOCOBAR</title>
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
     <link href="/public/css/theme.css" rel="stylesheet">
+    <link href="/public/css/customer-themes.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .navbar-custom {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        /* ── CREDITS VIEW ── */
+        .credits-view {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 20px 16px 60px;
+            font-family: 'Outfit', sans-serif;
         }
-        .credit-card {
-            border-left: 4px solid #ffc107;
+
+        /* Page header */
+        .cr-page-hdr {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
         }
-        .overdue-card {
-            border-left: 4px solid #dc3545;
+        .cr-page-icon {
+            width: 38px; height: 38px;
+            border-radius: 11px;
+            background: var(--accentbg);
+            border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--accent);
+            flex-shrink: 0;
         }
-        .paid-card {
-            border-left: 4px solid #28a745;
+        .cr-page-hdr h1 {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text);
+            margin: 0;
         }
-        .summary-card {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            color: white;
-            border-radius: 15px;
-            padding: 20px;
+
+        /* ── HERO SUMMARY ── */
+        .cr-hero {
+            background: var(--surf);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.1), 0 0 0 1px rgba(0,0,0,.04);
+            overflow: hidden;
+            margin-bottom: 16px;
         }
-        #userMenu .user-name-text {
-            display: none;
+        .cr-hero-head {
+            background: var(--accentbg);
+            border-bottom: 1.5px dashed var(--border);
+            padding: 12px 18px;
+            display: flex; align-items: center; gap: 8px;
         }
-        @media (min-width: 576px) {
-            #userMenu .user-name-text {
-                display: inline;
+        .cr-hero-title {
+            font-size: 11px; font-weight: 800;
+            color: var(--text);
+            letter-spacing: .05em; text-transform: uppercase;
+        }
+        .cr-hero-body {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            padding: 16px 18px; gap: 8px;
+        }
+        .cr-stat {}
+        .cr-stat-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 26px; font-weight: 900;
+            color: var(--accent);
+            line-height: 1; margin-bottom: 4px;
+        }
+        .cr-stat-val.red   { color: var(--red); }
+        .cr-stat-val.amber { color: var(--amber); }
+        .cr-stat-lbl {
+            font-size: 10px; color: var(--text3);
+            font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+        }
+        .cr-hero-body .cr-stat:not(:last-child) {
+            border-right: 1px dashed var(--border);
+            padding-right: 18px;
+        }
+        .cr-hero-body .cr-stat:not(:first-child) { padding-left: 18px; }
+
+        /* ── CREDIT CARDS LIST ── */
+        .cr-list { display: flex; flex-direction: column; gap: 12px; }
+
+        .cr-card {
+            background: var(--surf);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: 0 4px 16px rgba(0,0,0,.08);
+            overflow: hidden;
+            transition: box-shadow .2s, border-color .2s, transform .15s;
+            animation: crCardIn .35s ease both;
+        }
+        .cr-card:hover {
+            box-shadow: 0 6px 24px rgba(0,0,0,.12);
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+        .cr-card.vencido  { border-top: 2px solid var(--red); }
+        .cr-card.vigente  { border-top: 2px solid var(--accent); }
+        .cr-card.sin-fecha{ border-top: 2px solid var(--amber); }
+        @keyframes crCardIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+        /* Card head */
+        .cr-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 9px 14px;
+            border-bottom: 1.5px dashed var(--border);
+            gap: 10px;
+        }
+        .cr-head-left { display: flex; align-items: center; gap: 8px; }
+        .cr-head-icon {
+            width: 28px; height: 28px; border-radius: 8px;
+            background: var(--accentbg); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--accent); flex-shrink: 0;
+        }
+        .cr-head-title { font-size: 12px; font-weight: 800; color: var(--text); }
+        .cr-head-id    { font-size: 9.5px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+        .cr-head-date  { font-size: 9px; color: var(--text3); margin-top: 1px; }
+
+        /* Status badge */
+        .cr-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 9px; border-radius: 20px;
+            font-size: 9px; font-weight: 800; letter-spacing: .04em;
+            white-space: nowrap; flex-shrink: 0;
+        }
+        .cr-badge::before {
+            content: ''; width: 4px; height: 4px;
+            border-radius: 50%; flex-shrink: 0;
+        }
+        .badge-vencido  { background: var(--rbg);  color: var(--red);   border: 1px solid rgba(0,0,0,.08); }
+        .badge-vencido::before  { background: var(--red);   box-shadow: 0 0 4px var(--red); }
+        .badge-vigente  { background: var(--gbg);  color: var(--green); border: 1px solid rgba(0,0,0,.08); }
+        .badge-vigente::before  { background: var(--green); box-shadow: 0 0 4px var(--green); }
+        .badge-sin-fecha{ background: var(--ambg); color: var(--amber); border: 1px solid rgba(0,0,0,.08); }
+        .badge-sin-fecha::before{ background: var(--amber); box-shadow: 0 0 4px var(--amber); }
+
+        /* Card body — fields row */
+        .cr-body {
+            display: flex; align-items: center; flex-wrap: wrap;
+            padding: 10px 14px; gap: 0;
+        }
+        .cr-field {
+            display: flex; flex-direction: column; gap: 2px;
+            flex: 1; min-width: 80px;
+        }
+        .cr-field + .cr-field {
+            border-left: 1px dashed var(--border);
+            padding-left: 12px; margin-left: 12px;
+        }
+        .cr-field-lbl {
+            font-size: 8.5px; font-weight: 700;
+            letter-spacing: .09em; text-transform: uppercase; color: var(--text3);
+        }
+        .cr-field-val {
+            font-size: 12.5px; font-weight: 700;
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .cr-field-val.accent { color: var(--accent); }
+        .cr-field-val.red    { color: var(--red); }
+
+        /* Alert row (vencido) */
+        .cr-alert {
+            margin: 0 14px 6px;
+            padding: 6px 10px; border-radius: 8px;
+            background: var(--rbg); border: 1px solid rgba(0,0,0,.06);
+            font-size: 10.5px; color: var(--text2);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .cr-alert svg { color: var(--red); flex-shrink: 0; }
+        .cr-alert strong { color: var(--red); }
+
+        /* Card footer */
+        .cr-footer {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 6px 14px 10px; gap: 10px;
+        }
+        .cr-rate {
+            display: flex; align-items: center; gap: 4px;
+            font-size: 9.5px; color: var(--text3);
+        }
+        .cr-pay-btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: 7px 16px; border-radius: 9px;
+            background: linear-gradient(135deg, var(--accent), var(--accent));
+            border: none; color: #fff;
+            font-size: 11.5px; font-weight: 800; font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(0,0,0,.18);
+            transition: opacity .15s, transform .12s, box-shadow .15s;
+            white-space: nowrap;
+        }
+        .cr-pay-btn:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 5px 16px rgba(0,0,0,.22); }
+        .cr-pay-btn:active { transform: scale(.97); }
+
+        /* Paid / no-balance badge */
+        .cr-paid-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 12px; border-radius: 9px;
+            background: var(--gbg); color: var(--green);
+            font-size: 11px; font-weight: 700;
+            border: 1px solid rgba(0,0,0,.06);
+        }
+
+        /* Empty state */
+        .cr-empty {
+            text-align: center;
+            padding: 48px 24px;
+            background: var(--surf);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+        .cr-empty-icon {
+            width: 56px; height: 56px; border-radius: 16px;
+            background: var(--gbg); border: 1px solid rgba(0,0,0,.06);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--green); margin: 0 auto 14px;
+            font-size: 24px;
+        }
+        .cr-empty h3 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+        .cr-empty p  { font-size: 12px; color: var(--text3); margin: 0; }
+
+        /* Loading */
+        .cr-loading {
+            text-align: center; padding: 48px 0;
+            color: var(--text3); font-size: 13px;
+        }
+        .cr-spinner {
+            width: 32px; height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Mobile adjustments */
+        @media (max-width: 520px) {
+            .cr-hero-body { grid-template-columns: 1fr 1fr; }
+            .cr-hero-body .cr-stat:not(:last-child) { border-right: none; padding-right: 0; }
+            .cr-hero-body .cr-stat:not(:first-child) { padding-left: 0; }
+            .cr-body { flex-wrap: wrap; gap: 8px; }
+            .cr-field { flex: 0 0 calc(50% - 4px); min-width: 0; }
+            .cr-field + .cr-field { border-left: none; padding-left: 0; margin-left: 0; }
+            .cr-stat-val { font-size: 20px; }
+        }
+
+        /* ── MODAL (tema) ── */
+        .modal-content {
+            background: var(--surf) !important;
+            border: 1px solid var(--border) !important;
+            color: var(--text) !important;
+        }
+        .modal-header {
+            border-bottom: 1px solid var(--border) !important;
+            background: var(--accentbg) !important;
+        }
+        .modal-footer { border-top: 1px solid var(--border) !important; }
+        .modal-title  { color: var(--text) !important; font-weight: 700; }
+        .form-label   { color: var(--text2); font-size: 12px; font-weight: 600; }
+        .form-control, .form-select {
+            background: var(--surf2) !important;
+            border: 1px solid var(--border) !important;
+            color: var(--text) !important;
+            border-radius: 8px !important;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 0 3px var(--accentbg) !important;
+        }
+        .form-control[readonly] { color: var(--text3) !important; }
+        .btn-primary {
+            background: var(--accent) !important;
+            border-color: var(--accent) !important;
+            font-weight: 700;
+        }
+        .btn-secondary { font-weight: 600; }
+
+        /* ── Toast ── */
+        .lb-toast {
+            background: var(--surf); border: 1px solid var(--border);
+            border-radius: 12px; padding: 11px 14px;
+            display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.1);
+            font-size: 13px; font-weight: 500; color: var(--text);
+            min-width: 280px; max-width: 380px;
+            position: fixed; top: 80px; right: 20px; z-index: 9999;
+            opacity: 0; transform: translateY(-8px);
+            transition: opacity .22s, transform .22s;
+        }
+        .lb-toast.lb-toast-show { opacity: 1; transform: translateY(0); }
+        .lb-toast.lb-toast-hide { opacity: 0; transform: translateY(-8px); }
+        .lb-toast-icon  { display: flex; align-items: center; flex-shrink: 0; }
+        .lb-toast-msg   { flex: 1; }
+        .lb-toast-close {
+            margin-left: auto; background: none; border: none;
+            padding: 2px 5px; cursor: pointer; color: var(--text3);
+            border-radius: 5px; flex-shrink: 0; font-size: 16px; line-height: 1;
+        }
+        .lb-toast-close:hover { color: var(--text); background: var(--surf2); }
+        @media (max-width: 576px) {
+            .lb-toast {
+                top: auto; bottom: 24px; right: auto; left: 50%;
+                transform: translateX(-50%) translateY(16px);
+                min-width: min(340px, calc(100vw - 32px));
+                max-width: calc(100vw - 32px);
             }
+            .lb-toast.lb-toast-show { transform: translateX(-50%) translateY(0); }
+            .lb-toast.lb-toast-hide { transform: translateX(-50%) translateY(16px); }
         }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-dark navbar-custom navbar-lb">
-        <div class="container-fluid">
-            <a class="navbar-brand spa-link" href="/customer/catalog">
-                <i class="bi bi-shop"></i> LOCOBAR
-            </a>
-            <div class="d-flex align-items-center">
-                <div class="dropdown">
-                    <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false" title="Mi cuenta">
-                        <i class="bi bi-person-circle fs-4"></i>
-                        <span class="user-name-text ms-1" id="userName">Usuario</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item spa-link" href="/customer/orders"><i class="bi bi-receipt"></i> Mis Pedidos</a></li>
-                        <li><a class="dropdown-item spa-link" href="/customer/credits"><i class="bi bi-credit-card"></i> Crédito que está debiendo</a></li>
-                        <li><a class="dropdown-item spa-link" href="/customer/group-purchases"><i class="bi bi-people"></i> Compras Grupales</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
-                    </ul>
-                </div>
+<div id="spa-view-content">
+
+<div class="credits-view">
+
+    <!-- Header -->
+    <div class="cr-page-hdr">
+        <div class="cr-page-icon">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+        </div>
+        <h1>Mi Crédito</h1>
+    </div>
+
+    <!-- Hero summary -->
+    <div class="cr-hero">
+        <div class="cr-hero-head">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            <span class="cr-hero-title">Resumen de Deudas</span>
+        </div>
+        <div class="cr-hero-body">
+            <div class="cr-stat">
+                <div class="cr-stat-val red" id="totalBalance">$0.00</div>
+                <div class="cr-stat-lbl">Total Adeudado</div>
+            </div>
+            <div class="cr-stat">
+                <div class="cr-stat-val amber" id="totalInterest">$0.00</div>
+                <div class="cr-stat-lbl">Intereses Acumulados</div>
+            </div>
+            <div class="cr-stat">
+                <div class="cr-stat-val" id="totalCredits">0</div>
+                <div class="cr-stat-lbl">Créditos Activos</div>
             </div>
         </div>
-    </nav>
+    </div>
 
-    <div id="spa-view-content">
-    <!-- Main Content -->
-    <div class="container mt-4">
-        <h2 class="mb-4">
-            <i class="bi bi-credit-card"></i> Mi Crédito
-        </h2>
+    <!-- Credits list -->
+    <div class="cr-list" id="creditsList">
+        <div class="cr-loading">
+            <div class="cr-spinner"></div>
+            Cargando créditos...
+        </div>
+    </div>
 
-        <!-- Summary Card -->
-        <div class="row mb-4">
-            <div class="col-md-12">
-                <div class="summary-card">
-                    <h5>Resumen de Deudas</h5>
-                    <div class="row mt-3">
-                        <div class="col-md-4">
-                            <h3 id="totalBalance">$0.00</h3>
-                            <small>Total Adeudado</small>
-                        </div>
-                        <div class="col-md-4">
-                            <h3 id="totalInterest">$0.00</h3>
-                            <small>Intereses Acumulados</small>
-                        </div>
-                        <div class="col-md-4">
-                            <h3 id="totalCredits">0</h3>
-                            <small>Créditos Activos</small>
-                        </div>
+</div><!-- .credits-view -->
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:6px;color:var(--accent)">
+                        <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                    Registrar Pago
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="paymentForm">
+                    <input type="hidden" id="paymentCreditId">
+                    <div class="mb-3">
+                        <label class="form-label">Saldo Actual</label>
+                        <input type="text" class="form-control" id="paymentBalance" readonly>
                     </div>
-                </div>
+                    <div class="mb-3">
+                        <label class="form-label">Monto a Pagar <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="paymentAmount" step="0.01" min="0.01" required>
+                        <div class="form-text" style="color:var(--text3);font-size:11px;">Puede ser un pago parcial</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Método de Pago <span class="text-danger">*</span></label>
+                        <select class="form-select" id="paymentMethod" required>
+                            <option value="">Seleccione...</option>
+                            <option value="CASH">Efectivo</option>
+                            <option value="CARD">Tarjeta</option>
+                            <option value="TRANSFER">Transferencia</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fecha de Pago <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="paymentDate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notas</label>
+                        <textarea class="form-control" id="paymentNotes" rows="2" placeholder="Opcional..."></textarea>
+                    </div>
+                </form>
             </div>
-        </div>
-
-        <!-- Credits List -->
-        <div id="creditsList">
-            <div class="text-center text-muted">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Cargando...</span>
-                </div>
-                <p class="mt-2">Cargando créditos...</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Payment Modal -->
-    <div class="modal fade" id="paymentModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Registrar Pago de Crédito</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="paymentForm">
-                        <input type="hidden" id="paymentCreditId">
-                        <div class="mb-3">
-                            <label class="form-label">Saldo Actual</label>
-                            <input type="text" class="form-control" id="paymentBalance" readonly>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Monto a Pagar <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="paymentAmount" step="0.01" min="0.01" required>
-                            <small class="form-text text-muted">Puede ser un pago parcial</small>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Método de Pago <span class="text-danger">*</span></label>
-                            <select class="form-select" id="paymentMethod" required>
-                                <option value="">Seleccione...</option>
-                                <option value="CASH">Efectivo</option>
-                                <option value="CARD">Tarjeta</option>
-                                <option value="TRANSFER">Transferencia</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Fecha de Pago <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" id="paymentDate" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Notas</label>
-                            <textarea class="form-control" id="paymentNotes" rows="2"></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="savePayment()">Registrar Pago</button>
-                </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="savePayment()">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:4px">
+                        <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                    Registrar Pago
+                </button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Scripts -->
-    <script src="/libs/js/jquery.min.js"></script>
-    <script src="/libs/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const token = localStorage.getItem('customerToken');
-        const customer = JSON.parse(localStorage.getItem('customer') || '{}');
+<script src="/libs/js/jquery.min.js"></script>
+<script src="/libs/js/bootstrap.bundle.min.js"></script>
+<script>
+    var token    = localStorage.getItem('customerToken');
+    var customer = JSON.parse(localStorage.getItem('customer') || '{}');
 
-        if (!token) {
-            window.location.href = '/customer/login';
+    if (!token) { window.location.href = '/customer/login'; }
+
+    // ── Tema (lb_theme / lb_mode) ──────────────────────────────
+    function _applyCreditsTheme() {
+        var theme = localStorage.getItem('lb_theme') || 'theme2';
+        var mode  = localStorage.getItem('lb_mode')  || 'auto';
+        var resolved = mode;
+        if (mode === 'auto') {
+            var h = new Date().getHours();
+            resolved = (h >= 7 && h < 20) ? 'light' : 'dark';
         }
+        var el = document.documentElement;
+        el.setAttribute('data-lb-theme', theme);
+        el.setAttribute('data-lb-mode', resolved);
+        el.classList.add('lb-themed');
+    }
 
-        $(document).ready(function() {
-            $.get('/api/public/brand-slogan', function(r) { if (r && r.pageTitleCredits) document.title = r.pageTitleCredits; });
-            if (customer.name) {
-                $('#userName').text(customer.name);
-            }
-            loadCredits();
-            loadCreditSummary();
-            updateCartBadge();
+    // ── Init ───────────────────────────────────────────────────
+    $(document).ready(function() {
+        _applyCreditsTheme();
+        $.get('/api/public/brand-slogan', function(r) {
+            if (r && r.pageTitleCredits) document.title = r.pageTitleCredits;
         });
+        loadCredits();
+        loadCreditSummary();
+    });
 
-        function loadCredits() {
-            if (!token || !customer.id) return;
+    // ── Load credits ──────────────────────────────────────────
+    function loadCredits() {
+        if (!token || !customer.id) return;
+        $('#creditsList').html('<div class="cr-loading"><div class="cr-spinner"></div>Cargando créditos...</div>');
+        $.ajax({
+            url: '/api/customer/credits',
+            method: 'GET',
+            headers: { 'Authorization': 'Bearer ' + token },
+            data: { status: 'ACTIVE' },
+            success: function(response) { displayCredits(response.credits); },
+            error: function(xhr) {
+                if (xhr.status === 401) { window.location.href = '/customer/login'; return; }
+                $('#creditsList').html('<div class="cr-empty"><div class="cr-empty-icon" style="background:var(--rbg);color:var(--red)"><i class="bi bi-exclamation-triangle"></i></div><h3>Error al cargar créditos</h3><p>Intenta recargar la página.</p></div>');
+            }
+        });
+    }
 
-            $.ajax({
-                url: '/api/customer-credits',
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                data: {
-                    tenantId: 1,
-                    customerId: customer.id,
-                    status: 'ACTIVE'
-                },
-                success: function(response) {
-                    displayCredits(response.credits);
-                },
-                error: function(xhr) {
-                    if (xhr.status === 401) {
-                        window.location.href = '/customer/login';
-                        return;
-                    }
-                    $('#creditsList').html(`
-                        <div class="alert alert-danger">
-                            Error al cargar créditos
-                        </div>
-                    `);
-                }
-            });
+    // ── Load summary ──────────────────────────────────────────
+    function loadCreditSummary() {
+        if (!token || !customer.id) return;
+        $.ajax({
+            url: '/api/customer/credits/summary',
+            method: 'GET',
+            headers: { 'Authorization': 'Bearer ' + token },
+            data: { includeInterest: 'true' },
+            success: function(summary) {
+                $('#totalBalance').text('$' + parseFloat(summary.totalBalance || 0).toFixed(2));
+                $('#totalInterest').text('$' + parseFloat(summary.totalInterest || 0).toFixed(2));
+                $('#totalCredits').text(summary.activeCredits || 0);
+            },
+            error: function(xhr) {
+                if (xhr.status === 401) { window.location.href = '/customer/login'; return; }
+                console.error('Error loading credit summary:', xhr);
+            }
+        });
+    }
+
+    // ── Formato fecha con hora ────────────────────────────────
+    function fmtCreditDate(iso) {
+        if (!iso) return '—';
+        var d = new Date(iso);
+        return d.toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' }) +
+               ' · ' + d.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+    }
+
+    // ── Display credits ───────────────────────────────────────
+    function displayCredits(credits) {
+        var container = $('#creditsList');
+        container.empty();
+
+        if (!credits || credits.length === 0) {
+            container.html(
+                '<div class="cr-empty">' +
+                '<div class="cr-empty-icon"><i class="bi bi-check2-circle"></i></div>' +
+                '<h3>Sin créditos pendientes</h3>' +
+                '<p>No tienes deudas activas en este momento.</p>' +
+                '</div>'
+            );
+            return;
         }
 
-        function loadCreditSummary() {
-            if (!token || !customer.id) return;
+        credits.forEach(function(credit, idx) {
+            var initialAmount  = parseFloat(credit.initialAmount || 0).toFixed(2);
+            var currentBalance = parseFloat(credit.currentBalance || 0).toFixed(2);
+            var interestAmount = parseFloat(credit.interestAmount || 0).toFixed(2);
+            var dueDate = credit.dueDate
+                ? new Date(credit.dueDate).toLocaleDateString('es-ES')
+                : null;
 
-            $.ajax({
-                url: `/api/customer-credits/summary/${customer.id}`,
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                data: {
-                    tenantId: 1,
-                    includeInterest: 'true'
-                },
-                success: function(summary) {
-                    $('#totalBalance').text('$' + parseFloat(summary.totalBalance || 0).toFixed(2));
-                    $('#totalInterest').text('$' + parseFloat(summary.totalInterest || 0).toFixed(2));
-                    $('#totalCredits').text(summary.activeCredits || 0);
-                },
-                error: function(xhr) {
-                    if (xhr.status === 401) {
-                        window.location.href = '/customer/login';
-                        return;
-                    }
-                    console.error('Error loading credit summary:', xhr);
-                }
-            });
-        }
+            var isOverdue = credit.dueDate
+                && new Date() > new Date(credit.dueDate)
+                && parseFloat(credit.currentBalance) > 0.01;
 
-        function displayCredits(credits) {
-            const container = $('#creditsList');
-            container.empty();
-
-            if (!credits || credits.length === 0) {
-                container.html(`
-                    <div class="alert alert-success">
-                        <i class="bi bi-check-circle"></i> No tienes créditos activos
-                    </div>
-                `);
-                return;
+            // Status class & badge
+            var statusCls, badgeCls, badgeTxt;
+            if (isOverdue) {
+                statusCls = 'vencido'; badgeCls = 'badge-vencido'; badgeTxt = 'Vencido';
+            } else if (!dueDate) {
+                statusCls = 'sin-fecha'; badgeCls = 'badge-sin-fecha'; badgeTxt = 'Sin fecha límite';
+            } else {
+                statusCls = 'vigente'; badgeCls = 'badge-vigente'; badgeTxt = 'Vigente';
             }
 
-            credits.forEach(credit => {
-                const initialAmount = parseFloat(credit.initialAmount).toFixed(2);
-                const currentBalance = parseFloat(credit.currentBalance || 0).toFixed(2);
-                const interestAmount = parseFloat(credit.interestAmount || 0).toFixed(2);
-                const dueDate = credit.dueDate ? 
-                    new Date(credit.dueDate).toLocaleDateString('es-ES') : 
-                    'Sin fecha límite';
-
-                const isOverdue = credit.dueDate && 
-                    new Date() > new Date(credit.dueDate) && 
-                    parseFloat(credit.currentBalance) > 0.01;
-
-                let cardClass = 'credit-card';
-                if (credit.status === 'PAID') {
-                    cardClass = 'paid-card';
-                } else if (isOverdue) {
-                    cardClass = 'overdue-card';
-                }
-
-                const productInfo = credit.groupPurchaseParticipant && credit.groupPurchaseParticipant.groupPurchase ?
-                    `<p class="text-muted mb-2">
-                        <small>Compra Grupal #${credit.groupPurchaseParticipant.groupPurchase.id} | 
-                        Producto: ${credit.groupPurchaseParticipant.groupPurchase.product ? credit.groupPurchaseParticipant.groupPurchase.product.name : 'N/A'}</small>
-                    </p>` : '';
-
-                const card = `
-                    <div class="card mb-3 ${cardClass}">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <h5 class="card-title">
-                                        ${credit.groupPurchaseParticipant && credit.groupPurchaseParticipant.groupPurchase && credit.groupPurchaseParticipant.groupPurchase.product ?
-                                            credit.groupPurchaseParticipant.groupPurchase.product.name : 
-                                            'Crédito'
-                                        }
-                                    </h5>
-                                    ${productInfo}
-                                    <div class="row mb-2">
-                                        <div class="col-md-6">
-                                            <strong>Monto inicial:</strong> $${initialAmount}
-                                        </div>
-                                        <div class="col-md-6">
-                                            <strong>Saldo actual:</strong> $${currentBalance}
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-md-6">
-                                            <strong>Intereses acumulados:</strong> $${interestAmount}
-                                        </div>
-                                        <div class="col-md-6">
-                                            <strong>Fecha límite:</strong> ${dueDate}
-                                        </div>
-                                    </div>
-                                    ${isOverdue ? 
-                                        `<div class="alert alert-danger mt-2">
-                                            <i class="bi bi-exclamation-triangle"></i> 
-                                            <strong>Esta deuda está vencida.</strong> 
-                                            Los intereses continúan acumulándose hasta que se pague.
-                                        </div>` : ''
-                                    }
-                                    ${parseFloat(credit.interestRate || 0) > 0 ? 
-                                        `<small class="text-muted">Tasa de interés: ${(parseFloat(credit.interestRate) * 100).toFixed(2)}% diario</small>` : ''
-                                    }
-                                </div>
-                                <div class="col-md-4 text-end">
-                                    ${credit.status !== 'PAID' && parseFloat(currentBalance) > 0.01 ? 
-                                        `<button class="btn btn-primary btn-lg w-100 mb-2" onclick="openPaymentModal(${credit.id}, ${currentBalance})">
-                                            <i class="bi bi-cash"></i> Pagar Ahora
-                                        </button>` : 
-                                        credit.status === 'PAID' ?
-                                        '<div class="alert alert-success"><i class="bi bi-check-circle"></i> Pagado</div>' :
-                                        '<div class="alert alert-info"><i class="bi bi-info-circle"></i> Sin saldo</div>'
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.append(card);
-            });
-        }
-
-        function openPaymentModal(creditId, balance) {
-            $('#paymentCreditId').val(creditId);
-            $('#paymentBalance').val('$' + parseFloat(balance).toFixed(2));
-            $('#paymentAmount').val(parseFloat(balance).toFixed(2));
-            $('#paymentMethod').val('CASH');
-            $('#paymentDate').val(new Date().toISOString().split('T')[0]);
-            $('#paymentNotes').val('');
-            
-            const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
-            modal.show();
-        }
-
-        function savePayment() {
-            const creditId = $('#paymentCreditId').val();
-            const amount = parseFloat($('#paymentAmount').val());
-            const paymentMethod = $('#paymentMethod').val();
-            const paymentDate = $('#paymentDate').val();
-            const notes = $('#paymentNotes').val() || null;
-
-            if (!creditId || !amount || amount <= 0 || !paymentMethod || !paymentDate) {
-                showAlert('Complete todos los campos requeridos', 'warning');
-                return;
+            // Product name
+            var productName = 'Crédito';
+            if (credit.groupPurchaseParticipant && credit.groupPurchaseParticipant.groupPurchase) {
+                var gp = credit.groupPurchaseParticipant.groupPurchase;
+                if (gp.product) productName = gp.product.name;
+                else productName = 'Compra Grupal #' + gp.id;
             }
 
-            // Get credit info first
-            $.ajax({
-                url: `/api/customer-credits/${creditId}`,
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                data: { tenantId: 1 },
-                success: function(credit) {
-                    const groupPurchaseParticipantId = credit.groupPurchaseParticipantId;
-                    
-                    if (!groupPurchaseParticipantId) {
-                        showAlert('Este crédito no está asociado a una compra grupal', 'warning');
-                        return;
-                    }
+            // Interest rate
+            var rateHtml = '';
+            var rate = parseFloat(credit.interestRate || 0);
+            if (rate > 0) {
+                rateHtml = '<div class="cr-rate">' +
+                    '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' +
+                    'Tasa: ' + (rate * 100).toFixed(2) + '% diario' +
+                    '</div>';
+            }
 
-                    $.ajax({
-                        url: '/api/customer-payments/apply-to-credit',
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        data: JSON.stringify({
-                            tenantId: 1,
-                            customerId: customer.id,
-                            groupPurchaseParticipantId: groupPurchaseParticipantId,
-                            amount: amount,
-                            paymentMethod: paymentMethod,
-                            paymentDate: paymentDate,
-                            notes: notes
-                        }),
-                        success: function() {
-                            showAlert('Pago registrado exitosamente. El administrador verificará el pago.', 'success');
-                            bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
-                            loadCredits();
-                            loadCreditSummary();
-                            // Also reload group purchases if open
-                            if (window.parent && window.parent.loadGroupPurchases) {
-                                window.parent.loadGroupPurchases();
-                            }
-                        },
-                        error: function(xhr) {
-                            if (xhr.status === 401) {
-                                window.location.href = '/customer/login';
-                                return;
-                            }
-                            const error = xhr.responseJSON?.error || 'Error al registrar pago';
-                            showAlert(error, 'danger');
-                        }
-                    });
-                },
-                error: function(xhr) {
-                    if (xhr.status === 401) {
-                        window.location.href = '/customer/login';
-                        return;
-                    }
-                    showAlert('Error al obtener información del crédito', 'danger');
-                }
-            });
+            // Alert (overdue)
+            var alertHtml = '';
+            if (isOverdue) {
+                alertHtml = '<div class="cr-alert">' +
+                    '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
+                    '<span><strong>Esta deuda está vencida.</strong> Los intereses continúan acumulándose hasta que se pague.</span>' +
+                    '</div>';
+            }
+
+            // Pay button or paid badge
+            var actionHtml;
+            if (credit.status === 'PAID') {
+                actionHtml = '<span class="cr-paid-badge"><i class="bi bi-check-circle-fill"></i> Pagado</span>';
+            } else if (parseFloat(currentBalance) > 0.01) {
+                actionHtml = '<button class="cr-pay-btn" onclick="openPaymentModal(' + credit.id + ', ' + currentBalance + ')">' +
+                    '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>' +
+                    'Pagar Ahora</button>';
+            } else {
+                actionHtml = '<span class="cr-paid-badge" style="background:var(--accentbg);color:var(--accent)"><i class="bi bi-info-circle"></i> Sin saldo</span>';
+            }
+
+            var balanceClass = isOverdue ? 'red' : 'accent';
+
+            var card = '<div class="cr-card ' + statusCls + '" style="animation-delay:' + (idx * 0.07) + 's">' +
+                '<div class="cr-head">' +
+                    '<div class="cr-head-left">' +
+                        '<div class="cr-head-icon">' +
+                            '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>' +
+                        '</div>' +
+                        '<div>' +
+                            '<div class="cr-head-title">' + productName + '</div>' +
+                            '<div class="cr-head-id">CR-' + String(credit.id).padStart(4,'0') + '</div>' +
+                            '<div class="cr-head-date">' + fmtCreditDate(credit.createdAt) + '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<span class="cr-badge ' + badgeCls + '">' + badgeTxt + '</span>' +
+                '</div>' +
+                '<div class="cr-body">' +
+                    '<div class="cr-field">' +
+                        '<span class="cr-field-lbl">Monto inicial</span>' +
+                        '<span class="cr-field-val">$' + initialAmount + '</span>' +
+                    '</div>' +
+                    '<div class="cr-field">' +
+                        '<span class="cr-field-lbl">Saldo actual</span>' +
+                        '<span class="cr-field-val ' + balanceClass + '">$' + currentBalance + '</span>' +
+                    '</div>' +
+                    '<div class="cr-field">' +
+                        '<span class="cr-field-lbl">Intereses</span>' +
+                        '<span class="cr-field-val">$' + interestAmount + '</span>' +
+                    '</div>' +
+                    '<div class="cr-field">' +
+                        '<span class="cr-field-lbl">Fecha límite</span>' +
+                        '<span class="cr-field-val ' + (isOverdue ? 'red' : '') + '">' + (dueDate || '—') + '</span>' +
+                    '</div>' +
+                '</div>' +
+                alertHtml +
+                '<div class="cr-footer">' +
+                    (rateHtml || '<span></span>') +
+                    actionHtml +
+                '</div>' +
+            '</div>';
+
+            container.append(card);
+        });
+    }
+
+    // ── Payment modal ─────────────────────────────────────────
+    function openPaymentModal(creditId, balance) {
+        $('#paymentCreditId').val(creditId);
+        $('#paymentBalance').val('$' + parseFloat(balance).toFixed(2));
+        $('#paymentAmount').val(parseFloat(balance).toFixed(2));
+        $('#paymentMethod').val('CASH');
+        $('#paymentDate').val(new Date().toISOString().split('T')[0]);
+        $('#paymentNotes').val('');
+        new bootstrap.Modal(document.getElementById('paymentModal')).show();
+    }
+
+    function savePayment() {
+        var creditId      = $('#paymentCreditId').val();
+        var amount        = parseFloat($('#paymentAmount').val());
+        var paymentMethod = $('#paymentMethod').val();
+        var paymentDate   = $('#paymentDate').val();
+        var notes         = $('#paymentNotes').val() || null;
+
+        if (!creditId || !amount || amount <= 0 || !paymentMethod || !paymentDate) {
+            showAlert('Complete todos los campos requeridos', 'warning');
+            return;
         }
 
-        function updateCartBadge() {
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            $('#cartBadge').text(cart.length);
-        }
+        $.ajax({
+            url: '/api/customer/credits/' + creditId + '/payment',
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({
+                amount: amount,
+                paymentMethod: paymentMethod,
+                paymentDate: paymentDate,
+                notes: notes
+            }),
+            success: function() {
+                showAlert('Pago registrado exitosamente.', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
+                loadCredits();
+                loadCreditSummary();
+            },
+            error: function(xhr) {
+                if (xhr.status === 401) { window.location.href = '/customer/login'; return; }
+                var msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Error al registrar pago';
+                showAlert(msg, 'danger');
+            }
+        });
+    }
 
-        function logout() {
-            localStorage.removeItem('customerToken');
-            localStorage.removeItem('customer');
-            window.location.href = '/customer/login';
-        }
+    // ── Toast ─────────────────────────────────────────────────
+    function showAlert(message, type) {
+        var colorMap = { success:'var(--green)', warning:'var(--amber)', danger:'var(--red)', info:'var(--accent)' };
+        var svgMap = {
+            success: '<svg width="17" height="17" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg>',
+            warning: '<svg width="17" height="17" fill="currentColor" viewBox="0 0 16 16"><path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>',
+            danger:  '<svg width="17" height="17" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg>',
+            info:    '<svg width="17" height="17" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>'
+        };
+        var color   = colorMap[type] || colorMap.info;
+        var svgIcon = svgMap[type]   || svgMap.info;
+        var existing = document.getElementById('lbToastGlobal');
+        if (existing) existing.remove();
+        var toast = document.createElement('div');
+        toast.id = 'lbToastGlobal';
+        toast.className = 'lb-toast';
+        toast.innerHTML =
+            '<span class="lb-toast-icon" style="color:' + color + '">' + svgIcon + '</span>' +
+            '<span class="lb-toast-msg">' + message + '</span>' +
+            '<button class="lb-toast-close" onclick="this.closest(\'.lb-toast\').remove()" aria-label="Cerrar">&times;</button>';
+        (document.getElementById('app-content') || document.body).appendChild(toast);
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() { toast.classList.add('lb-toast-show'); });
+        });
+        setTimeout(function() {
+            toast.classList.remove('lb-toast-show');
+            toast.classList.add('lb-toast-hide');
+            setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 250);
+        }, 3500);
+    }
 
-        function showAlert(message, type) {
-            const alert = $(`
-                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `);
-            $('.container').prepend(alert);
-            setTimeout(() => alert.fadeOut(), 5000);
-        }
-    </script>
-    </div><!-- #spa-view-content -->
+    // Expose for SPA router
+    window.initCreditsView = function() {
+        _applyCreditsTheme();
+        loadCredits();
+        loadCreditSummary();
+    };
+</script>
+
+</div><!-- #spa-view-content -->
 </body>
 </html>

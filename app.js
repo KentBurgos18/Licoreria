@@ -89,6 +89,19 @@ app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'login.html'));
 });
 
+// API pública: cuentas bancarias para transferencia (sin auth)
+app.get('/api/public/bank-accounts', async (req, res) => {
+  try {
+    const raw = await Setting.getSetting(1, 'bank_accounts', '[]');
+    let accounts = [];
+    try { accounts = JSON.parse(raw); } catch(e) { accounts = []; }
+    res.json({ accounts });
+  } catch (err) {
+    console.error('Error getting bank-accounts:', err);
+    res.json({ accounts: [] });
+  }
+});
+
 // API pública: texto/eslogan y títulos de pestaña para login y páginas (sin auth)
 app.get('/api/public/brand-slogan', async (req, res) => {
   try {
@@ -294,6 +307,8 @@ app.use('/api/sales', authenticateAdmin, salesRouter);
 app.use('/api/sales', authenticateAdmin, salesVoidRouter);
 app.use('/api/purchases', authenticateAdmin, require('./routes/purchases'));
 app.use('/api/users', authenticateAdmin, require('./routes/users'));
+app.use('/api/roles', authenticateAdmin, require('./routes/roles'));
+app.use('/api/expenses', authenticateAdmin, require('./routes/expenses'));
 app.use('/api/group-purchases', authenticateAdmin, require('./routes/groupPurchases'));
 app.use('/api/customer-payments', authenticateAdmin, require('./routes/customerPayments'));
 app.use('/api/customer-credits', authenticateAdmin, require('./routes/customerCredits'));
@@ -354,6 +369,10 @@ app.get('/dashboard/users', (req, res) => {
 });
 
 app.get('/dashboard/settings', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
+});
+
+app.get('/dashboard/expenses', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
 });
 
@@ -898,6 +917,71 @@ async function initializeApp() {
       `);
     } catch (e) {
       console.warn('⚠️ Migración theme_id/theme_mode en users:', e.message);
+    }
+
+    // Migración: sistema de roles personalizados
+    try {
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS roles (
+          id BIGSERIAL PRIMARY KEY,
+          tenant_id BIGINT NOT NULL DEFAULT 1,
+          name VARCHAR(100) NOT NULL,
+          permissions JSONB NOT NULL DEFAULT '{}',
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          UNIQUE(tenant_id, name)
+        );
+      `);
+      await sequelize.query(`
+        ALTER TABLE users
+          ADD COLUMN IF NOT EXISTS custom_role_id BIGINT REFERENCES roles(id) ON DELETE SET NULL;
+      `);
+      // Rol "Cajero" por defecto si no existe ninguno en el tenant
+      await sequelize.query(`
+        INSERT INTO roles (tenant_id, name, permissions)
+        SELECT 1, 'Cajero', '{"dashboard":"full","products":"read","suppliers":"none","purchases":"none","sell":"full","sales":"read","group-purchases":"none","credits":"none","customers":"read","expenses":"none","users":"none","settings":"none"}'::jsonb
+        WHERE NOT EXISTS (SELECT 1 FROM roles WHERE tenant_id = 1);
+      `);
+      console.log('✅ Migración roles completada');
+    } catch (e) {
+      console.warn('⚠️ Migración roles:', e.message);
+    }
+
+    // Migración gastos (expense_categories + expenses)
+    try {
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS expense_categories (
+          id BIGSERIAL PRIMARY KEY,
+          tenant_id BIGINT NOT NULL DEFAULT 1,
+          name VARCHAR(100) NOT NULL,
+          UNIQUE(tenant_id, name)
+        );
+      `);
+      await sequelize.query(`
+        INSERT INTO expense_categories (tenant_id, name)
+        VALUES (1,'Alquiler'),(1,'Servicios'),(1,'Personal'),
+               (1,'Mantenimiento'),(1,'Insumos'),(1,'Otros')
+        ON CONFLICT DO NOTHING;
+      `);
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS expenses (
+          id BIGSERIAL PRIMARY KEY,
+          tenant_id BIGINT NOT NULL DEFAULT 1,
+          category_id BIGINT REFERENCES expense_categories(id) ON DELETE SET NULL,
+          description VARCHAR(255) NOT NULL,
+          amount DECIMAL(12,2) NOT NULL CHECK (amount > 0),
+          expense_date DATE NOT NULL,
+          paid_to VARCHAR(150),
+          notes TEXT,
+          created_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+      `);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_expenses_tenant   ON expenses(tenant_id)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_expenses_date     ON expenses(expense_date)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category_id)`);
+      console.log('✅ Migración expenses completada');
+    } catch (e) {
+      console.warn('⚠️ Migración expenses:', e.message);
     }
 
     // Sync models (create tables if they don't exist)

@@ -842,6 +842,7 @@
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
                 z-index: 1000;
+                height: calc(100vh - 72px); /* deja espacio para la barra inferior */
             }
             
             .sidebar.mobile-open {
@@ -1046,7 +1047,7 @@
             // Función para extraer la sección desde la ruta real
             function getSectionFromPath() {
                 const path = window.location.pathname;
-                const validSections = ['dashboard', 'products', 'suppliers', 'purchases', 'sell', 'sales', 'group-purchases', 'credits', 'customers', 'users', 'settings'];
+                const validSections = ['dashboard', 'products', 'suppliers', 'purchases', 'sell', 'sales', 'group-purchases', 'credits', 'customers', 'users', 'settings', 'expenses'];
                 
                 if (path === '/dashboard' || path === '/') {
                     return 'dashboard';
@@ -1126,44 +1127,47 @@
         <div class="sidebar-nav-scroll">
             <nav class="nav flex-column sb-nav">
                 <span class="sb-group-label">PRINCIPAL</span>
-                <a class="nav-link" href="#" data-section="dashboard">
+                <a class="nav-link" href="#" data-section="dashboard" title="Dashboard">
                     <svg class="sb-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span>
                 </a>
 
                 <span class="sb-group-label">INVENTARIO</span>
-                <a class="nav-link" href="#" data-section="products">
+                <a class="nav-link" href="#" data-section="products" title="Productos">
                     <svg class="sb-icon" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 3H8L6 7h12l-2-4z"/><circle cx="12" cy="14" r="2"/></svg><span>Productos</span>
                 </a>
-                <a class="nav-link" href="#" data-section="suppliers">
+                <a class="nav-link" href="#" data-section="suppliers" title="Proveedores">
                     <svg class="sb-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Proveedores</span>
                     <span class="badge bg-danger ms-auto d-none" id="supplierDebtsBadge">0</span>
                 </a>
-                <a class="nav-link" href="#" data-section="purchases">
+                <a class="nav-link" href="#" data-section="purchases" title="Compras">
                     <svg class="sb-icon" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span>Compras</span>
                 </a>
 
                 <span class="sb-group-label">VENTAS</span>
-                <a class="nav-link" href="#" data-section="sell">
+                <a class="nav-link" href="#" data-section="sell" title="Vender">
                     <svg class="sb-icon" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span>Vender</span>
                 </a>
-                <a class="nav-link" href="#" data-section="sales">
+                <a class="nav-link" href="#" data-section="sales" title="Ventas">
                     <svg class="sb-icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span>Ventas</span>
                 </a>
-                <a class="nav-link" href="#" data-section="group-purchases">
+                <a class="nav-link" href="#" data-section="group-purchases" title="Compras Grupales">
                     <svg class="sb-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Compras Grupales</span>
                 </a>
-                <a class="nav-link" href="#" data-section="credits">
+                <a class="nav-link" href="#" data-section="credits" title="Créditos">
                     <svg class="sb-icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><span>Créditos</span>
                 </a>
 
                 <span class="sb-group-label">GESTIÓN</span>
-                <a class="nav-link" href="#" data-section="customers">
+                <a class="nav-link" href="#" data-section="customers" title="Clientes">
                     <svg class="sb-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Clientes</span>
                 </a>
-                <a class="nav-link" href="#" data-section="users">
+                <a class="nav-link" href="#" data-section="expenses" title="Gastos">
+                    <svg class="sb-icon" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="18" y2="14"/></svg><span>Gastos</span>
+                </a>
+                <a class="nav-link" href="#" data-section="users" title="Usuarios">
                     <svg class="sb-icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/><path d="M19 11a3 3 0 0 1 0 6"/><path d="M5 11a3 3 0 0 0 0 6"/></svg><span>Usuarios</span>
                 </a>
-                <a class="nav-link" href="#" data-section="settings">
+                <a class="nav-link" href="#" data-section="settings" title="Configuración">
                     <svg class="sb-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Configuración</span>
                 </a>
             </nav>
@@ -1188,8 +1192,8 @@
     <!-- Topbar -->
     <header class="topbar">
         <div class="topbar-left">
-            <button class="topbar-menu-btn d-lg-none" onclick="toggleMobileMenu()" title="Menú">
-                <i class="bi bi-list"></i>
+            <button class="topbar-menu-btn d-none d-lg-flex" id="sidebarToggleBtn" onclick="toggleDesktopSidebar()" title="Contraer / expandir menú">
+                <i class="bi bi-layout-sidebar" id="sidebarToggleIcon"></i>
             </button>
             <div class="topbar-breadcrumb">
                 <i class="bi bi-grid" id="topbarIcon"></i>
@@ -1266,6 +1270,14 @@
                     </div>
                     <div class="db-sv" id="totalCombos">0</div>
                     <div class="db-sl">Combos Activos</div>
+                </div>
+                <div class="db-sc db-t1" style="cursor:pointer" onclick="showSection('expenses')" title="Ver gastos del mes">
+                    <div class="db-sth">
+                        <div class="db-si db-si-r"><i class="bi bi-cash-stack"></i></div>
+                        <span class="db-sch db-fl">mes actual</span>
+                    </div>
+                    <div class="db-sv" id="dashExpensesMonth">$0</div>
+                    <div class="db-sl">Gastos del Mes</div>
                 </div>
             </div>
 
@@ -2019,8 +2031,18 @@
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="bank-tab" data-bs-toggle="tab" data-bs-target="#bank-settings" type="button" role="tab">
+                        <i class="bi bi-bank"></i> Datos Bancarios
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
                     <button class="nav-link" id="appearance-tab" data-bs-toggle="tab" data-bs-target="#appearance-settings" type="button" role="tab">
                         <i class="bi bi-palette"></i> Apariencia
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="roles-tab" data-bs-toggle="tab" data-bs-target="#roles-settings" type="button" role="tab" onclick="rolesLoad()">
+                        <i class="bi bi-shield-lock"></i> Roles y Permisos
                     </button>
                 </li>
             </ul>
@@ -2029,6 +2051,38 @@
             <div class="tab-content" id="settingsTabContent">
                 <!-- General Settings Tab -->
                 <div class="tab-pane fade show active" id="general-settings" role="tabpanel">
+                    <!-- Imágenes de marca -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-image"></i> Imágenes de marca</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">Estas imágenes se usan en el login, favicon del navegador y la app del cliente. Formatos admitidos: PNG, JPG, WEBP (máx. 5 MB).</p>
+                            <div class="row g-4" id="brandImagesGrid">
+                                <!-- Logo -->
+                                <div class="col-6 col-md-3 text-center">
+                                    <div class="mb-2 fw-semibold small">Icono / Logo</div>
+                                    <div class="border rounded p-2 mb-2" style="background:var(--bg2,#1a1a2e);min-height:80px;display:flex;align-items:center;justify-content:center">
+                                        <img id="brandPreview_logo" src="/public/img/icono-LB.png" alt="Logo" style="max-height:72px;max-width:100%;object-fit:contain">
+                                    </div>
+                                    <div class="small text-muted mb-2">Login + app cliente</div>
+                                    <input type="file" id="brandImg_logo" accept="image/*" class="form-control form-control-sm mb-2">
+                                    <button type="button" class="btn btn-sm btn-primary w-100" onclick="uploadBrandImage('logo')"><i class="bi bi-upload"></i> Subir</button>
+                                </div>
+                                <!-- Favicon -->
+                                <div class="col-6 col-md-3 text-center">
+                                    <div class="mb-2 fw-semibold small">Favicon</div>
+                                    <div class="border rounded p-2 mb-2" style="background:var(--bg2,#1a1a2e);min-height:80px;display:flex;align-items:center;justify-content:center">
+                                        <img id="brandPreview_favicon" src="/public/img/pestana-LB.png" alt="Favicon" style="max-height:72px;max-width:100%;object-fit:contain">
+                                    </div>
+                                    <div class="small text-muted mb-2">Ícono pestaña navegador</div>
+                                    <input type="file" id="brandImg_favicon" accept="image/*" class="form-control form-control-sm mb-2">
+                                    <button type="button" class="btn btn-sm btn-primary w-100" onclick="uploadBrandImage('favicon')"><i class="bi bi-upload"></i> Subir</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="card">
                         <div class="card-header">
                             <h5 class="mb-0">
@@ -2399,6 +2453,102 @@
                     </div>
                 </div>
 
+                <!-- Datos Bancarios -->
+                <div class="tab-pane fade" id="bank-settings" role="tabpanel">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex align-items-center justify-content-between">
+                            <h5 class="mb-0"><i class="bi bi-bank"></i> Cuentas Bancarias para Transferencia</h5>
+                            <button class="btn btn-sm btn-primary" onclick="bankShowAddForm()">
+                                <i class="bi bi-plus-lg"></i> Agregar Cuenta
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">Estas cuentas aparecerán en el checkout cuando el cliente seleccione <strong>Transferencia Bancaria</strong>.</p>
+
+                            <!-- Formulario agregar/editar (oculto por defecto) -->
+                            <div id="bankAddForm" class="card card-body bg-light border mb-3 d-none">
+                                <h6 class="mb-3"><i class="bi bi-pencil-square"></i> <span id="bankFormTitle">Nueva Cuenta</span></h6>
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Banco <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-sm" id="bankNameSelect" onchange="bankNameToggleCustom()">
+                                            <option value="">— Selecciona un banco —</option>
+                                            <optgroup label="Bancos Privados">
+                                                <option>Banco Pichincha</option>
+                                                <option>Banco del Pacífico</option>
+                                                <option>Banco de Guayaquil</option>
+                                                <option>Produbanco</option>
+                                                <option>Banco Internacional</option>
+                                                <option>Banco Bolivariano</option>
+                                                <option>Banco del Austro</option>
+                                                <option>BGR Banco General Rumiñahui</option>
+                                                <option>Banco Solidario</option>
+                                                <option>Banco D-MIRO</option>
+                                                <option>BancoDesarrollo</option>
+                                                <option>Banco Finca</option>
+                                                <option>Banco ProCredit</option>
+                                                <option>Banco Capital</option>
+                                            </optgroup>
+                                            <optgroup label="Bancos Públicos">
+                                                <option>Banco del Estado (BDE)</option>
+                                                <option>BanEcuador</option>
+                                                <option>CFN (Corporación Financiera Nacional)</option>
+                                            </optgroup>
+                                            <optgroup label="Cooperativas">
+                                                <option>Cooperativa JEP</option>
+                                                <option>Cooperativa Jardín Azuayo</option>
+                                                <option>Cooperativa Cacpeco</option>
+                                                <option>Cooperativa 29 de Octubre</option>
+                                                <option>Cooperativa Cooprogreso</option>
+                                                <option>Cooperativa Pablo Muñoz Vega</option>
+                                                <option>Cooperativa Mego</option>
+                                                <option>Cooperativa Erco</option>
+                                                <option>Cooperativa Policía Nacional</option>
+                                                <option>Cooperativa Riobamba</option>
+                                                <option>Cooperativa Oscus</option>
+                                                <option>Cooperativa Mushuc Runa</option>
+                                                <option>Cooperativa San Francisco</option>
+                                                <option>Cooperativa Andina</option>
+                                            </optgroup>
+                                            <option value="__otro__">Otro (especificar)...</option>
+                                        </select>
+                                        <input type="text" class="form-control form-control-sm mt-1 d-none" id="bankNameCustom" placeholder="Nombre del banco o cooperativa">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Tipo de cuenta</label>
+                                        <select class="form-select form-select-sm" id="bankAccountType">
+                                            <option value="Ahorro">Ahorro</option>
+                                            <option value="Corriente">Corriente</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">N° de cuenta <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm" id="bankAccountNumber" placeholder="Ej: 2200912345">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Beneficiario <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm" id="bankBeneficiary" placeholder="Ej: LOCOBAR S.A.">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">RUC / Cédula</label>
+                                        <input type="text" class="form-control form-control-sm" id="bankIdentification" placeholder="Ej: 1792345678001">
+                                    </div>
+                                </div>
+                                <input type="hidden" id="bankEditId">
+                                <div class="d-flex gap-2 mt-3">
+                                    <button class="btn btn-sm btn-primary" onclick="bankSave()"><i class="bi bi-save"></i> Guardar</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="bankHideForm()">Cancelar</button>
+                                </div>
+                            </div>
+
+                            <!-- Lista de cuentas -->
+                            <div id="bankAccountsList">
+                                <div class="text-muted small text-center py-3" id="bankEmptyMsg">No hay cuentas bancarias configuradas.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Apariencia -->
                 <div class="tab-pane fade" id="appearance-settings" role="tabpanel">
                     <!-- Selector de modo -->
@@ -2475,6 +2625,196 @@
                     </div>
                 </div>
 
+                <!-- Roles y Permisos -->
+                <div class="tab-pane fade" id="roles-settings" role="tabpanel">
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-shield-lock"></i> Roles personalizados</h5>
+                            <button class="btn btn-primary btn-sm" onclick="rolesShowForm(null)">
+                                <i class="bi bi-plus-lg"></i> Nuevo rol
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="rolesListWrap" class="p-3">
+                                <p class="text-muted text-center my-3">Cargando...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulario crear/editar rol -->
+                    <div id="rolesFormWrap" class="card" style="display:none">
+                        <div class="card-header">
+                            <h5 class="mb-0" id="rolesFormTitle">Nuevo rol</h5>
+                        </div>
+                        <div class="card-body">
+                            <input type="hidden" id="rolesEditId">
+                            <div class="mb-3">
+                                <label class="form-label">Nombre del rol <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="rolesName" placeholder="Ej: Cajero, Bodeguero...">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Permisos por sección</label>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered align-middle mb-0" id="rolesPermTable">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:40%">Sección</th>
+                                                <th class="text-center">Sin acceso</th>
+                                                <th class="text-center">Solo lectura</th>
+                                                <th class="text-center">Completo</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="rolesPermBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary" onclick="rolesSave()"><i class="bi bi-check-lg"></i> Guardar</button>
+                                <button class="btn btn-secondary" onclick="rolesHideForm()">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="expenses" class="content-section">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0"><i class="bi bi-cash-stack"></i> Gastos</h2>
+            <button id="addExpenseBtn" class="btn btn-danger" onclick="showCreateExpenseModal()">
+                <i class="bi bi-plus"></i> Nuevo Gasto
+            </button>
+        </div>
+
+        <!-- Tarjetas resumen -->
+        <div class="row g-3 mb-4" id="expenseSummaryCards">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-muted small mb-1">Este mes</div>
+                        <div class="fs-3 fw-bold text-danger" id="expenseThisMonth">$0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-muted small mb-1">Este año</div>
+                        <div class="fs-3 fw-bold" id="expenseThisYear">$0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-muted small mb-1">Mayor categoría (año)</div>
+                        <div class="fs-5 fw-bold" id="expenseTopCategory">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card mb-3">
+            <div class="card-body py-2">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm mb-1">Categoría</label>
+                        <select class="form-select form-select-sm" id="expenseFilterCategory">
+                            <option value="">Todas las categorías</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm mb-1">Desde</label>
+                        <input type="date" class="form-control form-control-sm" id="expenseFilterFrom">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm mb-1">Hasta</label>
+                        <input type="date" class="form-control form-control-sm" id="expenseFilterTo">
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary btn-sm w-100" onclick="loadExpenses()">
+                            <i class="bi bi-funnel"></i> Filtrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="expensesTable">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Categoría</th>
+                                <th>Descripción</th>
+                                <th>Pagado a</th>
+                                <th class="text-end">Monto</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="6" class="text-center text-muted">Cargando gastos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Modal Gasto -->
+    <div class="modal fade" id="expenseModal" tabindex="-1">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="expenseModalTitle">Nuevo Gasto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="expenseEditId">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Categoría</label>
+                            <select class="form-select" id="expenseCategoryId">
+                                <option value="">Sin categoría</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Descripción <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="expenseDescription" placeholder="Ej: Pago arriendo local">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Monto <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="expenseAmount" step="0.01" min="0.01" placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="expenseDate">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Pagado a</label>
+                            <input type="text" class="form-control" id="expensePaidTo" placeholder="Ej: Empresa Eléctrica, Juan Pérez">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Notas</label>
+                            <textarea class="form-control" id="expenseNotes" rows="2" placeholder="Observaciones adicionales..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" onclick="saveExpense()">
+                        <i class="bi bi-check-lg"></i> Guardar Gasto
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -2920,9 +3260,12 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Rol</label>
-                            <select class="form-select" id="userRole">
-                                <option value="CASHIER">Empleado</option>
-                                <option value="ADMIN">Administrador</option>
+                            <select class="form-select" id="userRoleType" onchange="userRoleTypeChange()">
+                                <option value="ADMIN">Administrador (acceso total)</option>
+                                <option value="CUSTOM">Empleado con rol personalizado</option>
+                            </select>
+                            <select class="form-select mt-2 d-none" id="userCustomRoleId">
+                                <option value="">Sin rol asignado (acceso mínimo)</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -3495,6 +3838,52 @@
         let taxEnabled = true;
         var currentUserRole = null;
 
+        // ===== SISTEMA DE PERMISOS =====
+        var _perms = null; // null = ADMIN (acceso total)
+        var SECTION_READ_HIDE = {
+            products:          ['#addProductBtn', '.btn-edit-product', '.btn-delete-product'],
+            suppliers:         ['#addSupplierBtn', '.btn-edit-supplier', '.btn-delete-supplier'],
+            purchases:         ['#addPurchaseBtn'],
+            sell:              ['#sellPanelActive'],
+            sales:             ['.btn-cancel-sale', '.btn-void-sale'],
+            'group-purchases': ['#addGroupPurchaseBtn'],
+            credits:           ['.btn-pay-credit'],
+            customers:         ['#addCustomerBtn', '.btn-edit-customer', '.btn-delete-customer'],
+            users:             ['#addUserBtn', '.btn-edit-user', '.btn-delete-user'],
+            expenses:          ['#addExpenseBtn', '.btn-edit-expense', '.btn-delete-expense'],
+            settings:          []
+        };
+
+        function initPermissions(userData) {
+            _perms = (userData && userData.role === 'ADMIN') ? null : (userData.permissions || {});
+            applySidebarPermissions();
+        }
+
+        function getPermission(section) {
+            if (section === 'dashboard') return 'full';
+            if (_perms === null) return 'full';
+            return _perms[section] || 'none';
+        }
+
+        function applySidebarPermissions() {
+            document.querySelectorAll('.sidebar .nav-link[data-section]').forEach(function(link) {
+                var sec = link.dataset.section;
+                if (sec === 'dashboard') return;
+                link.style.display = getPermission(sec) === 'none' ? 'none' : '';
+            });
+            if (_perms !== null) {
+                document.querySelectorAll('.admin-only').forEach(function(el) { el.style.display = 'none'; });
+            }
+        }
+
+        function applySectionReadMode(section) {
+            if (getPermission(section) !== 'read') return;
+            (SECTION_READ_HIDE[section] || []).forEach(function(sel) {
+                document.querySelectorAll(sel).forEach(function(el) { el.style.display = 'none'; });
+            });
+        }
+        // ===== FIN PERMISOS =====
+
         // ============================================
         // FIX: Bootstrap Modal aria-hidden warning
         // Solución para "Blocked aria-hidden on an element 
@@ -3547,7 +3936,7 @@
         // Función para extraer la sección desde la ruta real
         function getSectionFromPath() {
             const path = window.location.pathname;
-            const validSections = ['dashboard', 'products', 'suppliers', 'purchases', 'sell', 'sales', 'group-purchases', 'credits', 'customers', 'users', 'settings'];
+            const validSections = ['dashboard', 'products', 'suppliers', 'purchases', 'sell', 'sales', 'group-purchases', 'credits', 'customers', 'users', 'settings', 'expenses'];
             
             // Si la ruta es /dashboard o /, retornar 'dashboard'
             if (path === '/dashboard' || path === '/') {
@@ -3577,7 +3966,7 @@
             
             // Restaurar sección desde ruta real de URL al cargar la página
             // Nota: El script inline ya estableció el estado correcto, solo verificamos y cargamos datos
-            const validSections = ['dashboard', 'products', 'suppliers', 'purchases', 'sell', 'sales', 'group-purchases', 'credits', 'customers', 'users', 'settings'];
+            const validSections = ['dashboard', 'products', 'suppliers', 'purchases', 'sell', 'sales', 'group-purchases', 'credits', 'customers', 'users', 'settings', 'expenses'];
             const sectionToShow = getSectionFromPath();
             
             // Verificar que el estado esté correcto (el script inline ya lo hizo, pero por si acaso)
@@ -3635,8 +4024,12 @@
                 case 'users':
                     loadUsers();
                     break;
+                case 'expenses':
+                    loadExpenses();
+                    loadExpenseSummary();
+                    break;
             }
-            
+
             // Cargar datos generales (solo una vez al inicio)
             loadTaxRate(); // Load tax rate from settings
             
@@ -3658,8 +4051,8 @@
 
         // Función para mostrar una sección y actualizar la URL
         function showSection(section, updateURL = true) {
-            // Empleado (CASHIER) no puede acceder a Usuarios, Configuración, Compras grupales, Créditos
-            if (currentUserRole === 'CASHIER' && ['users', 'settings', 'group-purchases', 'credits'].indexOf(section) !== -1) {
+            // Verificar permisos: si la sección está en 'none', redirigir a dashboard
+            if (getPermission(section) === 'none') {
                 section = 'dashboard';
                 updateURL = true;
             }
@@ -3761,6 +4154,10 @@
                     loadUsers();
                     break;
             }
+            // Aplicar modo lectura (ocultar botones de acción) si el permiso es 'read'
+            if (section !== 'dashboard') {
+                setTimeout(function() { applySectionReadMode(section); }, 400);
+            }
         }
 
         function initializeNavigation() {
@@ -3809,6 +4206,21 @@
         }
 
         // Mobile Menu Functions
+        function toggleDesktopSidebar() {
+            const collapsed = document.body.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
+            const icon = document.getElementById('sidebarToggleIcon');
+            if (icon) icon.className = collapsed ? 'bi bi-layout-sidebar-reverse' : 'bi bi-layout-sidebar';
+        }
+
+        function initSidebarState() {
+            if (localStorage.getItem('sidebarCollapsed') === '1') {
+                document.body.classList.add('sidebar-collapsed');
+                const icon = document.getElementById('sidebarToggleIcon');
+                if (icon) icon.className = 'bi bi-layout-sidebar-reverse';
+            }
+        }
+
         function toggleMobileMenu() {
             const sidebar = document.querySelector('.sidebar');
             const overlay = document.getElementById('sidebarOverlay');
@@ -3844,6 +4256,9 @@
         }
 
         function loadDashboardData() {
+            // Cargar widget de gastos del mes
+            loadExpenseSummary();
+
             // Load dashboard statistics
             $.ajax({
                 url: '/api/products',
@@ -4048,6 +4463,201 @@
                 }
             });
         }
+
+        // ══════════════════════════════════════════════════════════
+        // GASTOS
+        // ══════════════════════════════════════════════════════════
+        var expensesData = [];
+        var expenseCategoriesCache = [];
+
+        function loadExpenseCategories(selectedId, selectEl) {
+            if (expenseCategoriesCache.length > 0) {
+                populateExpenseCategorySelect(selectEl, selectedId);
+                return;
+            }
+            $.ajax({
+                url: '/api/expenses/categories',
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
+                success: function(res) {
+                    expenseCategoriesCache = res.categories || [];
+                    populateExpenseCategorySelect(selectEl, selectedId);
+                    // También llena el filtro
+                    var $filter = $('#expenseFilterCategory');
+                    $filter.find('option:not(:first)').remove();
+                    expenseCategoriesCache.forEach(function(c) {
+                        $filter.append('<option value="' + c.id + '">' + c.name + '</option>');
+                    });
+                }
+            });
+        }
+
+        function populateExpenseCategorySelect(selectEl, selectedId) {
+            var $sel = selectEl || $('#expenseCategoryId');
+            $sel.find('option:not(:first)').remove();
+            expenseCategoriesCache.forEach(function(c) {
+                var sel = (selectedId && String(c.id) === String(selectedId)) ? ' selected' : '';
+                $sel.append('<option value="' + c.id + '"' + sel + '>' + c.name + '</option>');
+            });
+        }
+
+        function loadExpenseSummary() {
+            $.ajax({
+                url: '/api/expenses/summary',
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
+                success: function(res) {
+                    var fmt = function(n) { return '$' + parseFloat(n || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+                    $('#expenseThisMonth').text(fmt(res.thisMonth));
+                    $('#expenseThisYear').text(fmt(res.thisYear));
+                    $('#dashExpensesMonth').text(fmt(res.thisMonth));
+                    if (res.topCategory) {
+                        $('#expenseTopCategory').text(res.topCategory.name + ' — ' + fmt(res.topCategory.total));
+                    } else {
+                        $('#expenseTopCategory').text('—');
+                    }
+                }
+            });
+        }
+
+        function loadExpenses() {
+            var params = { limit: 100, page: 1 };
+            var cat = $('#expenseFilterCategory').val();
+            var from = $('#expenseFilterFrom').val();
+            var to = $('#expenseFilterTo').val();
+            if (cat) params.categoryId = cat;
+            if (from) params.startDate = from;
+            if (to) params.endDate = to;
+
+            // Cargar categorías en filtro si aún no están
+            loadExpenseCategories(null, $('#expenseCategoryId'));
+
+            $.ajax({
+                url: '/api/expenses',
+                method: 'GET',
+                data: params,
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
+                success: function(res) {
+                    displayExpenses(res.expenses || []);
+                },
+                error: function() {
+                    $('#expensesTable tbody').html('<tr><td colspan="6" class="text-center text-danger">Error al cargar gastos</td></tr>');
+                }
+            });
+        }
+
+        function displayExpenses(list) {
+            expensesData = list;
+            var $tbody = $('#expensesTable tbody');
+            $tbody.empty();
+
+            if (!list || list.length === 0) {
+                $tbody.html('<tr><td colspan="6" class="text-center text-muted py-3">No se encontraron gastos</td></tr>');
+                return;
+            }
+
+            list.forEach(function(e, idx) {
+                var catName = (e.category && e.category.name) ? e.category.name : '<span class="text-muted">—</span>';
+                var paidTo = e.paidTo ? e.paidTo : '<span class="text-muted">—</span>';
+                var amt = '$' + parseFloat(e.amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                var fecha = e.expenseDate ? e.expenseDate.substring(0, 10) : '—';
+
+                $tbody.append(
+                    '<tr>' +
+                    '<td>' + fecha + '</td>' +
+                    '<td>' + catName + '</td>' +
+                    '<td>' + (e.description || '') + (e.notes ? '<br><small class="text-muted">' + e.notes + '</small>' : '') + '</td>' +
+                    '<td>' + paidTo + '</td>' +
+                    '<td class="text-end fw-semibold">' + amt + '</td>' +
+                    '<td class="text-end" style="white-space:nowrap">' +
+                    '<button class="btn btn-sm btn-outline-secondary btn-edit-expense me-1" onclick="showEditExpenseModal(' + idx + ')" title="Editar"><i class="bi bi-pencil"></i></button>' +
+                    '<button class="btn btn-sm btn-outline-danger btn-delete-expense" onclick="deleteExpense(' + e.id + ', \'' + (e.description || '').replace(/'/g, "\\'") + '\')" title="Eliminar"><i class="bi bi-trash"></i></button>' +
+                    '</td>' +
+                    '</tr>'
+                );
+            });
+        }
+
+        function showCreateExpenseModal() {
+            $('#expenseEditId').val('');
+            $('#expenseModalTitle').text('Nuevo Gasto');
+            $('#expenseDescription').val('');
+            $('#expenseAmount').val('');
+            $('#expenseDate').val(new Date().toISOString().slice(0, 10));
+            $('#expensePaidTo').val('');
+            $('#expenseNotes').val('');
+            loadExpenseCategories(null, $('#expenseCategoryId'));
+            $('#expenseCategoryId').val('');
+            var modal = new bootstrap.Modal(document.getElementById('expenseModal'));
+            modal.show();
+        }
+
+        function showEditExpenseModal(idx) {
+            var e = expensesData[idx];
+            if (!e) return;
+            $('#expenseEditId').val(e.id);
+            $('#expenseModalTitle').text('Editar Gasto');
+            $('#expenseDescription').val(e.description || '');
+            $('#expenseAmount').val(parseFloat(e.amount).toFixed(2));
+            $('#expenseDate').val(e.expenseDate ? e.expenseDate.substring(0, 10) : '');
+            $('#expensePaidTo').val(e.paidTo || '');
+            $('#expenseNotes').val(e.notes || '');
+            loadExpenseCategories(e.categoryId, $('#expenseCategoryId'));
+            var modal = new bootstrap.Modal(document.getElementById('expenseModal'));
+            modal.show();
+        }
+
+        function saveExpense() {
+            var id = $('#expenseEditId').val();
+            var data = {
+                categoryId:  $('#expenseCategoryId').val() || null,
+                description: $('#expenseDescription').val().trim(),
+                amount:      parseFloat($('#expenseAmount').val()),
+                expenseDate: $('#expenseDate').val(),
+                paidTo:      $('#expensePaidTo').val().trim() || null,
+                notes:       $('#expenseNotes').val().trim() || null
+            };
+
+            if (!data.description) { alert('La descripción es requerida'); return; }
+            if (!data.amount || data.amount <= 0) { alert('El monto debe ser mayor a 0'); return; }
+            if (!data.expenseDate) { alert('La fecha es requerida'); return; }
+
+            var method = id ? 'PUT' : 'POST';
+            var url    = id ? '/api/expenses/' + id : '/api/expenses';
+
+            $.ajax({
+                url: url,
+                method: method,
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
+                success: function() {
+                    bootstrap.Modal.getInstance(document.getElementById('expenseModal')).hide();
+                    loadExpenses();
+                    loadExpenseSummary();
+                },
+                error: function(xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.error) ? xhr.responseJSON.error : 'Error al guardar';
+                    alert(msg);
+                }
+            });
+        }
+
+        function deleteExpense(id, desc) {
+            if (!confirm('¿Eliminar el gasto "' + desc + '"?')) return;
+            $.ajax({
+                url: '/api/expenses/' + id,
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
+                success: function() {
+                    loadExpenses();
+                    loadExpenseSummary();
+                },
+                error: function() { alert('Error al eliminar el gasto'); }
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════
 
         function loadPurchases() {
             const params = { tenantId: 1, limit: 50, page: 1 };
@@ -5527,14 +6137,165 @@
             });
         }
         
+        // ===== GESTIÓN DE ROLES =====
+        var ROLES_SECTIONS = [
+            ['dashboard','Dashboard'], ['products','Productos'], ['suppliers','Proveedores'],
+            ['purchases','Compras'], ['sell','Punto de Venta'], ['sales','Ventas'],
+            ['group-purchases','Compras Grupales'], ['credits','Créditos'],
+            ['customers','Clientes'], ['expenses','Gastos'], ['users','Usuarios'], ['settings','Configuración']
+        ];
+
+        function rolesLoad() {
+            $.ajax({
+                url: '/api/roles', method: 'GET',
+                success: function(res) { rolesRender(res.roles || []); },
+                error: function() { $('#rolesListWrap').html('<p class="text-danger">Error al cargar roles</p>'); }
+            });
+        }
+
+        function rolesRender(roles) {
+            if (!roles.length) {
+                $('#rolesListWrap').html('<p class="text-muted text-center my-3">No hay roles creados aún.</p>');
+                return;
+            }
+            var html = '<div class="list-group list-group-flush">';
+            roles.forEach(function(r) {
+                var perms = r.permissions || {};
+                var summary = ROLES_SECTIONS.filter(function(s) { return s[0] !== 'dashboard'; }).map(function(s) {
+                    var lv = perms[s[0]] || 'none';
+                    var badge = lv === 'full' ? 'success' : lv === 'read' ? 'warning' : 'secondary';
+                    var label = lv === 'full' ? 'Completo' : lv === 'read' ? 'Leer' : 'Ninguno';
+                    return '<span class="badge bg-' + badge + ' me-1" style="font-size:10px">' + s[1] + ': ' + label + '</span>';
+                }).join('');
+                html += '<div class="list-group-item px-3 py-2">' +
+                    '<div class="d-flex justify-content-between align-items-center">' +
+                    '<strong>' + r.name + '</strong>' +
+                    '<span class="text-muted small me-2">' + r.user_count + ' usuario(s)</span>' +
+                    '<div class="btn-group btn-group-sm">' +
+                    '<button class="btn btn-outline-primary" onclick="rolesShowForm(' + r.id + ')"><i class="bi bi-pencil"></i></button>' +
+                    '<button class="btn btn-outline-danger" onclick="rolesDelete(' + r.id + ',\'' + r.name + '\')"' + (r.user_count > 0 ? ' disabled title="Tiene usuarios asignados"' : '') + '><i class="bi bi-trash"></i></button>' +
+                    '</div></div>' +
+                    '<div class="mt-1">' + summary + '</div>' +
+                    '</div>';
+            });
+            html += '</div>';
+            $('#rolesListWrap').html(html);
+        }
+
+        function rolesShowForm(id) {
+            $('#rolesFormWrap').show();
+            $('#rolesEditId').val(id || '');
+            $('#rolesFormTitle').text(id ? 'Editar rol' : 'Nuevo rol');
+            // Build permission table rows
+            var body = document.getElementById('rolesPermBody');
+            body.innerHTML = '';
+            ROLES_SECTIONS.forEach(function(s) {
+                if (s[0] === 'dashboard') return;
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>' + s[1] + '</td>' +
+                    ['none','read','full'].map(function(lv, i) {
+                        return '<td class="text-center"><input type="radio" name="perm_' + s[0] + '" value="' + lv + '"' + (i === 0 ? ' checked' : '') + '></td>';
+                    }).join('');
+                body.appendChild(tr);
+            });
+            $('#rolesName').val('');
+            if (id) {
+                $.ajax({
+                    url: '/api/roles', method: 'GET',
+                    success: function(res) {
+                        var role = (res.roles || []).find(function(r) { return r.id == id; });
+                        if (!role) return;
+                        $('#rolesName').val(role.name);
+                        var perms = role.permissions || {};
+                        ROLES_SECTIONS.forEach(function(s) {
+                            if (s[0] === 'dashboard') return;
+                            var lv = perms[s[0]] || 'none';
+                            var radio = document.querySelector('input[name="perm_' + s[0] + '"][value="' + lv + '"]');
+                            if (radio) radio.checked = true;
+                        });
+                    }
+                });
+            }
+            document.getElementById('rolesFormWrap').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function rolesHideForm() {
+            $('#rolesFormWrap').hide();
+            $('#rolesEditId').val('');
+            $('#rolesName').val('');
+        }
+
+        function rolesSave() {
+            var name = $('#rolesName').val().trim();
+            if (!name) { showAlert('El nombre del rol es requerido', 'warning'); return; }
+            var permissions = {};
+            ROLES_SECTIONS.forEach(function(s) {
+                if (s[0] === 'dashboard') return;
+                var checked = document.querySelector('input[name="perm_' + s[0] + '"]:checked');
+                permissions[s[0]] = checked ? checked.value : 'none';
+            });
+            var id = $('#rolesEditId').val();
+            $.ajax({
+                url: id ? '/api/roles/' + id : '/api/roles',
+                method: id ? 'PUT' : 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ name: name, permissions: permissions }),
+                success: function() {
+                    showAlert(id ? 'Rol actualizado' : 'Rol creado', 'success');
+                    rolesHideForm();
+                    rolesLoad();
+                },
+                error: function(xhr) {
+                    showAlert(xhr.responseJSON && xhr.responseJSON.error || 'Error al guardar rol', 'danger');
+                }
+            });
+        }
+
+        function rolesDelete(id, name) {
+            if (!confirm('¿Eliminar el rol "' + name + '"?')) return;
+            $.ajax({
+                url: '/api/roles/' + id, method: 'DELETE',
+                success: function() { showAlert('Rol eliminado', 'success'); rolesLoad(); },
+                error: function(xhr) {
+                    showAlert(xhr.responseJSON && xhr.responseJSON.error || 'Error al eliminar rol', 'danger');
+                }
+            });
+        }
+        // ===== FIN GESTIÓN DE ROLES =====
+
+        function userRoleTypeChange() {
+            var isCustom = $('#userRoleType').val() === 'CUSTOM';
+            $('#userCustomRoleId').toggleClass('d-none', !isCustom);
+        }
+
+        function rolesLoadIntoSelect(selectedId) {
+            $.ajax({
+                url: '/api/roles',
+                method: 'GET',
+                success: function(res) {
+                    var sel = document.getElementById('userCustomRoleId');
+                    var current = sel.value;
+                    while (sel.options.length > 1) sel.remove(1);
+                    (res.roles || []).forEach(function(r) {
+                        var opt = new Option(r.name, r.id);
+                        sel.add(opt);
+                    });
+                    if (selectedId) sel.value = selectedId;
+                }
+            });
+        }
+
         function showCreateUserModal() {
             currentEditingUser = null;
             $('#userModalTitle').text('Nuevo usuario');
             $('#userForm')[0].reset();
+            $('#userRoleType').val('CUSTOM');
+            $('#userCustomRoleId').removeClass('d-none');
+            rolesLoadIntoSelect(null);
             $('#userPassword').closest('.mb-3').show();
             $('#userPassword').prop('required', true);
             $('#userPasswordRequired').show();
-            
+
             const modal = new bootstrap.Modal(document.getElementById('userModal'));
             modal.show();
         }
@@ -5547,10 +6308,17 @@
                 success: function(user) {
                     currentEditingUser = user;
                     $('#userModalTitle').text('Editar usuario');
-                    
+
                     $('#userName').val(user.name);
                     $('#userEmail').val(user.email);
-                    $('#userRole').val(user.role);
+                    if (user.role === 'ADMIN') {
+                        $('#userRoleType').val('ADMIN');
+                        $('#userCustomRoleId').addClass('d-none');
+                    } else {
+                        $('#userRoleType').val('CUSTOM');
+                        $('#userCustomRoleId').removeClass('d-none');
+                        rolesLoadIntoSelect(user.customRoleId);
+                    }
                     $('#userStatus').val(user.isActive.toString());
                     $('#userPassword').val('');
                     $('#userPassword').closest('.mb-3').hide();
@@ -5585,11 +6353,13 @@
         }
         
         function saveUser() {
-            const formData = {
+            var roleType = $('#userRoleType').val();
+            var formData = {
                 tenantId: 1,
                 name: $('#userName').val(),
                 email: $('#userEmail').val(),
-                role: $('#userRole').val(),
+                role: roleType === 'ADMIN' ? 'ADMIN' : 'CASHIER',
+                customRoleId: roleType === 'CUSTOM' ? ($('#userCustomRoleId').val() || null) : null,
                 isActive: $('#userStatus').val() === 'true'
             };
             
@@ -7554,7 +8324,7 @@
 
         function gsAgregar(customerId, customerName) {
             if (gsParticipantes.some(function(p) { return p.customerId === customerId; })) return;
-            gsParticipantes.push({ customerId: customerId, customerName: customerName, amountDue: 0, paymentMethod: 'CASH', dueDate: null });
+            gsParticipantes.push({ customerId: customerId, customerName: customerName, amountDue: 0, paymentMethod: '', dueDate: null, interestRate: 0 });
             groupSaleParticipants = gsParticipantes;
             gsCalcMontos();
             gsRender();
@@ -7576,6 +8346,14 @@
         function gsSetMonto(idx, val) {
             if (gsParticipantes[idx]) gsParticipantes[idx].amountDue = parseFloat(val) || 0;
             gsValidar();
+        }
+
+        function gsSetDueDate(idx, val) {
+            if (gsParticipantes[idx]) gsParticipantes[idx].dueDate = val || null;
+        }
+
+        function gsSetInterestRate(idx, val) {
+            if (gsParticipantes[idx]) gsParticipantes[idx].interestRate = (parseFloat(val) || 0) / 100;
         }
 
 
@@ -7612,20 +8390,28 @@
                     return '<button type="button" class="btn btn-sm btn-outline-' + m.c + act + '" onclick="gsSetMetodo(' + i + ',\'' + m.v + '\')">' + m.l + '</button>';
                 }).join('');
                 var n = String(p.customerName || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-                var row = '<div class="d-flex align-items-center gap-2 border rounded px-2 py-1 mb-1">' +
+                var creditFields = p.paymentMethod === 'CREDIT'
+                    ? '<input type="date" class="form-control form-control-sm flex-shrink-0" style="width:130px" title="Fecha límite de pago" value="' + (p.dueDate || '') + '" onchange="gsSetDueDate(' + i + ',this.value)">' +
+                      '<div class="input-group input-group-sm flex-shrink-0" style="width:90px" title="Tasa de interés diaria (%)">' +
+                        '<input type="number" class="form-control p-1" step="0.01" min="0" max="100" placeholder="0" value="' + ((p.interestRate || 0) * 100).toFixed(2) + '" onchange="gsSetInterestRate(' + i + ',this.value)">' +
+                        '<span class="input-group-text p-1">%</span>' +
+                      '</div>'
+                    : '';
+                var row = '<div class="d-flex align-items-center gap-2 border rounded px-2 py-1 mb-1 flex-wrap">' +
                     '<span class="small fw-semibold flex-fill text-truncate" title="' + n + '" style="min-width:80px;max-width:150px">' + n + '</span>' +
                     '<div class="btn-group btn-group-sm flex-shrink-0" role="group">' + btns + '</div>' +
                     '<div class="input-group input-group-sm flex-shrink-0" style="width:100px">' +
                         '<span class="input-group-text p-1">$</span>' +
                         '<input type="number" class="form-control p-1" step="0.01" min="0" value="' + p.amountDue.toFixed(2) + '" onchange="gsSetMonto(' + i + ',this.value)" oninput="gsValidar()">' +
                     '</div>' +
+                    creditFields +
                     '<button class="btn btn-sm btn-link text-danger p-0 flex-shrink-0" type="button" onclick="gsRemove(' + i + ')"><i class="bi bi-x-circle"></i></button>' +
                     '</div>';
                 $c.append(row);
             });
             // Update pay button state
             $('#sellCartModalPayButtonText').text('Procesar Venta Grupal');
-            $('#sellCartModalPay').prop('disabled', sellCart.length === 0);
+            gsValidar();
         }
 
         function gsValidar() {
@@ -7633,12 +8419,21 @@
             var total = (taxEnabled && currentTaxRate != null) ? subtotal * (1 + currentTaxRate / 100) : subtotal;
             var suma = gsParticipantes.reduce(function(s, p) { return s + (parseFloat(p.amountDue) || 0); }, 0);
             var $v = $('#gsValidacion');
-            if (!gsParticipantes.length) { $v.html(''); return false; }
+            var $btn = $('#sellCartModalPay');
+            if (!gsParticipantes.length) { $v.html(''); $btn.prop('disabled', true); return false; }
+            var sinMetodo = gsParticipantes.filter(function(p) { return !p.paymentMethod; });
+            if (sinMetodo.length) {
+                $v.html('<span class="text-warning"><i class="bi bi-exclamation-triangle"></i> Falta seleccionar forma de pago para cada participante</span>');
+                $btn.prop('disabled', true);
+                return false;
+            }
             if (Math.abs(suma - total) > 0.02) {
                 $v.html('<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Suma $' + suma.toFixed(2) + ' ≠ $' + total.toFixed(2) + '</span>');
+                $btn.prop('disabled', true);
                 return false;
             }
             $v.html('<span class="text-success"><i class="bi bi-check-circle"></i> $' + suma.toFixed(2) + ' / $' + total.toFixed(2) + '</span>');
+            $btn.prop('disabled', sellCart.length === 0);
             return true;
         }
         // ─────────────────────────────────────────────────────────────────────────
@@ -8273,7 +9068,8 @@
                     customerId: p.customerId,
                     amountDue: parseFloat(p.amountDue) || 0,
                     paymentMethod: p.paymentMethod,
-                    dueDate: p.dueDate || null
+                    dueDate: p.dueDate || null,
+                    interestRate: parseFloat(p.interestRate) || 0
                 })),
                 notes: 'Venta grupal desde dashboard'
             };
@@ -8457,32 +9253,39 @@
                     if (sbAvatar) sbAvatar.textContent = (userData.name || 'A')[0].toUpperCase();
                     if (sbName) sbName.textContent = userData.name || userData.email || 'Admin';
                     if (sbRole) sbRole.textContent = 'En línea';
-                    // Ocultar menú solo para Empleado (CASHIER): Usuarios, Configuración, Compras grupales, Créditos
-                    if (currentUserRole === 'CASHIER') {
-                        $('.sidebar .nav-link[data-section="users"]').hide();
-                        $('.sidebar .nav-link[data-section="settings"]').hide();
-                        $('.sidebar .nav-link[data-section="group-purchases"]').hide();
-                        $('.sidebar .nav-link[data-section="credits"]').hide();
-                        $('.admin-only').hide();
-                        var section = (window.location.pathname.split('/').filter(Boolean).pop() || 'dashboard').replace('.html', '');
-                        if (['users', 'settings', 'group-purchases', 'credits'].indexOf(section) !== -1) {
-                            history.replaceState(null, '', '/dashboard');
-                            $('.content-section').removeClass('active');
-                            $('#dashboard').addClass('active');
-                            $('.sidebar .nav-link, .mobile-bottom-nav .nav-link').removeClass('active');
-                            $('.sidebar .nav-link[data-section="dashboard"], .mobile-bottom-nav .nav-link[data-section="dashboard"]').addClass('active');
-                            if (typeof loadDashboardData === 'function') loadDashboardData();
-                        }
+                    // Inicializar sistema de permisos con datos del usuario
+                    initPermissions(userData);
+                    // Si la sección actual no está permitida, redirigir a dashboard
+                    var curSection = (window.location.pathname.split('/').filter(Boolean).pop() || 'dashboard').replace('.html', '');
+                    if (curSection !== 'dashboard' && getPermission(curSection) === 'none') {
+                        history.replaceState(null, '', '/dashboard');
+                        $('.content-section').removeClass('active');
+                        $('#dashboard').addClass('active');
+                        $('.sidebar .nav-link, .mobile-bottom-nav .nav-link').removeClass('active');
+                        $('.sidebar .nav-link[data-section="dashboard"], .mobile-bottom-nav .nav-link[data-section="dashboard"]').addClass('active');
+                        if (typeof loadDashboardData === 'function') loadDashboardData();
                     }
                 } catch (e) {
                     console.warn('Error parsing user data');
                 }
             }
             
-            // Verificar token con el servidor (opcional, para mayor seguridad)
+            // Verificar token con el servidor y actualizar permisos
             $.ajax({
                 url: '/api/admin/auth/me',
                 method: 'GET',
+                success: function(res) {
+                    if (res.user) {
+                        // Actualizar permisos con datos frescos del servidor
+                        initPermissions(res.user);
+                        // Persistir datos actualizados (incluye permissions)
+                        var stored = {};
+                        try { stored = JSON.parse(localStorage.getItem('adminUser') || '{}'); } catch(e) {}
+                        stored.permissions = res.user.permissions;
+                        stored.customRoleId = res.user.customRoleId;
+                        localStorage.setItem('adminUser', JSON.stringify(stored));
+                    }
+                },
                 error: function(xhr) {
                     if (xhr.status === 401 || xhr.status === 403) {
                         // Token inválido o expirado
@@ -8498,6 +9301,8 @@
         
         // Ejecutar verificación de autenticación
         checkAuth();
+        // Mostrar prompt de instalación PWA (3s después del login, solo 1 vez)
+        setTimeout(function() { if (typeof showPwaPrompt === 'function') showPwaPrompt(); }, 3000);
         // initTheme() se llama desde el bloque del theme manager (script siguiente)
 
         // Notificaciones (pago en efectivo pendiente de confirmar)
@@ -9195,6 +10000,42 @@
             });
         }
 
+        function uploadBrandImage(type) {
+            var input = document.getElementById('brandImg_' + type);
+            if (!input || !input.files || !input.files[0]) {
+                showAlert('Selecciona una imagen primero', 'warning');
+                return;
+            }
+            var file = input.files[0];
+            if (!file.type.startsWith('image/')) {
+                showAlert('Solo se admiten imágenes (PNG, JPG, WEBP)', 'warning');
+                return;
+            }
+            var formData = new FormData();
+            formData.append('image', file);
+            $.ajax({
+                url: '/api/settings/upload-brand-image?type=' + type,
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(res) {
+                    showAlert('Imagen actualizada correctamente', 'success');
+                    var preview = document.getElementById('brandPreview_' + type);
+                    if (preview) preview.src = res.url;
+                    // Actualizar favicon en la pestaña actual si se subió uno nuevo
+                    if (type === 'favicon') {
+                        var link = document.querySelector('link[rel="icon"]');
+                        if (link) link.href = res.url;
+                    }
+                    input.value = '';
+                },
+                error: function(xhr) {
+                    showAlert(xhr.responseJSON && xhr.responseJSON.error || 'Error al subir imagen', 'danger');
+                }
+            });
+        }
+
         function loadSettings() {
             // Load tax_enabled
             $.ajax({
@@ -9821,7 +10662,157 @@
         })();
         // Llamar initTheme ahora que está definido (actualiza ícono, picker, fecha y modo auto)
         window.initTheme();
+        // Restaurar estado del sidebar colapsado
+        initSidebarState();
     })();
+
+    // ===== BANK ACCOUNTS MANAGER =====
+    var _bankAccounts = [];
+
+    function bankLoad() {
+        var token = localStorage.getItem('adminToken');
+        $.ajax({
+            url: '/api/settings/bank_accounts?tenantId=1',
+            headers: { 'Authorization': 'Bearer ' + token },
+            success: function(r) {
+                try { _bankAccounts = JSON.parse(r.value || '[]'); } catch(e) { _bankAccounts = []; }
+                bankRender();
+            },
+            error: function() { _bankAccounts = []; bankRender(); }
+        });
+    }
+
+    function bankRender() {
+        var list = document.getElementById('bankAccountsList');
+        var empty = document.getElementById('bankEmptyMsg');
+        if (!list) return;
+        if (!_bankAccounts.length) {
+            if (empty) empty.classList.remove('d-none');
+            list.querySelectorAll('.bank-account-row').forEach(function(el) { el.remove(); });
+            return;
+        }
+        if (empty) empty.classList.add('d-none');
+        var html = _bankAccounts.map(function(acc, i) {
+            return '<div class="bank-account-row d-flex align-items-center justify-content-between p-2 border rounded mb-2" style="background:var(--bs-light,#f8f9fa)">' +
+                '<div>' +
+                    '<div class="fw-semibold small"><i class="bi bi-bank2 me-1 text-primary"></i>' + escHtml(acc.bankName) + ' <span class="badge bg-secondary fw-normal">' + escHtml(acc.accountType || '') + '</span></div>' +
+                    '<div class="small text-muted"><span class="font-monospace">' + escHtml(acc.accountNumber) + '</span> &nbsp;·&nbsp; ' + escHtml(acc.beneficiary) + (acc.identification ? ' &nbsp;·&nbsp; ' + escHtml(acc.identification) : '') + '</div>' +
+                '</div>' +
+                '<div class="d-flex gap-1">' +
+                    '<button class="btn btn-sm btn-outline-primary" onclick="bankEdit(' + i + ')"><i class="bi bi-pencil"></i></button>' +
+                    '<button class="btn btn-sm btn-outline-danger" onclick="bankDelete(' + i + ')"><i class="bi bi-trash"></i></button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+        list.innerHTML = '<div id="bankEmptyMsg" class="d-none"></div>' + html;
+    }
+
+    function escHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function bankNameToggleCustom() {
+        var sel = document.getElementById('bankNameSelect');
+        var custom = document.getElementById('bankNameCustom');
+        if (sel.value === '__otro__') {
+            custom.classList.remove('d-none');
+            custom.focus();
+        } else {
+            custom.classList.add('d-none');
+            custom.value = '';
+        }
+    }
+
+    function bankGetName() {
+        var sel = document.getElementById('bankNameSelect');
+        if (sel.value === '__otro__') return document.getElementById('bankNameCustom').value.trim();
+        return sel.value;
+    }
+
+    function bankSetName(name) {
+        var sel = document.getElementById('bankNameSelect');
+        var custom = document.getElementById('bankNameCustom');
+        var opts = Array.from(sel.options).map(function(o) { return o.value; });
+        if (name && opts.includes(name)) {
+            sel.value = name;
+            custom.classList.add('d-none');
+            custom.value = '';
+        } else {
+            sel.value = '__otro__';
+            custom.classList.remove('d-none');
+            custom.value = name || '';
+        }
+    }
+
+    function bankShowAddForm() {
+        document.getElementById('bankFormTitle').textContent = 'Nueva Cuenta';
+        document.getElementById('bankNameSelect').value = '';
+        document.getElementById('bankNameCustom').value = '';
+        document.getElementById('bankNameCustom').classList.add('d-none');
+        document.getElementById('bankAccountType').value = 'Ahorro';
+        document.getElementById('bankAccountNumber').value = '';
+        document.getElementById('bankBeneficiary').value = '';
+        document.getElementById('bankIdentification').value = '';
+        document.getElementById('bankEditId').value = '';
+        document.getElementById('bankAddForm').classList.remove('d-none');
+    }
+
+    function bankHideForm() { document.getElementById('bankAddForm').classList.add('d-none'); }
+
+    function bankEdit(idx) {
+        var acc = _bankAccounts[idx];
+        if (!acc) return;
+        document.getElementById('bankFormTitle').textContent = 'Editar Cuenta';
+        bankSetName(acc.bankName || '');
+        document.getElementById('bankAccountType').value = acc.accountType || 'Ahorro';
+        document.getElementById('bankAccountNumber').value = acc.accountNumber || '';
+        document.getElementById('bankBeneficiary').value = acc.beneficiary || '';
+        document.getElementById('bankIdentification').value = acc.identification || '';
+        document.getElementById('bankEditId').value = idx;
+        document.getElementById('bankAddForm').classList.remove('d-none');
+    }
+
+    function bankSave() {
+        var name = bankGetName();
+        var num  = $('#bankAccountNumber').val().trim();
+        var ben  = $('#bankBeneficiary').val().trim();
+        if (!name || !num || !ben) { alert('Banco, número de cuenta y beneficiario son requeridos.'); return; }
+        var acc = {
+            bankName: name,
+            accountType: $('#bankAccountType').val(),
+            accountNumber: num,
+            beneficiary: ben,
+            identification: $('#bankIdentification').val().trim()
+        };
+        var editId = $('#bankEditId').val();
+        if (editId !== '') { _bankAccounts[parseInt(editId)] = acc; }
+        else { _bankAccounts.push(acc); }
+        bankPersist();
+    }
+
+    function bankDelete(idx) {
+        if (!confirm('¿Eliminar esta cuenta bancaria?')) return;
+        _bankAccounts.splice(idx, 1);
+        bankPersist();
+    }
+
+    function bankPersist() {
+        var token = localStorage.getItem('adminToken');
+        $.ajax({
+            url: '/api/settings',
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            data: JSON.stringify({ tenantId: 1, key: 'bank_accounts', value: JSON.stringify(_bankAccounts), type: 'string', description: 'Cuentas bancarias para transferencia' }),
+            success: function() {
+                bankHideForm();
+                bankRender();
+            },
+            error: function(xhr) {
+                alert('Error al guardar: ' + (xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : 'Error desconocido'));
+            }
+        });
+    }
+
+    // Cargar cuentas bancarias cuando se activa el tab
+    $(document).on('shown.bs.tab', '#bank-tab', function() { bankLoad(); });
     </script>
 
     <!-- Product Image Modal -->
@@ -9990,5 +10981,90 @@
             </div>
         </div>
     </div>
+
+    <!-- PWA Install Prompt -->
+    <div id="pwaPrompt" style="
+        display:none; position:fixed; bottom:0; left:0; right:0; z-index:9999;
+        padding:12px 16px 20px; background:var(--bg2,#1a1a2e);
+        border-top:1px solid var(--border,rgba(255,255,255,.1));
+        box-shadow:0 -4px 24px rgba(0,0,0,.4); font-family:inherit;">
+        <div style="max-width:480px;margin:0 auto;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                <img src="/public/img/icono-LB.png" alt="LOCOBAR" style="width:44px;height:44px;border-radius:10px;object-fit:contain;background:#000;padding:2px;">
+                <div>
+                    <div style="font-weight:700;font-size:15px;color:var(--text,#fff)">Añadir a pantalla de inicio</div>
+                    <div style="font-size:12px;color:var(--text3,#888)">Accede al panel sin abrir el navegador</div>
+                </div>
+                <button onclick="pwaDismiss()" style="margin-left:auto;background:none;border:none;color:var(--text3,#888);font-size:20px;line-height:1;cursor:pointer;padding:4px">&times;</button>
+            </div>
+            <div id="pwaIosSteps" style="display:none;margin-bottom:10px;">
+                <div style="font-size:13px;color:var(--text2,#ccc);line-height:1.8">
+                    <span style="display:block">1. Toca el botón <strong style="color:var(--text,#fff)">Compartir</strong>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:middle;margin-left:4px"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                        de tu navegador</span>
+                    <span style="display:block">2. Desplázate y toca <strong style="color:var(--text,#fff)">"Añadir a pantalla de inicio"</strong></span>
+                    <span style="display:block">3. Toca <strong style="color:var(--text,#fff)">"Añadir"</strong> en la esquina superior derecha</span>
+                </div>
+                <button onclick="pwaDismiss()" style="margin-top:10px;width:100%;padding:10px;background:var(--accent,#7c3aed);color:#fff;border:none;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer">Entendido</button>
+            </div>
+            <div id="pwaChromeBtns" style="display:none">
+                <div style="display:flex;gap:8px">
+                    <button onclick="pwaDismiss()" style="flex:1;padding:10px;background:none;border:1px solid var(--border,rgba(255,255,255,.2));color:var(--text2,#ccc);border-radius:8px;font-size:14px;cursor:pointer">Ahora no</button>
+                    <button id="pwaInstallBtn" style="flex:2;padding:10px;background:var(--accent,#7c3aed);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">⬇ Instalar app</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        var STORAGE_KEY = 'pwa_prompt_done_admin';
+        if (localStorage.getItem(STORAGE_KEY)) return;
+
+        var deferredPrompt = null;
+
+        function isIosSafari() {
+            var ua = navigator.userAgent;
+            return /iphone|ipad|ipod/i.test(ua) && !/crios|fxios|opios|chrome/i.test(ua) && /safari/i.test(ua);
+        }
+        function isStandalone() {
+            return navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+        }
+
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        window.showPwaPrompt = function() {
+            if (isStandalone()) return;
+            if (localStorage.getItem(STORAGE_KEY)) return;
+            var prompt = document.getElementById('pwaPrompt');
+            if (!prompt) return;
+
+            if (isIosSafari()) {
+                document.getElementById('pwaIosSteps').style.display = 'block';
+                prompt.style.display = 'block';
+            } else if (deferredPrompt) {
+                document.getElementById('pwaChromeBtns').style.display = 'block';
+                prompt.style.display = 'block';
+                document.getElementById('pwaInstallBtn').onclick = function() {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then(function() {
+                        localStorage.setItem(STORAGE_KEY, '1');
+                        prompt.style.display = 'none';
+                        deferredPrompt = null;
+                    });
+                };
+            }
+        };
+
+        window.pwaDismiss = function() {
+            localStorage.setItem(STORAGE_KEY, '1');
+            var prompt = document.getElementById('pwaPrompt');
+            if (prompt) prompt.style.display = 'none';
+        };
+    })();
+    </script>
 </body>
 </html>

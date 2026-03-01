@@ -1,7 +1,16 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { User, sequelize } = require('../models');
+const RoleModel = require('../models/Role');
+const Role = RoleModel(sequelize);
+
+async function fetchPermissions(user) {
+  if (user.role === 'ADMIN') return null;
+  if (!user.customRoleId) return {};
+  const role = await Role.findByPk(user.customRoleId);
+  return role ? role.permissions : {};
+}
 
 const router = express.Router();
 
@@ -44,10 +53,13 @@ router.post('/login', async (req, res) => {
     // Actualizar último login
     await user.update({ lastLogin: new Date() });
 
+    // Obtener permisos del rol personalizado
+    const permissions = await fetchPermissions(user);
+
     // Generar JWT token
     const token = jwt.sign(
-      { 
-        userId: user.id, 
+      {
+        userId: user.id,
         tenantId: user.tenantId,
         email: user.email,
         role: user.role,
@@ -63,7 +75,9 @@ router.post('/login', async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        customRoleId: user.customRoleId || null,
+        permissions
       },
       token
     });
@@ -100,7 +114,7 @@ router.get('/me', async (req, res) => {
       }
 
       const user = await User.findByPk(decoded.userId, {
-        attributes: ['id', 'name', 'email', 'role', 'lastLogin']
+        attributes: ['id', 'name', 'email', 'role', 'customRoleId', 'lastLogin']
       });
 
       if (!user) {
@@ -110,7 +124,19 @@ router.get('/me', async (req, res) => {
         });
       }
 
-      res.json({ user });
+      const permissions = await fetchPermissions(user);
+
+      res.json({
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          customRoleId: user.customRoleId || null,
+          lastLogin: user.lastLogin,
+          permissions
+        }
+      });
     } catch (jwtError) {
       return res.status(401).json({
         error: 'Token inválido o expirado',
