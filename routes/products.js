@@ -5,6 +5,7 @@ const { Op } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
 const { requireRole } = require('./adminAuth');
+const { processProductImage } = require('../services/ImageProcessor');
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
@@ -70,11 +71,11 @@ router.post('/', requireRole('ADMIN'), upload.single('image'), async (req, res) 
     // Handle image upload
     let imageUrl = null;
     if (req.file) {
+      const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
+      await processProductImage(filePath);
       imageUrl = '/uploads/' + req.file.filename;
-      console.log('Image uploaded:', imageUrl, 'File:', req.file.filename);
     } else if (req.body && req.body.imageUrl) {
       imageUrl = req.body.imageUrl;
-      console.log('Using existing imageUrl:', imageUrl);
     }
 
     // Validate SKU uniqueness within tenant
@@ -387,6 +388,8 @@ router.put('/:id', requireRole('ADMIN'), upload.single('image'), async (req, res
     // Handle image upload
     let imageUrl = product.imageUrl;
     if (req.file) {
+      const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
+      await processProductImage(filePath);
       imageUrl = '/uploads/' + req.file.filename;
     } else if (req.body && req.body.imageUrl) {
       imageUrl = req.body.imageUrl;
