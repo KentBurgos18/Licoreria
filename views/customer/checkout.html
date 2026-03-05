@@ -303,17 +303,29 @@
             font-family: inherit;
             box-sizing: border-box;
         }
-        /* Campos llenos: tono un poco más claro (--surf3) pero dentro del tema oscuro */
-        #pp-button-inline .ppb-form-control.valid,
-        #pp-button-inline .ppb-form-control.single-line,
-        #pp-button-inline .ppb-form-control:not(:placeholder-shown),
-        #pp-button-inline .ppb-input-group:has(.valid) .ppb-input-group-text,
-        #pp-button-inline .ppb-input-group:has(.single-line) .ppb-input-group-text,
-        #pp-button-modal .ppb-form-control.valid,
-        #pp-button-modal .ppb-form-control.single-line,
-        #pp-button-modal .ppb-form-control:not(:placeholder-shown),
-        #pp-button-modal .ppb-input-group:has(.valid) .ppb-input-group-text,
-        #pp-button-modal .ppb-input-group:has(.single-line) .ppb-input-group-text {
+        /* Modo oscuro: forzar fondos oscuros (PayPhone aplica blanco por defecto a campos llenos) */
+        html[data-lb-mode="dark"] #pp-button-inline input.ppb-form-control,
+        html[data-lb-mode="dark"] #pp-button-inline .ppb-input-group-text,
+        html[data-lb-mode="dark"] #pp-button-modal input.ppb-form-control,
+        html[data-lb-mode="dark"] #pp-button-modal .ppb-input-group-text {
+            background: var(--surf2) !important;
+            background-color: var(--surf2) !important;
+            color: var(--text) !important;
+        }
+        html[data-lb-mode="dark"] #pp-button-inline input.ppb-form-control.valid,
+        html[data-lb-mode="dark"] #pp-button-inline input.ppb-form-control.single-line,
+        html[data-lb-mode="dark"] #pp-button-inline input.ppb-form-control:not(:placeholder-shown),
+        html[data-lb-mode="dark"] #pp-button-inline .ppb-input-group:has(.valid) .ppb-input-group-text,
+        html[data-lb-mode="dark"] #pp-button-inline .ppb-input-group:has(.single-line) .ppb-input-group-text,
+        html[data-lb-mode="dark"] #pp-button-inline .ppb-input-group:has(.valid) .ppb-bg-white,
+        html[data-lb-mode="dark"] #pp-button-inline .ppb-input-group:has(.single-line) .ppb-bg-white,
+        html[data-lb-mode="dark"] #pp-button-modal input.ppb-form-control.valid,
+        html[data-lb-mode="dark"] #pp-button-modal input.ppb-form-control.single-line,
+        html[data-lb-mode="dark"] #pp-button-modal input.ppb-form-control:not(:placeholder-shown),
+        html[data-lb-mode="dark"] #pp-button-modal .ppb-input-group:has(.valid) .ppb-input-group-text,
+        html[data-lb-mode="dark"] #pp-button-modal .ppb-input-group:has(.single-line) .ppb-input-group-text,
+        html[data-lb-mode="dark"] #pp-button-modal .ppb-input-group:has(.valid) .ppb-bg-white,
+        html[data-lb-mode="dark"] #pp-button-modal .ppb-input-group:has(.single-line) .ppb-bg-white {
             background: var(--surf3) !important;
             background-color: var(--surf3) !important;
             color: var(--text) !important;
@@ -366,12 +378,12 @@
             background: var(--surf2) !important;
             background-color: var(--surf2) !important;
         }
-        #pp-button-inline .ppb-input-group:has(.valid) .ppb-bg-white,
-        #pp-button-inline .ppb-input-group:has(.single-line) .ppb-bg-white,
-        #pp-button-modal .ppb-input-group:has(.valid) .ppb-bg-white,
-        #pp-button-modal .ppb-input-group:has(.single-line) .ppb-bg-white {
-            background: var(--surf3) !important;
-            background-color: var(--surf3) !important;
+        html[data-lb-mode="dark"] #pp-button-inline .ppb-bg-white,
+        html[data-lb-mode="dark"] #pp-button-modal .ppb-bg-white,
+        html[data-lb-mode="dark"] #pp-button-inline .ppb-form-select,
+        html[data-lb-mode="dark"] #pp-button-modal .ppb-form-select {
+            background: var(--surf2) !important;
+            background-color: var(--surf2) !important;
         }
         #pp-button-inline .ppb-text-amount-h4,
         #pp-button-modal .ppb-text-amount-h4 {
