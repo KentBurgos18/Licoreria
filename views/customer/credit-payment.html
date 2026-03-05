@@ -87,6 +87,35 @@
             margin-bottom: 14px; display: none;
         }
         #ppSection.show { display: block; }
+        /* PayPhone widget: overrides para integrar con el diseño de la página */
+        #pp-button-credit .ppb-form-control,
+        #pp-button-credit .ppb-input-group-text {
+            background: var(--surf2) !important;
+            border-color: var(--border) !important;
+            color: var(--text) !important;
+            font-family: inherit;
+            border-radius: 10px !important;
+        }
+        #pp-button-credit .ppb-form-control:focus {
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 0 2.5px var(--accentbg) !important;
+        }
+        #pp-button-credit .ppb-form-control::placeholder { color: var(--text3); }
+        #pp-button-credit .ppb-p,
+        #pp-button-credit .ppb-message { color: var(--text2) !important; }
+        #pp-button-credit .ppb-input-group { border-radius: 10px; }
+        #pp-button-credit .payment-box,
+        #pp-button-credit .ppb-content { background: transparent !important; }
+        #pp-button-credit button[type="submit"],
+        #pp-button-credit .ppb-btn-primary {
+            background: var(--accent) !important;
+            border-color: var(--accent) !important;
+            color: #fff !important;
+            border-radius: 10px !important;
+            font-weight: 600;
+        }
+        #pp-button-credit button[type="submit"]:hover,
+        #pp-button-credit .ppb-btn-primary:hover { filter: brightness(1.1); }
         #ppSection .pp-note {
             font-size: 11px; color: var(--text3);
             margin-bottom: 10px; display: flex; align-items: center; gap: 6px;

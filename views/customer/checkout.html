@@ -280,6 +280,59 @@
             margin-bottom: 14px;
         }
 
+        /* ── PayPhone widget: overrides para integrar con el diseño de la página ── */
+        #pp-button-inline .ppb-form-control,
+        #pp-button-inline .ppb-input-group-text,
+        #pp-button-modal .ppb-form-control,
+        #pp-button-modal .ppb-input-group-text {
+            background: var(--surf2) !important;
+            border-color: var(--border) !important;
+            color: var(--text) !important;
+            font-family: inherit;
+            border-radius: 10px !important;
+        }
+        #pp-button-inline .ppb-form-control:focus,
+        #pp-button-modal .ppb-form-control:focus {
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 0 2.5px var(--accentbg) !important;
+        }
+        #pp-button-inline .ppb-form-control::placeholder,
+        #pp-button-modal .ppb-form-control::placeholder {
+            color: var(--text3);
+        }
+        #pp-button-inline .ppb-p,
+        #pp-button-inline .ppb-message,
+        #pp-button-modal .ppb-p,
+        #pp-button-modal .ppb-message {
+            color: var(--text2) !important;
+        }
+        #pp-button-inline .ppb-input-group,
+        #pp-button-modal .ppb-input-group {
+            border-radius: 10px;
+        }
+        #pp-button-inline .payment-box,
+        #pp-button-inline .ppb-content,
+        #pp-button-modal .payment-box,
+        #pp-button-modal .ppb-content {
+            background: transparent !important;
+        }
+        #pp-button-inline button[type="submit"],
+        #pp-button-inline .ppb-btn-primary,
+        #pp-button-modal button[type="submit"],
+        #pp-button-modal .ppb-btn-primary {
+            background: var(--accent) !important;
+            border-color: var(--accent) !important;
+            color: #fff !important;
+            border-radius: 10px !important;
+            font-weight: 600;
+        }
+        #pp-button-inline button[type="submit"]:hover,
+        #pp-button-inline .ppb-btn-primary:hover,
+        #pp-button-modal button[type="submit"]:hover,
+        #pp-button-modal .ppb-btn-primary:hover {
+            filter: brightness(1.1);
+        }
+
         /* ── Transfer bank list ── */
         .transfer-info { margin-top: 14px; animation: coSlideDown .3s ease both; }
         .transfer-info-header {
@@ -887,7 +940,6 @@
             }
 
             loadTaxRate();
-            loadPayphoneAssets();
             startCartExpiryTimer(function() {
                 showAlert('Tu carrito expiró. Redirigiendo al catálogo...', 'warning');
                 setTimeout(function() {
@@ -895,20 +947,6 @@
                 }, 2000);
             });
         });
-
-        function loadPayphoneAssets() {
-            if (document.querySelector('script[data-payphone-sdk]')) return;
-            var link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = 'https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.css';
-            link.setAttribute('data-payphone-sdk', '1');
-            document.head.appendChild(link);
-            var script = document.createElement('script');
-            script.src = 'https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js';
-            script.type = 'module';
-            script.setAttribute('data-payphone-sdk', '1');
-            document.head.appendChild(script);
-        }
 
         function selectPaymentMethod(method, el) {
             document.querySelectorAll('.payment-method-card').forEach(function(c) { c.classList.remove('active'); });
@@ -1470,7 +1508,6 @@
 
             displayCreditSummary();
             updateCreditTotals();
-            loadPayphoneAssets();
         }
 
         function displayCreditSummary() {
@@ -1711,6 +1748,13 @@
             if (typeof window.PPaymentButtonBox !== 'undefined') {
                 callback();
                 return;
+            }
+            // Cargar CSS bajo demanda (evita doble carga y error "multiple calls to tags.js")
+            if (!document.querySelector('link[href*="payphone-payment-box.css"]')) {
+                var link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.css';
+                document.head.appendChild(link);
             }
             import('https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js').then(function(m) {
                 window.PPaymentButtonBox = m.PPaymentButtonBox || m.default || m;
@@ -1966,7 +2010,6 @@
             displayOrderSummary();
             // Cargar IVA y descuento de forma asíncrona y actualizar totales al llegar
             loadTaxRate();
-            loadPayphoneAssets();
             startCartExpiryTimer(function() {
                 showAlert('Tu carrito expiró. Redirigiendo al catálogo...', 'warning');
                 setTimeout(function() {
