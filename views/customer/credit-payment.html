@@ -400,15 +400,33 @@
 
     function loadPayphoneScript(cb) {
         if (typeof window.PPaymentButtonBox !== 'undefined') { cb(); return; }
-        // Load PayPhone SDK as module
+        var url = 'https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js';
         var link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = 'https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.css';
         document.head.appendChild(link);
-        import('https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js').then(function(m) {
-            window.PPaymentButtonBox = m.PPaymentButtonBox || m.default || m;
-            cb();
-        }).catch(function() { cb(); });
+        var existing = document.querySelector('script[data-payphone-sdk]');
+        if (existing) {
+            var wait = setInterval(function() {
+                if (typeof window.PPaymentButtonBox !== 'undefined') { clearInterval(wait); cb(); }
+            }, 50);
+            setTimeout(function() { clearInterval(wait); cb(); }, 5000);
+            return;
+        }
+        var script = document.createElement('script');
+        script.src = url;
+        script.type = 'module';
+        script.setAttribute('data-payphone-sdk', '1');
+        script.onload = function() {
+            if (typeof window.PPaymentButtonBox !== 'undefined') { cb(); return; }
+            import(url).then(function(m) {
+                var P = m.PPaymentButtonBox || (m.default && m.default.PPaymentButtonBox) || m.default;
+                window.PPaymentButtonBox = (typeof P === 'function') ? P : (m.PPaymentButtonBox || m.default || m);
+                cb();
+            }).catch(function() { cb(); });
+        };
+        script.onerror = function() { cb(); };
+        document.head.appendChild(script);
     }
 
     function initPPBox(config) {

@@ -1749,19 +1749,44 @@
                 callback();
                 return;
             }
-            // Cargar CSS bajo demanda (evita doble carga y error "multiple calls to tags.js")
+            // Cargar CSS bajo demanda
             if (!document.querySelector('link[href*="payphone-payment-box.css"]')) {
                 var link = document.createElement('link');
                 link.rel = 'stylesheet';
                 link.href = 'https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.css';
                 document.head.appendChild(link);
             }
-            import('https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js').then(function(m) {
-                window.PPaymentButtonBox = m.PPaymentButtonBox || m.default || m;
-                callback();
-            }).catch(function() {
-                callback();
-            });
+            // Usar script tag (como antes): PayPhone asigna PPaymentButtonBox a window al cargar así.
+            // import() puede devolver estructura distinta y provocar "is not a constructor".
+            var existing = document.querySelector('script[data-payphone-sdk]');
+            if (existing) {
+                var wait = setInterval(function() {
+                    if (typeof window.PPaymentButtonBox !== 'undefined') {
+                        clearInterval(wait);
+                        callback();
+                    }
+                }, 50);
+                setTimeout(function() { clearInterval(wait); callback(); }, 5000);
+                return;
+            }
+            var script = document.createElement('script');
+            script.src = 'https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js';
+            script.type = 'module';
+            script.setAttribute('data-payphone-sdk', '1');
+            script.onload = function() {
+                if (typeof window.PPaymentButtonBox !== 'undefined') {
+                    callback();
+                    return;
+                }
+                // El script no asignó a window; usar import para obtener el export correcto
+                import(script.src).then(function(m) {
+                    var P = m.PPaymentButtonBox || (m.default && m.default.PPaymentButtonBox) || m.default;
+                    window.PPaymentButtonBox = (typeof P === 'function') ? P : (m.PPaymentButtonBox || m.default || m);
+                    callback();
+                }).catch(function() { callback(); });
+            };
+            script.onerror = function() { callback(); };
+            document.head.appendChild(script);
         }
 
         function startPayphoneFlow(items) {
