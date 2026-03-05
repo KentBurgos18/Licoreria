@@ -98,6 +98,15 @@
             font-family: inherit;
             box-sizing: border-box;
         }
+        #pp-button-credit .ppb-form-control.valid,
+        #pp-button-credit .ppb-form-control.single-line,
+        #pp-button-credit .ppb-form-control:not(:placeholder-shown),
+        #pp-button-credit .ppb-input-group:has(.valid) .ppb-input-group-text,
+        #pp-button-credit .ppb-input-group:has(.single-line) .ppb-input-group-text {
+            background: var(--surf3) !important;
+            background-color: var(--surf3) !important;
+            color: var(--text) !important;
+        }
         #pp-button-credit .ppb-form-control:focus {
             border-color: var(--accent) !important;
             box-shadow: 0 0 0 2.5px var(--accentbg) !important;
@@ -121,6 +130,11 @@
         #pp-button-credit .ppb-bg-white {
             background: var(--surf2) !important;
             background-color: var(--surf2) !important;
+        }
+        #pp-button-credit .ppb-input-group:has(.valid) .ppb-bg-white,
+        #pp-button-credit .ppb-input-group:has(.single-line) .ppb-bg-white {
+            background: var(--surf3) !important;
+            background-color: var(--surf3) !important;
         }
         #pp-button-credit .ppb-text-amount-h4 { color: var(--accent) !important; }
         #pp-button-credit .ppb-h2,

@@ -303,6 +303,21 @@
             font-family: inherit;
             box-sizing: border-box;
         }
+        /* Campos llenos: tono un poco más claro (--surf3) pero dentro del tema oscuro */
+        #pp-button-inline .ppb-form-control.valid,
+        #pp-button-inline .ppb-form-control.single-line,
+        #pp-button-inline .ppb-form-control:not(:placeholder-shown),
+        #pp-button-inline .ppb-input-group:has(.valid) .ppb-input-group-text,
+        #pp-button-inline .ppb-input-group:has(.single-line) .ppb-input-group-text,
+        #pp-button-modal .ppb-form-control.valid,
+        #pp-button-modal .ppb-form-control.single-line,
+        #pp-button-modal .ppb-form-control:not(:placeholder-shown),
+        #pp-button-modal .ppb-input-group:has(.valid) .ppb-input-group-text,
+        #pp-button-modal .ppb-input-group:has(.single-line) .ppb-input-group-text {
+            background: var(--surf3) !important;
+            background-color: var(--surf3) !important;
+            color: var(--text) !important;
+        }
         #pp-button-inline .ppb-form-control,
         #pp-button-modal .ppb-form-control {
             min-width: 0;
@@ -350,6 +365,13 @@
         #pp-button-modal .ppb-bg-white {
             background: var(--surf2) !important;
             background-color: var(--surf2) !important;
+        }
+        #pp-button-inline .ppb-input-group:has(.valid) .ppb-bg-white,
+        #pp-button-inline .ppb-input-group:has(.single-line) .ppb-bg-white,
+        #pp-button-modal .ppb-input-group:has(.valid) .ppb-bg-white,
+        #pp-button-modal .ppb-input-group:has(.single-line) .ppb-bg-white {
+            background: var(--surf3) !important;
+            background-color: var(--surf3) !important;
         }
         #pp-button-inline .ppb-text-amount-h4,
         #pp-button-modal .ppb-text-amount-h4 {
