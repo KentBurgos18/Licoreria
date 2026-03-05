@@ -408,6 +408,18 @@
         #pp-button-modal .ppb-col-6 {
             color: var(--text) !important;
         }
+        /* Selector de país (teléfono): reemplazar naranja PayPhone #ff7300 por tema */
+        #pp-button-inline .selected-flag,
+        #pp-button-inline .country-selector .selected-flag,
+        #pp-button-modal .selected-flag,
+        #pp-button-modal .country-selector .selected-flag {
+            background-color: var(--accent) !important;
+            color: #fff !important;
+        }
+        #pp-button-inline .flag-container,
+        #pp-button-modal .flag-container {
+            border-color: var(--border) !important;
+        }
 
         /* ── Transfer bank list ── */
         .transfer-info { margin-top: 14px; animation: coSlideDown .3s ease both; }
