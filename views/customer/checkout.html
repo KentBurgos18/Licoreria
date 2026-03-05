@@ -1829,10 +1829,21 @@
                 if (config.returnUrl) ppbConfig.returnUrl = config.returnUrl;
                 payphonePPB = new window.PPaymentButtonBox(ppbConfig);
                 payphonePPB.render('pp-button-inline');
+                selectPayphoneCardWhenReady('pp-button-inline');
             } catch (e) {
                 console.error('PayPhone init error:', e);
                 document.getElementById('pp-button-inline').innerHTML = '<p class="text-danger">Error al cargar el formulario de pago. Intente de nuevo.</p>';
             }
+        }
+
+        function selectPayphoneCardWhenReady(containerId) {
+            function trySelect() {
+                var btn = document.querySelector('#' + containerId + ' .btn-card, #' + containerId + ' .select-btn.btn-card');
+                if (btn && !btn.classList.contains('active')) { btn.click(); return true; }
+                return false;
+            }
+            if (trySelect()) return;
+            setTimeout(function() { if (!trySelect()) setTimeout(trySelect, 200); }, 400);
         }
 
         function initPayphoneCajita(config, modal) {
@@ -1859,6 +1870,7 @@
                 if (config.returnUrl) ppbConfig2.returnUrl = config.returnUrl;
                 payphonePPB = new window.PPaymentButtonBox(ppbConfig2);
                 payphonePPB.render('pp-button-modal');
+                selectPayphoneCardWhenReady('pp-button-modal');
             } catch (e) {
                 console.error('PayPhone init error:', e);
                 showAlert('Error al cargar el formulario de pago. Intente de nuevo.', 'danger');
