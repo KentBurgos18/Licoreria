@@ -1837,13 +1837,16 @@
         }
 
         function selectPayphoneCardWhenReady(containerId) {
-            function trySelect() {
+            function doSelect() {
                 var btn = document.querySelector('#' + containerId + ' .btn-card, #' + containerId + ' .select-btn.btn-card');
                 if (btn && !btn.classList.contains('active')) { btn.click(); return true; }
                 return false;
             }
-            if (trySelect()) return;
-            setTimeout(function() { if (!trySelect()) setTimeout(trySelect, 200); }, 400);
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    if (!doSelect()) setTimeout(doSelect, 150);
+                });
+            });
         }
 
         function initPayphoneCajita(config, modal) {
