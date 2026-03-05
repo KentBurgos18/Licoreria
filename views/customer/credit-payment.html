@@ -517,10 +517,6 @@
                 returnUrl: config.returnUrl
             });
             payphonePPB.render('pp-button-credit');
-            setTimeout(function() {
-                var cardBtn = document.querySelector('#pp-button-credit .btn-card, #pp-button-credit .select-btn.btn-card');
-                if (cardBtn && !cardBtn.classList.contains('active')) cardBtn.click();
-            }, 300);
         } catch (e) {
             console.error('PayPhone init error:', e);
             document.getElementById('pp-button-credit').innerHTML = '<p style="color:var(--red);font-size:12.5px">Error al cargar el formulario de pago. Intente de nuevo.</p>';

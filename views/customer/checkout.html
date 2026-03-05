@@ -1829,11 +1829,6 @@
                 if (config.returnUrl) ppbConfig.returnUrl = config.returnUrl;
                 payphonePPB = new window.PPaymentButtonBox(ppbConfig);
                 payphonePPB.render('pp-button-inline');
-                // Marcar tarjeta como seleccionada por defecto (PayPhone no siempre aplica defaultMethod)
-                setTimeout(function() {
-                    var cardBtn = document.querySelector('#pp-button-inline .btn-card, #pp-button-inline .select-btn.btn-card');
-                    if (cardBtn && !cardBtn.classList.contains('active')) cardBtn.click();
-                }, 300);
             } catch (e) {
                 console.error('PayPhone init error:', e);
                 document.getElementById('pp-button-inline').innerHTML = '<p class="text-danger">Error al cargar el formulario de pago. Intente de nuevo.</p>';
@@ -1864,10 +1859,6 @@
                 if (config.returnUrl) ppbConfig2.returnUrl = config.returnUrl;
                 payphonePPB = new window.PPaymentButtonBox(ppbConfig2);
                 payphonePPB.render('pp-button-modal');
-                setTimeout(function() {
-                    var cardBtn = document.querySelector('#pp-button-modal .btn-card, #pp-button-modal .select-btn.btn-card');
-                    if (cardBtn && !cardBtn.classList.contains('active')) cardBtn.click();
-                }, 300);
             } catch (e) {
                 console.error('PayPhone init error:', e);
                 showAlert('Error al cargar el formulario de pago. Intente de nuevo.', 'danger');
