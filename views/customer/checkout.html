@@ -345,6 +345,54 @@
         #pp-button-modal .ppb-btn-primary:hover {
             filter: brightness(1.1);
         }
+        /* PayPhone: forzar colores del tema del cliente (sobre .ppb-bg-white, .ppb-text-amount-h4, etc.) */
+        #pp-button-inline .ppb-bg-white,
+        #pp-button-modal .ppb-bg-white {
+            background: var(--surf2) !important;
+            background-color: var(--surf2) !important;
+        }
+        #pp-button-inline .ppb-text-amount-h4,
+        #pp-button-modal .ppb-text-amount-h4 {
+            color: var(--accent) !important;
+        }
+        #pp-button-inline .ppb-h2,
+        #pp-button-inline .ppb-h4,
+        #pp-button-inline .ppb-h5,
+        #pp-button-modal .ppb-h2,
+        #pp-button-modal .ppb-h4,
+        #pp-button-modal .ppb-h5 {
+            color: var(--text) !important;
+        }
+        #pp-button-inline .ppb-form-select,
+        #pp-button-modal .ppb-form-select {
+            background: var(--surf2) !important;
+            border-color: var(--border) !important;
+            color: var(--text) !important;
+        }
+        #pp-button-inline .select-btn,
+        #pp-button-inline .ppb-btn-control,
+        #pp-button-modal .select-btn,
+        #pp-button-modal .ppb-btn-control {
+            background: var(--surf2) !important;
+            border-color: var(--border) !important;
+            color: var(--text) !important;
+        }
+        #pp-button-inline .select-btn:hover,
+        #pp-button-inline .select-btn.active,
+        #pp-button-inline .ppb-btn-control:hover,
+        #pp-button-inline .ppb-btn-control.active,
+        #pp-button-modal .select-btn:hover,
+        #pp-button-modal .select-btn.active,
+        #pp-button-modal .ppb-btn-control:hover,
+        #pp-button-modal .ppb-btn-control.active {
+            background: var(--accentbg) !important;
+            border-color: var(--accent) !important;
+            color: var(--accent) !important;
+        }
+        #pp-button-inline .ppb-hr,
+        #pp-button-modal .ppb-hr {
+            border-color: var(--border) !important;
+        }
 
         /* ── Transfer bank list ── */
         .transfer-info { margin-top: 14px; animation: coSlideDown .3s ease both; }
