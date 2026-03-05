@@ -165,6 +165,8 @@
         #pp-button-credit .ppb-btn-control.active {
             background: var(--accentbg) !important;
             border-color: var(--accent) !important;
+            border-width: 2px !important;
+            box-shadow: 0 0 0 2px var(--accentbg) !important;
             color: var(--accent) !important;
         }
         #pp-button-credit .ppb-hr { border-color: var(--border) !important; }
@@ -517,12 +519,20 @@
                 returnUrl: config.returnUrl
             });
             payphonePPB.render('pp-button-credit');
-            requestAnimationFrame(function() {
-                requestAnimationFrame(function() {
+            (function() {
+                function doSelect() {
                     var btn = document.querySelector('#pp-button-credit .btn-card, #pp-button-credit .select-btn.btn-card');
-                    if (btn && !btn.classList.contains('active')) btn.click();
+                    if (!btn) return false;
+                    if (btn.classList.contains('active')) return true;
+                    btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+                    return true;
+                }
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(function() {
+                        if (!doSelect()) setTimeout(doSelect, 300);
+                    });
                 });
-            });
+            })();
         } catch (e) {
             console.error('PayPhone init error:', e);
             document.getElementById('pp-button-credit').innerHTML = '<p style="color:var(--red);font-size:12.5px">Error al cargar el formulario de pago. Intente de nuevo.</p>';
