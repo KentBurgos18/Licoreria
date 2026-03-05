@@ -146,6 +146,10 @@
             color: var(--accent) !important;
         }
         #pp-button-credit .ppb-hr { border-color: var(--border) !important; }
+        #pp-button-credit .ppb-text-amount,
+        #pp-button-credit .ppb-text-amount-h4,
+        #pp-button-credit [class*="text-amount"],
+        #pp-button-credit .ppb-col-6.ppb-text-amount { color: var(--accent) !important; }
         #ppSection .pp-note {
             font-size: 11px; color: var(--text3);
             margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
@@ -474,6 +478,10 @@
                 returnUrl: config.returnUrl
             });
             payphonePPB.render('pp-button-credit');
+            setTimeout(function() {
+                var cardBtn = document.querySelector('#pp-button-credit .btn-card, #pp-button-credit .select-btn.btn-card');
+                if (cardBtn && !cardBtn.classList.contains('active')) cardBtn.click();
+            }, 300);
         } catch (e) {
             console.error('PayPhone init error:', e);
             document.getElementById('pp-button-credit').innerHTML = '<p style="color:var(--red);font-size:12.5px">Error al cargar el formulario de pago. Intente de nuevo.</p>';

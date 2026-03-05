@@ -393,6 +393,21 @@
         #pp-button-modal .ppb-hr {
             border-color: var(--border) !important;
         }
+        /* Monto (TEST) USD y textos similares: usar colores del tema */
+        #pp-button-inline .ppb-text-amount,
+        #pp-button-inline .ppb-text-amount-h4,
+        #pp-button-inline .ppb-col-6.ppb-text-amount,
+        #pp-button-inline [class*="text-amount"],
+        #pp-button-modal .ppb-text-amount,
+        #pp-button-modal .ppb-text-amount-h4,
+        #pp-button-modal .ppb-col-6.ppb-text-amount,
+        #pp-button-modal [class*="text-amount"] {
+            color: var(--accent) !important;
+        }
+        #pp-button-inline .ppb-col-6,
+        #pp-button-modal .ppb-col-6 {
+            color: var(--text) !important;
+        }
 
         /* ── Transfer bank list ── */
         .transfer-info { margin-top: 14px; animation: coSlideDown .3s ease both; }
@@ -1768,6 +1783,11 @@
                 if (config.returnUrl) ppbConfig.returnUrl = config.returnUrl;
                 payphonePPB = new window.PPaymentButtonBox(ppbConfig);
                 payphonePPB.render('pp-button-inline');
+                // Marcar tarjeta como seleccionada por defecto (PayPhone no siempre aplica defaultMethod)
+                setTimeout(function() {
+                    var cardBtn = document.querySelector('#pp-button-inline .btn-card, #pp-button-inline .select-btn.btn-card');
+                    if (cardBtn && !cardBtn.classList.contains('active')) cardBtn.click();
+                }, 300);
             } catch (e) {
                 console.error('PayPhone init error:', e);
                 document.getElementById('pp-button-inline').innerHTML = '<p class="text-danger">Error al cargar el formulario de pago. Intente de nuevo.</p>';
@@ -1798,6 +1818,10 @@
                 if (config.returnUrl) ppbConfig2.returnUrl = config.returnUrl;
                 payphonePPB = new window.PPaymentButtonBox(ppbConfig2);
                 payphonePPB.render('pp-button-modal');
+                setTimeout(function() {
+                    var cardBtn = document.querySelector('#pp-button-modal .btn-card, #pp-button-modal .select-btn.btn-card');
+                    if (cardBtn && !cardBtn.classList.contains('active')) cardBtn.click();
+                }, 300);
             } catch (e) {
                 console.error('PayPhone init error:', e);
                 showAlert('Error al cargar el formulario de pago. Intente de nuevo.', 'danger');
