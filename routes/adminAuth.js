@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { User, sequelize } = require('../models');
 const RoleModel = require('../models/Role');
 const Role = RoleModel(sequelize);
+const AuditService = require('../services/AuditService');
 
 async function fetchPermissions(user) {
   if (user.role === 'ADMIN') return null;
@@ -62,12 +63,23 @@ router.post('/login', async (req, res) => {
         userId: user.id,
         tenantId: user.tenantId,
         email: user.email,
+        name: user.name,
         role: user.role,
         type: 'admin' // Indica que es un usuario admin/empleado
       },
       JWT_SECRET,
       { expiresIn: '8h' } // Token válido por 8 horas (jornada laboral)
     );
+
+    // Log de auditoría: login exitoso
+    AuditService.log({
+      tenantId: user.tenantId, userId: user.id,
+      userName: user.name, userEmail: user.email,
+      action: 'LOGIN', entity: 'login', entityId: String(user.id),
+      description: `Inició sesión`,
+      metadata: { role: user.role },
+      ip: req.ip
+    });
 
     res.json({
       message: 'Login exitoso',
@@ -114,7 +126,7 @@ router.get('/me', async (req, res) => {
       }
 
       const user = await User.findByPk(decoded.userId, {
-        attributes: ['id', 'name', 'email', 'role', 'customRoleId', 'lastLogin']
+        attributes: ['id', 'name', 'email', 'role', 'customRoleId', 'lastLogin', 'dashboardConfig']
       });
 
       if (!user) {
@@ -134,7 +146,8 @@ router.get('/me', async (req, res) => {
           role: user.role,
           customRoleId: user.customRoleId || null,
           lastLogin: user.lastLogin,
-          permissions
+          permissions,
+          dashboardConfig: user.dashboardConfig || {}
         }
       });
     } catch (jwtError) {
@@ -212,6 +225,23 @@ router.post('/change-password', async (req, res) => {
   }
 });
 
+// PUT /admin/auth/dashboard-config - Guardar configuración del dashboard
+router.put('/dashboard-config', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Token no proporcionado' });
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.type !== 'admin') return res.status(403).json({ error: 'Acceso denegado' });
+    const { config } = req.body;
+    if (!config || typeof config !== 'object') return res.status(400).json({ error: 'Config inválida' });
+    await User.update({ dashboardConfig: config }, { where: { id: decoded.userId } });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error guardando dashboard config:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // Middleware para verificar token de admin
 const authenticateAdmin = (req, res, next) => {
   const token = req.headers.authorization?.replace('Bearer ', '') || 
@@ -236,9 +266,11 @@ const authenticateAdmin = (req, res, next) => {
       });
     }
     
-    req.userId = decoded.userId;
-    req.tenantId = decoded.tenantId;
-    req.userRole = decoded.role;
+    req.userId    = decoded.userId;
+    req.tenantId  = decoded.tenantId;
+    req.userRole  = decoded.role;
+    req.userEmail = decoded.email;
+    req.userName  = decoded.name || decoded.email;
     next();
   } catch (error) {
     return res.status(401).json({

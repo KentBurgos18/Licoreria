@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const { User } = require('../models');
 const { Op } = require('sequelize');
 const { requireRole } = require('./adminAuth');
+const AuditService = require('../services/AuditService');
 
 const router = express.Router();
 
@@ -135,6 +136,13 @@ router.post('/', async (req, res) => {
       isActive: isActive !== false
     });
 
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'CREATE', entity: 'user', entityId: newUser.id,
+      description: `Creó usuario "${newUser.name}" (${dbRole})`,
+      metadata: { created: { name: newUser.name, email: emailTrimmed, role: dbRole } }
+    });
+
     res.status(201).json(toResponse(newUser));
   } catch (error) {
     console.error('Error creating user:', error);
@@ -177,6 +185,7 @@ router.put('/:id', async (req, res) => {
       }
     }
 
+    const beforeSnap = { name: user.name, email: user.email, role: user.role, customRoleId: user.customRoleId, isActive: user.isActive };
     const updates = {};
     if (name !== undefined) updates.name = String(name).trim();
     if (email !== undefined) updates.email = String(email).trim().toLowerCase();
@@ -188,6 +197,17 @@ router.put('/:id', async (req, res) => {
     }
 
     await user.update(updates);
+
+    const afterSnap = { name: user.name, email: user.email, role: user.role, customRoleId: user.customRoleId, isActive: user.isActive };
+    const diff = AuditService.diffObjects(beforeSnap, afterSnap);
+    if (diff) {
+      AuditService.log({
+        ...AuditService.fromReq(req),
+        action: 'UPDATE', entity: 'user', entityId: id,
+        description: `Editó usuario "${user.name}"`,
+        metadata: diff
+      });
+    }
 
     res.json(toResponse(user));
   } catch (error) {
@@ -224,7 +244,15 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
+    const snap = { name: user.name, email: user.email, role: user.role };
     await user.destroy();
+
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'DELETE', entity: 'user', entityId: id,
+      description: `Eliminó usuario "${snap.name}"`,
+      metadata: { deleted: snap }
+    });
 
     res.json({ message: 'User deleted successfully' });
   } catch (error) {

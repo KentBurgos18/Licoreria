@@ -52,7 +52,7 @@
             display: flex; flex-direction: column; justify-content: center;
         }
         .pname {
-            font-size: 13px; font-weight: 500;
+            font-size: 13px; font-weight: 700;
             color: var(--text);
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             margin-bottom: 4px; line-height: 1.3; cursor: pointer;
@@ -94,31 +94,27 @@
         }
         .cart-btn:hover:not(:disabled) { filter: brightness(1.12); }
         .cart-btn:disabled { opacity: .4; cursor: default; }
-        /* ── Qty pill ── */
-        .qty-pill {
-            display: inline-flex; align-items: center;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            overflow: hidden;
-            background: var(--surf2);
-        }
-        .qty-pill .qty-btn {
-            background: transparent; border: none;
-            padding: 4px 9px; cursor: pointer;
+        /* ── Quantity controls (igual que carrito) ── */
+        .cart-qty-block { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .cart-qty-del {
+            width: 30px; height: 30px; border-radius: 8px;
+            background: var(--rbg); border: 1px solid rgba(239, 68, 68, .2);
             display: flex; align-items: center; justify-content: center;
-            line-height: 1; transition: background .15s; color: var(--text2);
+            color: var(--red); cursor: pointer; transition: all .14s; flex-shrink: 0;
+            padding: 0; line-height: 1;
         }
-        .qty-pill .qty-btn:hover:not(:disabled) { background: var(--surf3); }
-        .qty-pill .qty-btn:disabled { opacity: .4; cursor: default; }
-        .qty-pill .qty-btn.qty-remove { color: var(--red); }
-        .qty-pill .qty-btn.qty-add    { color: var(--green); }
-        .qty-pill .qty-num {
-            min-width: 26px; text-align: center;
-            font-weight: 600; font-size: .88rem; color: var(--text);
-            border-left: 1px solid var(--border);
-            border-right: 1px solid var(--border);
-            padding: 0 4px; user-select: none;
+        .cart-qty-del:hover { background: var(--red); color: #fff; border-color: var(--red); }
+        .cart-qty-num { font-size: 14px; font-weight: 700; color: var(--text); min-width: 20px; text-align: center; }
+        .cart-qty-btn {
+            width: 30px; height: 30px; border-radius: 8px;
+            background: var(--surf2); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text2); cursor: pointer; transition: all .14s; flex-shrink: 0;
+            padding: 0; line-height: 1;
         }
+        .cart-qty-btn:hover { background: var(--accentbg); border-color: var(--accent); color: var(--accent); }
+        .cart-qty-btn:active { transform: scale(.92); }
+        .cart-qty-btn:disabled { opacity: .4; cursor: not-allowed; }
         /* ── Search ── */
         .search-wrap { position: relative; margin-bottom: 14px; }
         .search-icon {
@@ -231,14 +227,12 @@
         .lb-toast-close:hover { color: var(--text); background: var(--surf2); }
         @media (max-width: 576px) {
             .lb-toast {
-                top: auto; bottom: 24px; right: auto; left: 50%;
-                transform: translateX(-50%) translateY(16px);
                 min-width: min(340px, calc(100vw - 32px));
                 max-width: calc(100vw - 32px);
+                right: 16px;
             }
-            .lb-toast.lb-toast-show { transform: translateX(-50%) translateY(0); }
-            .lb-toast.lb-toast-hide { transform: translateX(-50%) translateY(16px); }
         }
+        .product-card-image-wrap img { cursor: zoom-in; }
     </style>
 </head>
 <body>
@@ -318,10 +312,10 @@
     <script src="/libs/js/jquery.min.js"></script>
     <script src="/libs/js/bootstrap.bundle.min.js"></script>
     <script>
-        let cart = JSON.parse(localStorage.getItem('customerCart')) || [];
-        let customer = JSON.parse(localStorage.getItem('customer')) || null;
-        let lastProducts = [];
-        let searchTimeout;
+        var cart = JSON.parse(localStorage.getItem('customerCart')) || [];
+        var customer = JSON.parse(localStorage.getItem('customer')) || null;
+        var lastProducts = [];
+        var searchTimeout;
 
         function bindCatalogEvents() {
             $('#searchInput').off('input keyup keypress').on('input keyup', function() {
@@ -394,6 +388,9 @@
             if (productType) params.productType = productType;
             if (categoryId) params.categoryId = categoryId;
             if (presentationId) params.presentationId = presentationId;
+            params.cartItems = JSON.stringify(cart.map(function(item) {
+                return { productId: item.productId, quantity: item.quantity };
+            }));
 
             $.ajax({
                 url: '/api/customer/products',
@@ -431,27 +428,23 @@
             }
 
             products.forEach(product => {
-                const cartItem = cart.find(item => item.productId === product.id);
+                const pid = parseInt(product.id, 10);
+                const cartItem = cart.find(item => parseInt(item.productId, 10) === pid);
                 const cartQty = cartItem ? cartItem.quantity : 0;
-                const effectiveStock = Math.max(0, (product.currentStock || 0) - cartQty);
+                var effectiveStock = Math.max(0, product.currentStock != null ? product.currentStock : 0);
                 const stockClass = effectiveStock > 10 ? 'ok' : effectiveStock > 0 ? 'low' : 'out';
                 const stockText = effectiveStock > 0 ? `Disponibles: ${effectiveStock}` : 'Sin stock';
                 const nameEscaped = (product.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
                 const imgEscaped = (product.imageUrl || '').replace(/'/g, "\\'");
-                const maxStock = product.currentStock || 0;
+                const maxStock = effectiveStock + cartQty;
                 const isCombo = product.productType === 'COMBO';
 
+                const leftBtn = cartQty === 1
+                    ? `<button class="cart-qty-del" onclick="catalogDecrease(${product.id})" title="Eliminar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>`
+                    : `<button class="cart-qty-btn" onclick="catalogDecrease(${product.id})" title="Quitar uno"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>`;
+                const rightBtn = `<button class="cart-qty-btn" onclick="catalogIncrease(${product.id}, ${maxStock})" ${effectiveStock === 0 ? 'disabled' : ''} title="Agregar uno"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>`;
                 const btnArea = cartQty > 0
-                    ? `<div class="qty-pill">
-                            <button class="qty-btn qty-remove" onclick="catalogDecrease(${product.id})" title="Quitar uno">
-                                <i class="bi bi-trash3-fill" style="font-size:.7em"></i>
-                            </button>
-                            <span class="qty-num">${cartQty}</span>
-                            <button class="qty-btn qty-add" onclick="catalogIncrease(${product.id}, ${maxStock})"
-                                    ${effectiveStock === 0 ? 'disabled' : ''} title="Agregar uno">
-                                <i class="bi bi-plus-lg" style="font-size:.8em"></i>
-                            </button>
-                       </div>`
+                    ? `<div class="cart-qty-block">${leftBtn}<span class="cart-qty-num">${cartQty}</span>${rightBtn}</div>`
                     : `<button class="cart-btn"
                                onclick="addToCart(${product.id}, '${nameEscaped}', ${product.salePrice || 0}, ${maxStock}, '${imgEscaped}')"
                                ${effectiveStock === 0 ? 'disabled' : ''} title="Agregar al carrito">
@@ -459,17 +452,17 @@
                        </button>`;
 
                 const productCard = `
-                    <div class="product-card${isCombo ? ' is-combo' : ''}">
+                    <div class="product-card${isCombo ? ' is-combo' : ''} position-relative">
+                        ${isCombo ? '<span class="combo-badge position-absolute" style="top:8px;right:8px;z-index:1">COMBO</span>' : ''}
                         <div class="product-card-image-wrap">
                             ${product.imageUrl
-                                ? `<img src="${product.imageUrl}" alt="${nameEscaped}">`
+                                ? `<img src="${product.imageUrl}" alt="${nameEscaped}" class="lb-zoomable" data-src="${product.imageUrl.replace(/"/g,'&quot;')}" data-alt="${nameEscaped}">`
                                 : `<div class="product-card-image-placeholder"><i class="bi bi-image"></i></div>`}
                         </div>
                         <div class="product-card-body">
                             <div class="pname" onclick="this.classList.toggle('expanded')">${product.name}</div>
-                            <div style="display:flex;align-items:center;gap:6px">
+                            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                                 <span class="pstock ${stockClass}">${stockText}</span>
-                                ${isCombo ? '<span class="combo-badge">COMBO</span>' : ''}
                             </div>
                             <div style="display:flex;justify-content:space-between;align-items:center">
                                 <span class="pprice">$${(product.salePrice || 0).toFixed(2)}</span>
@@ -484,7 +477,8 @@
 
         function addToCart(productId, productName, price, maxStock, imageUrl) {
             const wasEmpty = cart.length === 0;
-            const existingItem = cart.find(item => item.productId === productId);
+            const pid = parseInt(productId, 10);
+            const existingItem = cart.find(item => parseInt(item.productId, 10) === pid);
             
             if (existingItem) {
                 if (existingItem.quantity >= maxStock) {
@@ -494,7 +488,7 @@
                 existingItem.quantity += 1;
             } else {
                 cart.push({
-                    productId,
+                    productId: pid,
                     productName,
                     price,
                     quantity: 1,
@@ -504,16 +498,17 @@
             }
 
             if (wasEmpty && !localStorage.getItem('cartExpiresAt')) {
-                localStorage.setItem('cartExpiresAt', String(Date.now() + 30 * 60 * 1000));
+                localStorage.setItem('cartExpiresAt', String(Date.now() + 15 * 60 * 1000));
             }
             localStorage.setItem('customerCart', JSON.stringify(cart));
             updateCartBar();
-            if (lastProducts.length > 0) displayProducts(lastProducts);
+            loadProducts();
             showAlert('Producto agregado con éxito!', 'success');
         }
 
         function catalogDecrease(productId) {
-            const idx = cart.findIndex(item => item.productId === productId);
+            const pid = parseInt(productId, 10);
+            const idx = cart.findIndex(item => parseInt(item.productId, 10) === pid);
             if (idx === -1) return;
             if (cart[idx].quantity <= 1) {
                 cart.splice(idx, 1);
@@ -523,11 +518,12 @@
             }
             localStorage.setItem('customerCart', JSON.stringify(cart));
             updateCartBar();
-            if (lastProducts.length > 0) displayProducts(lastProducts);
+            loadProducts();
         }
 
         function catalogIncrease(productId, maxStock) {
-            const existing = cart.find(item => item.productId === productId);
+            const pid = parseInt(productId, 10);
+            const existing = cart.find(item => parseInt(item.productId, 10) === pid);
             if (!existing) return;
             if (existing.quantity >= maxStock) {
                 showAlert('No hay más stock disponible', 'warning');
@@ -536,7 +532,7 @@
             existing.quantity += 1;
             localStorage.setItem('customerCart', JSON.stringify(cart));
             updateCartBar();
-            if (lastProducts.length > 0) displayProducts(lastProducts);
+            loadProducts();
         }
 
         function updateCartBar() {
@@ -563,7 +559,15 @@
             localStorage.removeItem('customerCart');
             localStorage.removeItem('cartExpiresAt');
             updateCartBar();
-            if (lastProducts.length > 0) displayProducts(lastProducts);
+            loadProducts();
+        }
+
+        function closeUserMenu() {
+            var btn = document.getElementById('userMenu');
+            var menu = btn ? btn.nextElementSibling : null;
+            if (btn)  btn.setAttribute('aria-expanded', 'false');
+            if (menu) menu.classList.remove('show');
+            if (btn)  btn.closest('.dropdown')?.classList.remove('show');
         }
 
         function logout() {
@@ -637,8 +641,8 @@
                     window._cartTimerInterval = null;
                     if (expiryEl) expiryEl.textContent = '';
                     updateCartBar();
-                    if (lastProducts.length > 0) displayProducts(lastProducts);
-                    showAlert('Tu carrito expiró (30 min). Agrega los productos nuevamente.', 'warning');
+                    loadProducts();
+                    showAlert('Tu carrito expiró (15 min). Agrega los productos nuevamente.', 'warning');
                     return;
                 }
                 if (expiryEl) {

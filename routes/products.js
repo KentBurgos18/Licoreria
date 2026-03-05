@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const { requireRole } = require('./adminAuth');
 const { processProductImage } = require('../services/ImageProcessor');
+const AuditService = require('../services/AuditService');
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
@@ -198,6 +199,13 @@ router.post('/', requireRole('ADMIN'), upload.single('image'), async (req, res) 
       includeList.push({ association: 'components', include: [{ association: 'component' }] });
     }
     const createdProduct = await Product.findByPk(product.id, { include: includeList });
+
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'CREATE', entity: 'product', entityId: product.id,
+      description: `Creó producto "${name}"`,
+      metadata: { created: { name, sku, salePrice, productType, stockMin, categoryId } }
+    });
 
     res.status(201).json(createdProduct);
   } catch (error) {
@@ -395,6 +403,9 @@ router.put('/:id', requireRole('ADMIN'), upload.single('image'), async (req, res
       imageUrl = req.body.imageUrl;
     }
 
+    // Snapshot before update for audit
+    const beforeSnap = { name: product.name, salePrice: product.salePrice, isActive: product.isActive, stockMin: product.stockMin, categoryId: product.categoryId };
+
     // Update fields
     const updates = {};
     if (name !== undefined && name !== null && name !== '') updates.name = name;
@@ -431,6 +442,15 @@ router.put('/:id', requireRole('ADMIN'), upload.single('image'), async (req, res
       updateInclude.push({ association: 'components', include: [{ association: 'component' }] });
     }
     const updatedProduct = await Product.findByPk(id, { include: updateInclude });
+
+    const afterSnap = { name: product.name, salePrice: product.salePrice, isActive: product.isActive, stockMin: product.stockMin, categoryId: product.categoryId };
+    const diff = AuditService.diffObjects(beforeSnap, afterSnap);
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'UPDATE', entity: 'product', entityId: id,
+      description: `Editó producto "${product.name}"`,
+      metadata: diff
+    });
 
     res.json(updatedProduct);
   } catch (error) {
@@ -493,6 +513,13 @@ router.post('/:id/add-stock', requireRole('ADMIN'), async (req, res) => {
 
     // Get updated stock
     const currentStock = await InventoryMovement.getCurrentStock(tenantId, id);
+
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'CREATE', entity: 'product_stock', entityId: id,
+      description: `Agregó ${quantity} unidades a "${product.name}"`,
+      metadata: { quantity, unitCost: unitCost || null, productName: product.name }
+    });
 
     res.json({
       message: 'Stock added successfully',
@@ -592,10 +619,19 @@ router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
       );
     }
 
+    const deletedName = product.name;
+    const deletedSku  = product.sku;
     await sequelize.query(
       'DELETE FROM products WHERE id = :productId AND tenant_id = :tenantId',
       { replacements: { productId, tenantId } }
     );
+
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'DELETE', entity: 'product', entityId: productId,
+      description: `Eliminó producto "${deletedName}"`,
+      metadata: { deleted: { name: deletedName, sku: deletedSku } }
+    });
 
     res.json({ message: 'Producto eliminado correctamente' });
   } catch (error) {

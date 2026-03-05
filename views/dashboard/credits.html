@@ -1,0 +1,46 @@
+<div id="spa-view-content">
+  <div id="credits" class="content-section active">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="bi bi-credit-card"></i> Créditos
+                </h2>
+                <button class="btn btn-info" onclick="calculateAllInterests()">
+                    <i class="bi bi-calculator"></i> Calcular Intereses
+                </button>
+            </div>
+
+            <!-- Credits Table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="creditsTable">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Monto Inicial</th>
+                                    <th>Saldo Actual</th>
+                                    <th>Intereses</th>
+                                    <th>Fecha Inicio</th>
+                                    <th>Días</th>
+                                    <th>Fecha Límite</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="9" class="text-center text-muted">
+                                        Cargando créditos...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+  <script>
+    if (typeof loadCredits === 'function') loadCredits();
+    window.initCreditsView = function() { if (typeof loadCredits === 'function') loadCredits(); };
+  </script>
+</div>

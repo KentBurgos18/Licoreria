@@ -8,6 +8,7 @@ const { sequelize }        = require('../models');
 
 const ExpenseCategory = ExpenseCategoryModel(sequelize);
 const Expense         = ExpenseModel(sequelize);
+const AuditService    = require('../services/AuditService');
 
 // Asociación para JOINs
 Expense.belongsTo(ExpenseCategory, { foreignKey: 'categoryId', as: 'category' });
@@ -133,6 +134,13 @@ router.post('/', async (req, res) => {
       include: [{ model: ExpenseCategory, as: 'category', attributes: ['id', 'name'] }]
     });
 
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'CREATE', entity: 'expense', entityId: expense.id,
+      description: `Registró gasto "${description.trim()}" — $${Number(amount).toFixed(2)}`,
+      metadata: { created: { description: description.trim(), amount: Number(amount), expenseDate, categoryId: categoryId || null } }
+    });
+
     res.status(201).json({ expense: full });
   } catch (error) {
     console.error('Error creando gasto:', error);
@@ -161,6 +169,7 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'El monto debe ser mayor a 0' });
     }
 
+    const beforeSnap = { description: expense.description, amount: Number(expense.amount), expenseDate: expense.expenseDate, categoryId: expense.categoryId };
     const updates = {};
     if (categoryId  !== undefined) updates.categoryId  = categoryId ? Number(categoryId) : null;
     if (description !== undefined) updates.description = description.trim();
@@ -173,6 +182,15 @@ router.put('/:id', async (req, res) => {
 
     const full = await Expense.findByPk(expense.id, {
       include: [{ model: ExpenseCategory, as: 'category', attributes: ['id', 'name'] }]
+    });
+
+    const afterSnap = { description: expense.description, amount: Number(expense.amount), expenseDate: expense.expenseDate, categoryId: expense.categoryId };
+    const diff = AuditService.diffObjects(beforeSnap, afterSnap);
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'UPDATE', entity: 'expense', entityId: expense.id,
+      description: `Editó gasto "${expense.description}"`,
+      metadata: diff
     });
 
     res.json({ expense: full });
@@ -194,7 +212,14 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Gasto no encontrado' });
     }
 
+    const snap = { description: expense.description, amount: Number(expense.amount), expenseDate: expense.expenseDate };
     await expense.destroy();
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'DELETE', entity: 'expense', entityId: req.params.id,
+      description: `Eliminó gasto "${snap.description}" — $${snap.amount.toFixed(2)}`,
+      metadata: { deleted: snap }
+    });
     res.json({ message: 'Gasto eliminado correctamente' });
   } catch (error) {
     console.error('Error eliminando gasto:', error);

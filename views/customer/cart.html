@@ -303,13 +303,10 @@
         .lb-toast-close:hover { color: var(--text); background: var(--surf2); }
         @media (max-width: 576px) {
             .lb-toast {
-                top: auto; bottom: 24px; right: auto; left: 50%;
-                transform: translateX(-50%) translateY(16px);
                 min-width: min(340px, calc(100vw - 32px));
                 max-width: calc(100vw - 32px);
+                right: 16px;
             }
-            .lb-toast.lb-toast-show { transform: translateX(-50%) translateY(0); }
-            .lb-toast.lb-toast-hide { transform: translateX(-50%) translateY(16px); }
         }
     </style>
 </head>
@@ -357,7 +354,7 @@
         <div class="cart-timer-bar d-none" id="cartTimerBar">
             <svg class="cart-timer-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <div style="flex:1;">
-                <div class="cart-timer-text">Los ítems del carrito se reservan por <strong>30 min</strong>. Tiempo restante: <span class="cart-timer-time" id="cartTimerDisplay">30:00</span></div>
+                <div class="cart-timer-text">Los ítems del carrito se reservan por <strong>15 min</strong>. Tiempo restante: <span class="cart-timer-time" id="cartTimerDisplay">15:00</span></div>
                 <div class="cart-timer-prog-wrap">
                     <div class="cart-timer-prog-bar" id="cartTimerProgBar" style="width:100%"></div>
                 </div>
@@ -404,7 +401,7 @@
                     </div>
                     <div class="cart-sec-badge">
                         <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
-                        Reserva de ítems por 30 min
+                        Reserva de ítems por 15 min
                     </div>
                 </div>
             </div>
@@ -440,7 +437,7 @@
             startCartExpiryTimer(function() {
                 cart = [];
                 displayCart();
-                showAlert('Tu carrito expiró (30 min). Agrega los productos nuevamente.', 'warning');
+                showAlert('Tu carrito expiró (15 min). Agrega los productos nuevamente.', 'warning');
             });
 
             syncCartImages();
@@ -617,6 +614,7 @@
 
         function goToCheckout() {
             if (cart.length === 0) { showAlert('El carrito está vacío', 'warning'); return; }
+            sessionStorage.removeItem('creditPayment'); // Ir a pagar carrito = dejar de lado pago de crédito
             if (window.spaNavigate) window.spaNavigate('/customer/checkout');
             else window.location.href = '/customer/checkout';
         }
@@ -664,7 +662,7 @@
                 clearInterval(window._cartTimerInterval);
                 window._cartTimerInterval = null;
             }
-            var totalMs = 30 * 60 * 1000;
+            var totalMs = 15 * 60 * 1000;
 
             function tick() {
                 var currentCart   = JSON.parse(localStorage.getItem('customerCart')) || [];
@@ -727,7 +725,7 @@
             startCartExpiryTimer(function() {
                 cart = [];
                 displayCart();
-                showAlert('Tu carrito expiró (30 min). Agrega los productos nuevamente.', 'warning');
+                showAlert('Tu carrito expiró (15 min). Agrega los productos nuevamente.', 'warning');
             });
         };
     </script>

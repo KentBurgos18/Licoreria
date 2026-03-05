@@ -1,0 +1,74 @@
+<div id="spa-view-content">
+  <div id="sell" class="content-section active">
+            <h2 class="mb-4">
+                <i class="bi bi-cash"></i> Punto de Venta
+            </h2>
+
+            <!-- Burbuja flotante del carrito -->
+            <div class="sell-cart-bubble" id="sellCartBubble" onclick="openSellCartModal()">
+                <div class="sell-cart-bubble-icon">
+                    <i class="bi bi-cart3"></i>
+                    <span class="sell-cart-bubble-badge" id="sellCartBubbleBadge">0</span>
+                </div>
+            </div>
+
+            <!-- Filtros (mismo patrón que Productos: búsqueda + botón Filtros) -->
+            <div class="card mb-4">
+                <div class="card-body p-2 p-md-3">
+
+                    <!-- Fila 1: Búsqueda siempre visible + toggle de filtros en mobile -->
+                    <div class="d-flex gap-2 mb-2">
+                        <input type="text" class="form-control form-control-sm" id="sellProductSearch"
+                               placeholder="Nombre o SKU..." autocomplete="off">
+                        <!-- Botón "Filtros" solo en mobile -->
+                        <button class="btn btn-outline-secondary btn-sm flex-shrink-0 d-md-none"
+                                type="button"
+                                data-bs-toggle="collapse" data-bs-target="#sellFiltersExtra"
+                                aria-expanded="false">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                            Filtros
+                        </button>
+                    </div>
+
+                    <!-- Selects: siempre visibles en md+, colapsables en mobile -->
+                    <div class="collapse d-md-block" id="sellFiltersExtra">
+                        <div class="row g-2">
+                            <div class="col-6 col-md-2">
+                                <label class="form-label form-label-sm mb-1">Tipo</label>
+                                <select class="form-select form-select-sm" id="sellTypeFilter">
+                                    <option value="">Todos</option>
+                                    <option value="SIMPLE">Simple</option>
+                                    <option value="COMBO">Combo</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label form-label-sm mb-1">Categoría</label>
+                                <select class="form-select form-select-sm" id="sellCategoryFilter">
+                                    <option value="">Todas</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label form-label-sm mb-1">Presentación</label>
+                                <select class="form-select form-select-sm" id="sellPresentationFilter">
+                                    <option value="">Todas</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Grid de productos (tarjetas tipo catálogo) -->
+            <div class="row g-3" id="sellProductsGrid">
+                <div class="col-12 text-center text-muted">
+                    <div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div>
+                    <p class="mt-2">Cargando productos...</p>
+                </div>
+            </div>
+        </div>
+  <script>
+    if (typeof loadSellProducts === 'function') loadSellProducts();
+    window.initSellView = function() { if (typeof loadSellProducts === 'function') loadSellProducts(); };
+  </script>
+</div>

@@ -57,6 +57,12 @@ module.exports = (sequelize) => {
       allowNull: true,
       field: 'last_login'
     },
+    dashboardConfig: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+      defaultValue: {},
+      field: 'dashboard_config'
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,

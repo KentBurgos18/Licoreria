@@ -1,0 +1,176 @@
+<div id="spa-view-content">
+  <div id="dashboard" class="content-section active">
+
+            <!-- Page header -->
+            <div class="db-ph">
+                <div class="db-ptitle">Dashboard <span>·</span> General</div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm" style="background:var(--th-surf2);border:1px solid var(--th-border);color:var(--th-text2);" onclick="openDashboardCustomizer()" title="Personalizar dashboard">
+                        <i class="bi bi-sliders"></i><span class="d-none d-md-inline ms-1">Personalizar</span>
+                    </button>
+                    <button class="btn btn-sm" style="background:var(--th-surf2);border:1px solid var(--th-border);color:var(--th-text2);" onclick="loadDashboardData()">
+                        <i class="bi bi-arrow-clockwise"></i> Actualizar
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="showSection('sell')">
+                        <i class="bi bi-plus"></i> Nueva Venta
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stat cards -->
+            <div class="db-sg">
+                <div class="db-sc db-t1" data-widget-id="kpi_products">
+                    <div class="db-sth">
+                        <div class="db-si db-si-t"><i class="bi bi-box"></i></div>
+                        <span class="db-sch db-fl">activos</span>
+                    </div>
+                    <div class="db-sv" id="totalProducts">0</div>
+                    <div class="db-sl">Productos Totales</div>
+                </div>
+                <div class="db-sc db-t2" data-widget-id="kpi_stock">
+                    <div class="db-sth">
+                        <div class="db-si db-si-g"><i class="bi bi-archive"></i></div>
+                        <span class="db-sch db-up" id="totalStockBadge">unidades</span>
+                    </div>
+                    <div class="db-sv" id="totalStock">0</div>
+                    <div class="db-sl">Stock Disponible</div>
+                </div>
+                <div class="db-sc db-t3" data-widget-id="kpi_sales">
+                    <div class="db-sth">
+                        <div class="db-si db-si-r"><i class="bi bi-bar-chart-line"></i></div>
+                        <span class="db-sch db-up">mes actual</span>
+                    </div>
+                    <div class="db-sv" id="monthlySales">$0</div>
+                    <div class="db-sl">Ventas del Mes</div>
+                </div>
+                <div class="db-sc db-t4" data-widget-id="kpi_combos">
+                    <div class="db-sth">
+                        <div class="db-si db-si-y"><i class="bi bi-gift"></i></div>
+                        <span class="db-sch db-fl">activo</span>
+                    </div>
+                    <div class="db-sv" id="totalCombos">0</div>
+                    <div class="db-sl">Combos Activos</div>
+                </div>
+                <div class="db-sc db-t1" data-widget-id="kpi_expenses" style="cursor:pointer" onclick="showSection('expenses')" title="Ver gastos del mes">
+                    <div class="db-sth">
+                        <div class="db-si db-si-r"><i class="bi bi-cash-stack"></i></div>
+                        <span class="db-sch db-fl">mes actual</span>
+                    </div>
+                    <div class="db-sv" id="dashExpensesMonth">$0</div>
+                    <div class="db-sl">Gastos del Mes</div>
+                </div>
+            </div>
+
+            <!-- Monthly sales chart -->
+            <div class="db-card" data-widget-id="chart_monthly" style="margin-bottom:14px;">
+                <div class="db-ch">
+                    <div class="db-chl">
+                        <div class="db-cic"><i class="bi bi-graph-up-arrow"></i></div>
+                        <div>
+                            <div class="db-ct">Ventas por Mes</div>
+                            <div class="db-cd" id="salesChartSubtitle">últimos 12 meses · completadas</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="padding:16px 20px 14px;">
+                    <canvas id="monthlySalesChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Main grid -->
+            <div class="db-mg">
+
+                <!-- Recent sales table -->
+                <div class="db-card" data-widget-id="panel_recent_sales">
+                    <div class="db-ch">
+                        <div class="db-chl">
+                            <div class="db-cic"><i class="bi bi-bar-chart-line"></i></div>
+                            <div>
+                                <div class="db-ct">Ventas Recientes</div>
+                                <div class="db-cd" id="recentSalesCount">últimas transacciones</div>
+                            </div>
+                        </div>
+                        <button class="db-cl" onclick="showSection('sales')">Ver todas →</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table mb-0" id="recentSalesTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Fecha</th>
+                                    <th>Total</th>
+                                    <th>Método</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">
+                                        Cargando ventas recientes...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Right column -->
+                <div class="db-rc">
+
+                    <!-- Stock alerts -->
+                    <div class="db-card" data-widget-id="panel_low_stock">
+                        <div class="db-ch">
+                            <div class="db-chl">
+                                <div class="db-cic db-cic-y"><i class="bi bi-exclamation-triangle"></i></div>
+                                <div>
+                                    <div class="db-ct">Stock Bajo</div>
+                                    <div class="db-cd">Requiere reposición</div>
+                                </div>
+                            </div>
+                            <span class="db-alert-badge" id="lowStockBadge">cargando</span>
+                        </div>
+                        <div style="padding:12px;">
+                            <div id="lowStockProducts">
+                                <div class="text-center text-muted small py-2">Cargando productos...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick actions -->
+                    <div class="db-card" data-widget-id="panel_quick_actions">
+                        <div class="db-ch">
+                            <div class="db-chl">
+                                <div class="db-cic"><i class="bi bi-lightning-charge"></i></div>
+                                <div class="db-ct">Acciones Rápidas</div>
+                            </div>
+                        </div>
+                        <div style="padding:12px;">
+                            <div class="db-qg">
+                                <div class="db-qi" onclick="showSection('sell')">
+                                    <div class="db-qic db-qic-t"><i class="bi bi-cash"></i></div>
+                                    <div class="db-ql">Nueva Venta</div>
+                                </div>
+                                <div class="db-qi admin-only" onclick="showCreateProductModal()">
+                                    <div class="db-qic db-qic-g"><i class="bi bi-plus-circle"></i></div>
+                                    <div class="db-ql">Agregar Producto</div>
+                                </div>
+                                <div class="db-qi" onclick="showSection('customers')">
+                                    <div class="db-qic db-qic-b"><i class="bi bi-person-plus"></i></div>
+                                    <div class="db-ql">Nuevo Cliente</div>
+                                </div>
+                                <div class="db-qi" onclick="showSection('settings')">
+                                    <div class="db-qic db-qic-y"><i class="bi bi-gear"></i></div>
+                                    <div class="db-ql">Configuración</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+  <script>
+    if (typeof loadDashboardData === 'function') loadDashboardData();
+    window.initDashboardView = function() { if (typeof loadDashboardData === 'function') loadDashboardData(); };
+  </script>
+</div>

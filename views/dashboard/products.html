@@ -1,0 +1,108 @@
+<div id="spa-view-content">
+  <div id="products" class="content-section active">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="bi bi-box"></i> Gestión de Productos
+                </h2>
+                <button class="btn btn-primary admin-only" id="btnNewProduct" onclick="showCreateProductModal()">
+                    <i class="bi bi-plus"></i> Nuevo Producto
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-body p-2 p-md-3">
+
+                    <!-- Fila 1: Búsqueda siempre visible + toggle de filtros en mobile -->
+                    <div class="d-flex gap-2 mb-2">
+                        <input type="text" class="form-control form-control-sm" id="productSearch"
+                               placeholder="Nombre o SKU...">
+                        <!-- Botón "Filtros" solo en mobile -->
+                        <button class="btn btn-outline-secondary btn-sm flex-shrink-0 d-md-none"
+                                type="button"
+                                data-bs-toggle="collapse" data-bs-target="#productFiltersExtra"
+                                aria-expanded="false">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                            Filtros
+                        </button>
+                    </div>
+
+                    <!-- Selects + Filtrar: siempre visibles en md+, colapsables en mobile -->
+                    <div class="collapse d-md-block" id="productFiltersExtra">
+                        <div class="row g-2">
+                            <div class="col-6 col-md-2">
+                                <label class="form-label form-label-sm mb-1">Tipo</label>
+                                <select class="form-select form-select-sm" id="productTypeFilter">
+                                    <option value="">Todos</option>
+                                    <option value="SIMPLE">Simple</option>
+                                    <option value="COMBO">Combo</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label form-label-sm mb-1">Categoría</label>
+                                <select class="form-select form-select-sm" id="productCategoryFilter">
+                                    <option value="">Todas</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label form-label-sm mb-1">Presentación</label>
+                                <select class="form-select form-select-sm" id="productPresentationFilter">
+                                    <option value="">Todas</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label form-label-sm mb-1">Estado</label>
+                                <select class="form-select form-select-sm" id="productStatusFilter">
+                                    <option value="">Todos</option>
+                                    <option value="true">Activo</option>
+                                    <option value="false">Inactivo</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4 d-flex align-items-end gap-2">
+                                <button class="btn btn-outline-secondary btn-sm" onclick="loadProducts()" title="Recargar productos desde el servidor">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                                    Recargar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Products Table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="productsTable">
+                            <thead>
+                                <tr>
+                                    <th style="width:80px"></th>
+                                    <th>Nombre</th>
+                                    <th>Categoría</th>
+                                    <th>Presentación</th>
+                                    <th>Pool</th>
+                                    <th>IVA</th>
+                                    <th>Precio Venta</th>
+                                    <th>Stock</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted">
+                                        Cargando productos...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+  <script>
+    if (typeof loadProducts === 'function') loadProducts();
+    window.initProductsView = function() { if (typeof loadProducts === 'function') loadProducts(); };
+  </script>
+</div>

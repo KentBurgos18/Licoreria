@@ -2,6 +2,7 @@ const express = require('express');
 const { Product } = require('../models');
 const ComboService = require('../services/ComboService');
 const { getSimpleProductAvailability, validateSimpleSaleQuantity } = require('../services/InventoryPoolHelper');
+const { getCartAwareAvailability } = require('../services/CartAvailabilityHelper');
 
 const router = express.Router();
 
@@ -111,27 +112,63 @@ router.post('/:id/validate', async (req, res) => {
   }
 });
 
+// Parse cartItems from body (array or JSON string)
+function parseCartItems(body) {
+  const items = body.cartItems;
+  if (!items) return [];
+  if (Array.isArray(items)) return items;
+  if (typeof items === 'string') {
+    try {
+      const parsed = JSON.parse(items);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {}
+  }
+  return [];
+}
+
 // POST /products/availability/bulk - Get availability for multiple products
+// Accepts optional cartItems for cart-aware availability (combo+individual, presentaciones caja/six)
 router.post('/availability/bulk', async (req, res) => {
   try {
-    const { tenantId: bodyTenantId, productIds } = req.body;
+    const { tenantId: bodyTenantId, productIds, cartItems: bodyCartItems } = req.body;
 
     // Be lenient with tenantId: fall back to 1 if not provided
     const tenantId = bodyTenantId || 1;
+    const cartItems = parseCartItems(req.body);
 
     // If no products are provided, just return empty list instead of 400
     if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
       return res.json({ products: [] });
     }
 
-    // Find all products
+    // Find all products (include components for cart-aware combo logic)
+    const { Op } = require('sequelize');
     const dbProducts = await Product.findAll({
-      where: {
-        id: { [require('sequelize').Op.in]: productIds },
-        tenantId
-      }
+      where: { id: { [Op.in]: productIds }, tenantId },
+      include: [
+        { association: 'components', include: [{ association: 'component' }], required: false }
+      ]
     });
 
+    // Cart-aware: combo+individual, presentaciones (caja/six) comparten pool
+    if (cartItems.length > 0) {
+      const availabilityMap = await getCartAwareAvailability(tenantId, cartItems, dbProducts);
+      const products = dbProducts.map((product) => {
+        const av = availabilityMap[product.id] || { currentStock: 0, availableForSale: false };
+        return {
+          productId: product.id,
+          productType: product.productType || 'SIMPLE',
+          productName: product.name,
+          productSku: product.sku,
+          currentStock: av.currentStock ?? 0,
+          availableStock: av.currentStock ?? 0,
+          availableForSale: av.availableForSale ?? false
+        };
+      });
+      return res.json({ products });
+    }
+
+    // Sin carrito: disponibilidad estándar
     const availabilityPromises = dbProducts.map(async (product) => {
       if (product.productType === 'SIMPLE') {
         const av = await getSimpleProductAvailability(tenantId, product);
@@ -151,6 +188,12 @@ router.post('/availability/bulk', async (req, res) => {
       } else {
         const comboAvailability = await ComboService.getComboAvailability(tenantId, product.id);
         return {
+          productId: product.id,
+          productType: 'COMBO',
+          productName: product.name,
+          productSku: product.sku,
+          currentStock: comboAvailability.availableStock,
+          availableStock: comboAvailability.availableStock,
           ...comboAvailability,
           availableForSale: comboAvailability.availableStock > 0
         };

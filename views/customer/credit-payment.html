@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
+    <title>Pagar Crédito - LOCOBAR</title>
+    <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <link href="/public/css/theme.css" rel="stylesheet">
+    <link href="/public/css/customer-themes.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        .cp-page { max-width: 520px; margin: 0 auto; padding: 20px 16px 60px; }
+
+        /* Back */
+        .cp-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            color: var(--text3); font-size: 12.5px; font-weight: 700;
+            text-decoration: none; margin-bottom: 16px;
+            padding: 5px 10px; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--surf);
+            transition: color .15s, border-color .15s;
+        }
+        .cp-back:hover { color: var(--accent); border-color: var(--accent); }
+
+        /* Info card */
+        .cp-info {
+            background: var(--surf); border: 1px solid var(--border);
+            border-radius: 14px; overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0,0,0,.08);
+            margin-bottom: 16px;
+        }
+        .cp-info-head {
+            background: var(--accentbg); border-bottom: 1.5px dashed var(--border);
+            padding: 10px 16px; display: flex; align-items: center; gap: 8px;
+        }
+        .cp-info-head span { font-size: 11px; font-weight: 800; color: var(--text); text-transform: uppercase; letter-spacing: .05em; }
+        .cp-product { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 2px; }
+        .cp-credit-id { font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+        .cp-info-body { padding: 14px 16px; }
+        .cp-balance {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px; font-weight: 900; color: var(--red);
+            margin-bottom: 2px;
+        }
+        .cp-balance-lbl { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; }
+
+        /* Form section */
+        .cp-form {
+            background: var(--surf); border: 1px solid var(--border);
+            border-radius: 14px; padding: 18px 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,.08);
+            margin-bottom: 14px;
+        }
+        .cp-form-title { font-size: 11px; font-weight: 800; color: var(--text); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 14px; }
+        .cp-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+        .cp-field label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: var(--text3); }
+        .cp-field input {
+            background: var(--surf2); border: 1px solid var(--border); color: var(--text);
+            border-radius: 9px; padding: 7px 12px; font-size: 13.5px;
+            font-family: 'Outfit', sans-serif; outline: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .cp-field input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accentbg); }
+
+        /* Payment method cards */
+        .cp-methods { display: flex; gap: 8px; margin-bottom: 16px; }
+        .cp-method {
+            flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;
+            padding: 10px 8px; border-radius: 11px;
+            border: 1.5px solid var(--border); background: var(--surf2);
+            cursor: pointer; transition: border-color .15s, background .15s, transform .12s;
+            user-select: none;
+        }
+        .cp-method:hover { border-color: var(--accent); background: var(--accentbg); }
+        .cp-method.active { border-color: var(--accent); background: var(--accentbg); }
+        .cp-method-icon { font-size: 18px; }
+        .cp-method-label { font-size: 10.5px; font-weight: 700; color: var(--text2); }
+        .cp-method.active .cp-method-label { color: var(--accent); }
+
+        /* PayPhone section */
+        #ppSection {
+            background: var(--surf2); border: 1px solid var(--border);
+            border-radius: 11px; padding: 14px 12px;
+            margin-bottom: 14px; display: none;
+        }
+        #ppSection.show { display: block; }
+        #ppSection .pp-note {
+            font-size: 11px; color: var(--text3);
+            margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+        }
+
+        /* Transfer info section */
+        #transferSection {
+            background: var(--surf2); border: 1px solid var(--border);
+            border-radius: 11px; padding: 14px 12px;
+            margin-bottom: 14px; display: none;
+        }
+        #transferSection.show { display: block; }
+        .bank-row {
+            border: 1px solid var(--border); border-radius: 10px;
+            margin-bottom: 6px; overflow: hidden; cursor: pointer;
+            transition: border-color .15s;
+        }
+        .bank-row:hover { border-color: var(--accent); }
+        .bank-row-head {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px;
+        }
+        .bank-row-name { font-size: 12px; font-weight: 700; color: var(--text); }
+        .bank-row-body { display: none; padding: 0 12px 10px; }
+        .bank-row.open .bank-row-body { display: block; }
+        .bank-detail-row { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; border-bottom: 1px dashed var(--border); }
+        .bank-detail-row:last-child { border-bottom: none; }
+        .dk { color: var(--text3); font-weight: 600; }
+        .dv { color: var(--text); font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; }
+
+        /* Confirm button */
+        .cp-confirm-btn {
+            width: 100%; padding: 12px; border-radius: 11px;
+            background: linear-gradient(135deg, var(--accent), var(--accent));
+            border: none; color: #fff; font-size: 14px; font-weight: 800;
+            font-family: 'Outfit', sans-serif; cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0,0,0,.2);
+            transition: opacity .15s, transform .12s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .cp-confirm-btn:hover { opacity: .9; transform: translateY(-1px); }
+        .cp-confirm-btn:active { transform: scale(.98); }
+        .cp-confirm-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+        /* Toast */
+        .lb-toast {
+            background: var(--surf); border: 1px solid var(--border);
+            border-radius: 12px; padding: 11px 14px;
+            display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.1);
+            font-size: 13px; font-weight: 500; color: var(--text);
+            min-width: 280px; max-width: 380px;
+            position: fixed; top: 80px; right: 20px; z-index: 9999;
+            opacity: 0; transform: translateY(-8px);
+            transition: opacity .22s, transform .22s;
+        }
+        .lb-toast.show { opacity: 1; transform: translateY(0); }
+        .lb-toast.hide { opacity: 0; transform: translateY(-8px); }
+        .lb-toast-close { margin-left: auto; background: none; border: none; padding: 2px 5px; cursor: pointer; color: var(--text3); border-radius: 5px; font-size: 16px; line-height: 1; }
+        .lb-toast-close:hover { color: var(--text); }
+    </style>
+</head>
+<body>
+
+<div class="cp-page">
+
+    <!-- Back -->
+    <a href="/customer/credits" class="cp-back" onclick="goBack(event)">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Volver a Créditos
+    </a>
+
+    <!-- Credit info -->
+    <div class="cp-info">
+        <div class="cp-info-head">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <span>Pagar Crédito</span>
+        </div>
+        <div class="cp-info-body">
+            <div class="cp-product" id="cpProduct">Cargando...</div>
+            <div class="cp-credit-id" id="cpCreditId"></div>
+            <div style="margin-top:10px">
+                <div class="cp-balance" id="cpBalance">$0.00</div>
+                <div class="cp-balance-lbl">Saldo a pagar</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment form -->
+    <div class="cp-form">
+        <div class="cp-form-title">Detalles del pago</div>
+
+        <div class="cp-field">
+            <label>Monto a pagar</label>
+            <input type="number" id="cpAmount" step="0.01" min="0.01" placeholder="0.00">
+        </div>
+
+        <div class="cp-field" id="dateField">
+            <label>Fecha de pago</label>
+            <input type="date" id="cpDate">
+        </div>
+
+        <div style="margin-bottom:8px">
+            <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:8px">Método de pago</div>
+            <div class="cp-methods">
+                <div class="cp-method" onclick="selectMethod('CASH', this)">
+                    <span class="cp-method-icon">💵</span>
+                    <span class="cp-method-label">Efectivo</span>
+                </div>
+                <div class="cp-method" onclick="selectMethod('TRANSFER', this)">
+                    <span class="cp-method-icon">🏦</span>
+                    <span class="cp-method-label">Transferencia</span>
+                </div>
+                <div class="cp-method" onclick="selectMethod('CARD', this)">
+                    <span class="cp-method-icon">💳</span>
+                    <span class="cp-method-label">Tarjeta</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transfer banks -->
+        <div id="transferSection">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-weight:600">Datos de transferencia:</div>
+            <div id="bankList"><div style="text-align:center;padding:12px;color:var(--text3);font-size:12px">Cargando cuentas...</div></div>
+        </div>
+
+        <!-- PayPhone section -->
+        <div id="ppSection">
+            <div class="pp-note">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Completa el pago en el formulario de tarjeta a continuación.
+            </div>
+            <div id="pp-button-credit"></div>
+        </div>
+
+        <!-- Confirm button (hidden for CARD) -->
+        <button class="cp-confirm-btn" id="confirmBtn" onclick="confirmPayment()" style="display:none">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Confirmar Pago
+        </button>
+    </div>
+
+</div>
+
+<script src="/libs/js/jquery.min.js"></script>
+<script src="/libs/js/bootstrap.bundle.min.js"></script>
+<script>
+    var token    = localStorage.getItem('customerToken');
+    var customer = JSON.parse(localStorage.getItem('customer') || '{}');
+    var cpCreditId, cpMaxAmount, cpMethod = null;
+
+    if (!token) { window.location.href = '/customer/login'; }
+
+    // Apply theme
+    (function() {
+        var theme = localStorage.getItem('lb_theme') || 'theme2';
+        var mode  = localStorage.getItem('lb_mode')  || 'auto';
+        if (mode === 'auto') {
+            var h = new Date().getHours();
+            mode = (h >= 7 && h < 20) ? 'light' : 'dark';
+        }
+        document.documentElement.setAttribute('data-lb-theme', theme);
+        document.documentElement.setAttribute('data-lb-mode', mode);
+        document.documentElement.classList.add('lb-themed');
+    })();
+
+    // Parse URL params
+    (function() {
+        var params = new URLSearchParams(window.location.search);
+        cpCreditId = params.get('creditId');
+        cpMaxAmount = parseFloat(params.get('amount') || '0');
+        var product = params.get('product') || 'Crédito';
+
+        if (!cpCreditId || !cpMaxAmount) {
+            window.location.href = '/customer/credits';
+            return;
+        }
+
+        document.getElementById('cpProduct').textContent = decodeURIComponent(product);
+        document.getElementById('cpCreditId').textContent = 'CR-' + String(cpCreditId).padStart(4, '0');
+        document.getElementById('cpBalance').textContent = '$' + cpMaxAmount.toFixed(2);
+        document.getElementById('cpAmount').value = cpMaxAmount.toFixed(2);
+        document.getElementById('cpAmount').max = cpMaxAmount.toFixed(2);
+        document.getElementById('cpDate').value = new Date().toISOString().split('T')[0];
+
+        $.get('/api/public/brand-slogan', function(r) {
+            if (r && r.pageTitleCredits) document.title = 'Pagar Crédito - ' + (r.brand || 'LOCOBAR');
+        });
+    })();
+
+    function goBack(e) {
+        e.preventDefault();
+        if (window.history.length > 1) window.history.back();
+        else window.location.href = '/customer/credits';
+    }
+
+    function selectMethod(method, el) {
+        document.querySelectorAll('.cp-method').forEach(function(c) { c.classList.remove('active'); });
+        el.classList.add('active');
+        cpMethod = method;
+
+        document.getElementById('transferSection').classList.toggle('show', method === 'TRANSFER');
+        document.getElementById('ppSection').classList.toggle('show', method === 'CARD');
+        document.getElementById('confirmBtn').style.display = (method !== 'CARD') ? 'flex' : 'none';
+        document.getElementById('dateField').style.display = (method !== 'CARD') ? 'flex' : 'none';
+
+        if (method === 'TRANSFER') {
+            loadBankAccounts();
+        } else if (method === 'CARD') {
+            initPayphoneForCredit();
+        }
+    }
+
+    // ── Bank accounts ─────────────────────────────────────────
+    var _banksCache = null;
+    function loadBankAccounts() {
+        if (_banksCache !== null) { renderBanks(_banksCache); return; }
+        $.get('/api/public/bank-accounts', function(r) {
+            _banksCache = r.accounts || [];
+            renderBanks(_banksCache);
+        }).fail(function() {
+            _banksCache = [];
+            renderBanks([]);
+        });
+    }
+
+    function renderBanks(accounts) {
+        var el = document.getElementById('bankList');
+        if (!accounts.length) {
+            el.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0">No hay cuentas bancarias configuradas. Contacta con el negocio.</div>';
+            return;
+        }
+        el.innerHTML = accounts.map(function(acc, i) {
+            return '<div class="bank-row" id="brow'+i+'" onclick="toggleBank('+i+')">' +
+                '<div class="bank-row-head"><div class="bank-row-name">' + escHtml(acc.bankName) + '</div></div>' +
+                '<div class="bank-row-body">' +
+                    '<div class="bank-detail-row"><span class="dk">Tipo</span><span class="dv">' + escHtml(acc.accountType || '') + '</span></div>' +
+                    '<div class="bank-detail-row"><span class="dk">N° Cuenta</span><span class="dv">' + escHtml(acc.accountNumber) + '</span></div>' +
+                    '<div class="bank-detail-row"><span class="dk">Beneficiario</span><span class="dv">' + escHtml(acc.beneficiary) + '</span></div>' +
+                    (acc.identification ? '<div class="bank-detail-row"><span class="dk">RUC/Cédula</span><span class="dv">' + escHtml(acc.identification) + '</span></div>' : '') +
+                '</div>' +
+            '</div>';
+        }).join('');
+    }
+
+    function toggleBank(i) {
+        var row = document.getElementById('brow' + i);
+        if (!row) return;
+        var wasOpen = row.classList.contains('open');
+        document.querySelectorAll('.bank-row').forEach(function(r) { r.classList.remove('open'); });
+        if (!wasOpen) row.classList.add('open');
+    }
+
+    // ── PayPhone ──────────────────────────────────────────────
+    var payphonePPB = null;
+    var ppPrepared  = false;
+
+    function initPayphoneForCredit() {
+        if (ppPrepared) return;
+        var container = document.getElementById('pp-button-credit');
+        container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px"><div class="spinner-border spinner-border-sm text-primary"></div><p class="mt-2">Cargando formulario de pago...</p></div>';
+
+        $.ajax({
+            url: '/api/customer/credits/' + cpCreditId + '/prepare-payphone',
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            contentType: 'application/json',
+            data: JSON.stringify({}),
+            success: function(config) {
+                ppPrepared = true;
+                container.innerHTML = '';
+                loadPayphoneScript(function() {
+                    initPPBox(config);
+                });
+            },
+            error: function(xhr) {
+                var msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Error al preparar el pago con tarjeta';
+                container.innerHTML = '<p style="color:var(--red);font-size:12.5px;padding:8px 0">' + escHtml(msg) + '</p>';
+            }
+        });
+    }
+
+    function loadPayphoneScript(cb) {
+        if (typeof window.PPaymentButtonBox !== 'undefined') { cb(); return; }
+        // Load PayPhone SDK as module
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.css';
+        document.head.appendChild(link);
+        import('https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js').then(function(m) {
+            window.PPaymentButtonBox = m.PPaymentButtonBox || m.default || m;
+            cb();
+        }).catch(function() { cb(); });
+    }
+
+    function initPPBox(config) {
+        try {
+            if (typeof window.PPaymentButtonBox === 'undefined') {
+                document.getElementById('pp-button-credit').innerHTML = '<p style="color:var(--red);font-size:12.5px">No se pudo cargar el formulario de pago. Recarga e intenta de nuevo.</p>';
+                return;
+            }
+            if (payphonePPB) payphonePPB = null;
+            payphonePPB = new window.PPaymentButtonBox({
+                token: config.token,
+                storeId: config.storeId,
+                clientTransactionId: config.clientTransactionId,
+                amount: config.amount,
+                amountWithoutTax: config.amountWithoutTax,
+                amountWithTax: config.amountWithTax,
+                tax: config.tax,
+                currency: config.currency || 'USD',
+                reference: config.reference || 'Pago de crédito',
+                lang: 'es',
+                defaultMethod: 'card',
+                returnUrl: config.returnUrl
+            });
+            payphonePPB.render('pp-button-credit');
+        } catch (e) {
+            console.error('PayPhone init error:', e);
+            document.getElementById('pp-button-credit').innerHTML = '<p style="color:var(--red);font-size:12.5px">Error al cargar el formulario de pago. Intente de nuevo.</p>';
+        }
+    }
+
+    // ── Confirm CASH / TRANSFER ───────────────────────────────
+    function confirmPayment() {
+        if (!cpMethod) { showToast('Seleccione un método de pago', 'warning'); return; }
+        var amount = parseFloat(document.getElementById('cpAmount').value);
+        var date   = document.getElementById('cpDate').value;
+        if (!amount || amount <= 0) { showToast('Ingrese un monto válido', 'warning'); return; }
+        if (amount > cpMaxAmount + 0.001) { showToast('El monto supera el saldo del crédito', 'warning'); return; }
+        if (!date) { showToast('Ingrese la fecha de pago', 'warning'); return; }
+
+        var btn = document.getElementById('confirmBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Procesando...';
+
+        $.ajax({
+            url: '/api/customer/credits/' + cpCreditId + '/payment',
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            data: JSON.stringify({ amount: amount, paymentMethod: cpMethod, paymentDate: date }),
+            success: function() {
+                showToast('¡Pago registrado exitosamente!', 'success');
+                setTimeout(function() {
+                    if (window.history.length > 1) window.history.back();
+                    else window.location.href = '/customer/credits';
+                }, 2000);
+            },
+            error: function(xhr) {
+                if (xhr.status === 401) { window.location.href = '/customer/login'; return; }
+                var msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Error al registrar el pago';
+                showToast(msg, 'danger');
+                btn.disabled = false;
+                btn.innerHTML = '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Confirmar Pago';
+            }
+        });
+    }
+
+    // ── Helpers ───────────────────────────────────────────────
+    function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function showToast(message, type) {
+        var colors = { success:'var(--green)', warning:'var(--amber)', danger:'var(--red)', info:'var(--accent)' };
+        var icons  = {
+            success: '<svg width="17" height="17" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg>',
+            warning: '<svg width="17" height="17" fill="currentColor" viewBox="0 0 16 16"><path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>',
+            danger:  '<svg width="17" height="17" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg>',
+            info:    '<svg width="17" height="17" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>'
+        };
+        var existing = document.getElementById('cpToast');
+        if (existing) existing.remove();
+        var t = document.createElement('div');
+        t.id = 'cpToast'; t.className = 'lb-toast';
+        t.innerHTML = '<span style="color:' + (colors[type]||colors.info) + '">' + (icons[type]||icons.info) + '</span>' +
+                      '<span style="flex:1">' + escHtml(message) + '</span>' +
+                      '<button class="lb-toast-close" onclick="this.closest(\'.lb-toast\').remove()">&times;</button>';
+        document.body.appendChild(t);
+        requestAnimationFrame(function() { requestAnimationFrame(function() { t.classList.add('show'); }); });
+        setTimeout(function() {
+            t.classList.remove('show'); t.classList.add('hide');
+            setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 250);
+        }, 3500);
+    }
+</script>
+
+</body>
+</html>

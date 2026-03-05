@@ -76,8 +76,10 @@ class CreditService {
     // Calculate new interest for this period
     const newInterest = this.calculateInterest(credit, asOfDate);
 
-    // Acumular interés y truncar a 2 decimales (igual que PayPhone)
-    credit.currentBalance = Math.floor((parseFloat(credit.currentBalance) + newInterest) * 100) / 100;
+    // Sumar en centavos para evitar 22.49+0.22=22.70999... (float) → truncado erróneo a 22.70
+    const balanceCents = Math.round(parseFloat(credit.currentBalance) * 100);
+    const interestCents = Math.round(newInterest * 100);
+    credit.currentBalance = (balanceCents + interestCents) / 100;
     credit.lastInterestCalculationDate = asOfStr;
 
     // No due-date based overdue logic — interest accumulates from day 1

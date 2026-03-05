@@ -1,6 +1,7 @@
 const express = require('express');
 const { Sale, SaleItem, Product, InventoryMovement, Setting, CustomerCredit, Customer, Notification } = require('../models');
 const ComboService = require('../services/ComboService');
+const AuditService = require('../services/AuditService');
 const { resolveMovement, validateSimpleSaleQuantity } = require('../services/InventoryPoolHelper');
 const { sequelize } = require('../models');
 const { Op } = require('sequelize');
@@ -92,15 +93,13 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Calculate subtotal, separating taxable and non-taxable
+    // Calcular subtotal (el IVA se aplica al subtotal completo para coincidir con el POS)
     let subtotal = 0;
-    let taxableSubtotal = 0;
     items.forEach(item => {
       const product = productMap[item.productId];
       const unitPrice = item.unitPrice || product.salePrice;
       const lineTotal = unitPrice * item.quantity;
       subtotal += lineTotal;
-      if (product.taxApplies !== false) taxableSubtotal += lineTotal;
     });
 
     const taxEnabledRaw = await Setting.getSetting(tenantId, 'tax_enabled', 'true');
@@ -119,7 +118,7 @@ router.post('/', async (req, res) => {
           code: 'TAX_RATE_NOT_CONFIGURED'
         });
       }
-      taxAmount = taxableSubtotal * (taxRate / 100);
+      taxAmount = subtotal * (taxRate / 100);
     }
 
     const calculatedTotal = subtotal + taxAmount;
@@ -127,8 +126,8 @@ router.post('/', async (req, res) => {
     // Use provided totalAmount or calculated total
     const finalTotal = totalAmount || calculatedTotal;
 
-    // Determine sale status: PENDING for transfers, COMPLETED for cash/card/credit
-    const saleStatus = paymentMethod === 'TRANSFER' ? 'PENDING' : 'COMPLETED';
+    // Dashboard sales: siempre COMPLETED (el empleado en caja verifica la transferencia al seleccionarla)
+    const saleStatus = 'COMPLETED';
     
     // For credit sales, customerId is required
     let finalCustomerId = customerId;
@@ -300,6 +299,13 @@ router.post('/', async (req, res) => {
       ]
     });
 
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'CREATE', entity: 'sale', entityId: sale.id,
+      description: `Registró venta #${sale.id} — $${finalTotal.toFixed(2)} (${paymentMethod})`,
+      metadata: { total: finalTotal, paymentMethod, itemsCount: items.length, customerId: finalCustomerId || null }
+    });
+
     res.status(201).json(completeSale);
   } catch (error) {
     await transaction.rollback();
@@ -318,6 +324,8 @@ router.get('/', async (req, res) => {
       tenantId,
       status,
       customerId,
+      paymentMethod,
+      transferAccountInfo,
       startDate,
       endDate,
       page = 1,
@@ -328,6 +336,8 @@ router.get('/', async (req, res) => {
     if (tenantId) whereClause.tenantId = tenantId;
     if (status) whereClause.status = status;
     if (customerId) whereClause.customerId = customerId;
+    if (paymentMethod) whereClause.paymentMethod = paymentMethod;
+    if (transferAccountInfo) whereClause.transferAccountInfo = transferAccountInfo;
 
     if (startDate || endDate) {
       whereClause.createdAt = {};
@@ -340,6 +350,7 @@ router.get('/', async (req, res) => {
     const { count, rows } = await Sale.findAndCountAll({
       where: whereClause,
       include: [
+        { association: 'customer', required: false },
         {
           association: 'items',
           include: [{
@@ -367,6 +378,44 @@ router.get('/', async (req, res) => {
       error: 'Internal server error',
       code: 'INTERNAL_ERROR'
     });
+  }
+});
+
+// GET /sales/stats/monthly-chart - Ventas por mes (últimos N meses) para gráfico
+router.get('/stats/monthly-chart', async (req, res) => {
+  try {
+    const { tenantId, months = 12 } = req.query;
+    if (!tenantId) return res.status(400).json({ error: 'tenantId is required' });
+
+    const n = Math.min(Math.max(parseInt(months) || 12, 1), 24);
+    const rows = await sequelize.query(`
+      SELECT
+        TO_CHAR(DATE_TRUNC('month', created_at AT TIME ZONE 'UTC'), 'YYYY-MM') AS month_key,
+        TO_CHAR(DATE_TRUNC('month', created_at AT TIME ZONE 'UTC'), 'Mon YYYY') AS label,
+        COALESCE(SUM(total_amount), 0)::float AS total
+      FROM sales
+      WHERE tenant_id = :tenantId
+        AND status = 'COMPLETED'
+        AND created_at >= DATE_TRUNC('month', NOW() - INTERVAL '1 month' * (:n - 1))
+      GROUP BY month_key, label
+      ORDER BY month_key ASC
+    `, { replacements: { tenantId: parseInt(tenantId), n }, type: sequelize.QueryTypes.SELECT });
+
+    // Rellenar meses sin ventas con 0
+    const result = [];
+    const now = new Date();
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = d.toISOString().slice(0, 7); // YYYY-MM
+      const found = rows.find(r => r.month_key === key);
+      const label = d.toLocaleString('es', { month: 'short', year: 'numeric' });
+      result.push({ month_key: key, label: found ? found.label : label, total: found ? found.total : 0 });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error getting monthly chart data:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -416,6 +465,7 @@ router.get('/:id', async (req, res) => {
     const sale = await Sale.findOne({
       where: { id, tenantId },
       include: [
+        { association: 'customer', required: false },
         {
           association: 'items',
           include: [{
@@ -720,7 +770,10 @@ router.patch('/:id/reject-pending', async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.to(`sale:${sale.id}`).emit('sale-voided', { saleId: sale.id });
+      io.to(`sale:${sale.id}`).emit('sale-voided', { saleId: sale.id, voidReason: voidReason });
+      if (sale.customerId) {
+        io.to(`customer:${sale.customerId}`).emit('sale-voided', { saleId: sale.id, voidReason: voidReason });
+      }
     }
 
     const updated = await Sale.findByPk(sale.id, {

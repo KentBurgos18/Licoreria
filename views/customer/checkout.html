@@ -122,54 +122,63 @@
         .section-title { font-size: 14px; font-weight: 700; color: var(--text); }
         .section-body { padding: 18px; }
 
-        /* ── Payment method cards ── */
+        /* ── Payment method cards (carrusel) ── */
         .pay-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 12px;
         }
         @media (max-width: 560px) {
             .pay-grid {
                 display: flex;
                 flex-wrap: nowrap;
                 overflow-x: auto;
-                gap: 10px;
-                padding-bottom: 4px;
+                gap: 12px;
+                padding: 4px 4px 8px;
                 scroll-snap-type: x mandatory;
                 -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
             }
             .pay-grid::-webkit-scrollbar { display: none; }
             .pay-grid .pay-card {
-                flex: 0 0 148px;
-                min-width: 148px;
-                scroll-snap-align: start;
+                flex: 0 0 140px;
+                min-width: 140px;
+                scroll-snap-align: center;
             }
         }
         .pay-card {
             background: var(--surf2);
             border: 1.5px solid var(--border);
-            border-radius: 12px; padding: 16px 12px;
-            cursor: pointer; text-align: center;
-            transition: all .2s; position: relative; overflow: hidden;
+            border-radius: 14px;
+            padding: 20px 14px;
+            cursor: pointer;
+            text-align: center;
+            transition: all .22s ease;
+            position: relative;
+            overflow: hidden;
         }
         .pay-card::before {
             content: ''; position: absolute; inset: 0;
-            background: var(--accentbg); opacity: 0; transition: opacity .2s;
-            border-radius: 12px;
+            background: var(--accentbg); opacity: 0; transition: opacity .22s;
+            border-radius: 14px;
         }
-        .pay-card:hover { border-color: var(--accent2); transform: translateY(-1px); box-shadow: var(--shadow); }
+        .pay-card:hover { border-color: var(--accent2); transform: translateY(-2px); box-shadow: var(--shadow); }
         .pay-card.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accentbg); }
         .pay-card.active::before { opacity: 1; }
         .pay-icon-wrap {
-            width: 44px; height: 44px; border-radius: 12px;
-            margin: 0 auto 10px;
+            width: 52px; height: 52px;
+            border-radius: 14px;
+            margin: 0 auto 6px;
             background: var(--accentbg);
             display: flex; align-items: center; justify-content: center;
-            color: var(--accent2); position: relative; z-index: 1;
-            transition: background .2s;
+            color: var(--accent2);
+            position: relative; z-index: 1;
+            transition: background .22s, color .22s;
         }
         .pay-card.active .pay-icon-wrap { background: var(--accent); color: #fff; }
-        .pay-name { font-size: 13px; font-weight: 700; color: var(--text); position: relative; z-index: 1; margin-bottom: 3px; }
+        .pay-icon-wrap svg { width: 26px; height: 26px; }
+        .pay-icon-wrap.pay-icon-emoji { font-size: 28px; line-height: 1; }
+        .pay-name { font-size: 13.5px; font-weight: 800; color: var(--text); position: relative; z-index: 1; margin-bottom: 2px; letter-spacing: .02em; }
         .pay-sub { font-size: 11px; color: var(--text3); position: relative; z-index: 1; }
         .pay-check {
             position: absolute; top: 8px; right: 8px;
@@ -503,13 +512,10 @@
         .lb-toast-close:hover { color: var(--text); background: var(--surf2); }
         @media (max-width: 576px) {
             .lb-toast {
-                top: auto; bottom: 24px; right: auto; left: 50%;
-                transform: translateX(-50%) translateY(16px);
                 min-width: min(340px, calc(100vw - 32px));
                 max-width: calc(100vw - 32px);
+                right: 16px;
             }
-            .lb-toast.lb-toast-show { transform: translateX(-50%) translateY(0); }
-            .lb-toast.lb-toast-hide { transform: translateX(-50%) translateY(16px); }
         }
     </style>
 </head>
@@ -556,7 +562,7 @@
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 </div>
                 <div>
-                    <div class="timer-msg">Los ítems del carrito se reservan por <strong>30 min</strong></div>
+                    <div class="timer-msg">Los ítems del carrito se reservan por <strong>15 min</strong></div>
                     <div style="font-size:11px;color:var(--text3);margin-top:1px;">Completa tu compra antes de que expire</div>
                 </div>
             </div>
@@ -591,9 +597,7 @@
                                 <div class="pay-check">
                                     <svg width="9" height="9" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                                 </div>
-                                <div class="pay-icon-wrap">
-                                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                                </div>
+                                <div class="pay-icon-wrap pay-icon-emoji">💵</div>
                                 <div class="pay-name">Efectivo</div>
                                 <div class="pay-sub">Pago al recibir</div>
                             </div>
@@ -602,9 +606,7 @@
                                 <div class="pay-check">
                                     <svg width="9" height="9" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                                 </div>
-                                <div class="pay-icon-wrap">
-                                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
-                                </div>
+                                <div class="pay-icon-wrap pay-icon-emoji">💳</div>
                                 <div class="pay-name">Tarjeta</div>
                                 <div class="pay-sub">Visa, Mastercard</div>
                                 <div class="payphone-badge">⚡ Payphone</div>
@@ -614,9 +616,7 @@
                                 <div class="pay-check">
                                     <svg width="9" height="9" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                                 </div>
-                                <div class="pay-icon-wrap">
-                                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                                </div>
+                                <div class="pay-icon-wrap pay-icon-emoji">🏛️</div>
                                 <div class="pay-name">Transferencia</div>
                                 <div class="pay-sub">Transferencia bancaria</div>
                             </div>
@@ -801,6 +801,24 @@
         </div>
     </div>
 
+    <!-- Modal: Pedido cancelado -->
+    <div class="modal fade" id="orderCancelledModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center py-5">
+                    <div style="width:70px;height:70px;border-radius:50%;border:3px solid var(--red,#dc3545);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                        <svg width="32" height="32" fill="none" stroke="var(--red,#dc3545)" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    </div>
+                    <h4 style="font-weight:800;color:var(--text);margin-bottom:8px;">Pedido cancelado</h4>
+                    <p style="color:var(--text2);margin-bottom:0;">Su pedido fue cancelado. Si tiene dudas, contacte al local.</p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="confirm-btn" style="max-width:200px;" id="orderCancelledCloseBtn">Aceptar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal: Gracias por su compra -->
     <div class="modal fade" id="thankYouModal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
@@ -823,11 +841,13 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="/libs/js/bootstrap.bundle.min.js"></script>
     <script>
-        let cart = JSON.parse(localStorage.getItem('customerCart')) || [];
-        let customer = JSON.parse(localStorage.getItem('customer')) || null;
-        let currentTaxRate = null;
-        let taxEnabled = true;
-        let currentDiscountRate = 0;
+        var cart = JSON.parse(localStorage.getItem('customerCart')) || [];
+        var customer = JSON.parse(localStorage.getItem('customer')) || null;
+        var currentTaxRate = null;
+        var taxEnabled = true;
+        var currentDiscountRate = 0;
+        var isCreditMode = false;
+        var creditPaymentCtx = null;
 
         $(document).ready(function() {
             $.get('/api/public/brand-slogan', function(r) { if (r && r.pageTitleCheckout) document.title = r.pageTitleCheckout; });
@@ -840,6 +860,14 @@
 
             if (customer) {
                 $('#userName').text(customer.name);
+            }
+
+            // Credit payment mode — si vino desde "Pagar ahora", priorizar crédito (aunque tenga carrito)
+            creditPaymentCtx = JSON.parse(sessionStorage.getItem('creditPayment') || 'null');
+            if (creditPaymentCtx) {
+                isCreditMode = true;
+                _initCreditMode();
+                return;
             }
 
             // Check cart expiry
@@ -905,6 +933,7 @@
                 $('#transferInfoSection').removeClass('d-none');
                 payphonePPB = null;
                 loadBankAccounts();
+                updateProcessButtonState();
             } else {
                 $('#payphone-inline-section').addClass('d-none');
                 $('#transferInfoSection').addClass('d-none');
@@ -912,8 +941,32 @@
                 $('#processBtn').removeClass('d-none');
                 $('#payphoneConfirmNote').addClass('d-none');
                 payphonePPB = null;
+                updateProcessButtonState();
             }
-            updateTotals();
+            if (isCreditMode && creditPaymentCtx) {
+                updateCreditTotals();
+            } else {
+                updateTotals();
+            }
+        }
+
+        function updateProcessButtonState() {
+            var btn = document.getElementById('processBtn');
+            if (!btn) return;
+            var method = $('#paymentMethod').val();
+            if (method === 'CARD') {
+                btn.disabled = true;
+                btn.title = '';
+                return;
+            }
+            if (method === 'TRANSFER') {
+                var selectedRow = document.querySelector('.bank-row.selected');
+                btn.disabled = !selectedRow;
+                btn.title = selectedRow ? '' : 'Seleccione la cuenta bancaria para continuar';
+                return;
+            }
+            btn.disabled = false;
+            btn.title = '';
         }
 
         var _bankAccountsCache = null;
@@ -1015,6 +1068,7 @@
             if (!list) return;
             if (!accounts.length) {
                 list.innerHTML = '<div class="transfer-empty">No hay cuentas bancarias configuradas. Contacta con el negocio.</div>';
+                updateProcessButtonState();
                 return;
             }
             list.innerHTML = accounts.map(function(acc, i) {
@@ -1058,6 +1112,7 @@
                     '</div>' +
                 '</div>';
             }).join('');
+            updateProcessButtonState();
         }
 
         function escCheckout(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -1088,6 +1143,7 @@
             if (!wasOpen) {
                 row.classList.add('open', 'selected');
             }
+            updateProcessButtonState();
         }
 
         function showPayphoneInline() {
@@ -1384,6 +1440,95 @@
             $('#total').text(`$${total.toFixed(2)}`);
         }
 
+        // ── Credit payment mode ───────────────────────────────────
+        function _initCreditMode() {
+            document.querySelectorAll('.payment-method-card').forEach(function(c) { c.classList.remove('active'); });
+            document.getElementById('paymentMethod').value = '';
+            document.getElementById('payphone-inline-section').classList.add('d-none');
+            document.getElementById('transferInfoSection').classList.add('d-none');
+            document.getElementById('processBtn').classList.remove('d-none');
+            document.getElementById('cartExpiryBanner').classList.add('d-none');
+            _bankAccountsCache = null;
+
+            var titleEl = document.querySelector('.co-title h1');
+            if (titleEl) titleEl.textContent = 'Pagar Crédito';
+
+            var confirmBtn = document.getElementById('processBtn');
+            if (confirmBtn) confirmBtn.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Confirmar Pago';
+
+            var backBtn = document.querySelector('.back-btn');
+            if (backBtn) {
+                backBtn.textContent = '← Volver a Créditos';
+                backBtn.removeAttribute('href');
+                backBtn.onclick = function(e) {
+                    e.preventDefault();
+                    sessionStorage.removeItem('creditPayment');
+                    if (window.spaNavigate) window.spaNavigate('/customer/credits');
+                    else window.location.href = '/customer/credits';
+                };
+            }
+
+            displayCreditSummary();
+            updateCreditTotals();
+            loadPayphoneAssets();
+        }
+
+        function displayCreditSummary() {
+            if (!creditPaymentCtx) return;
+            var amount = parseFloat(creditPaymentCtx.amount).toFixed(2);
+            document.getElementById('orderSummary').innerHTML =
+                '<div style="padding:12px 0;border-bottom:1px dashed var(--border);margin-bottom:10px">' +
+                    '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Crédito a pagar</div>' +
+                    '<div style="font-size:14px;font-weight:800;color:var(--text)">' + escCheckout(creditPaymentCtx.productName || 'Crédito') + '</div>' +
+                    '<div style="font-size:10.5px;color:var(--text3);font-family:monospace;margin-top:2px">CR-' + String(creditPaymentCtx.creditId).padStart(4,'0') + '</div>' +
+                '</div>' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">' +
+                    '<span style="font-size:12.5px;font-weight:700;color:var(--text2)">Saldo a pagar</span>' +
+                    '<span style="font-size:16px;font-weight:900;color:var(--red)">$' + amount + '</span>' +
+                '</div>';
+        }
+
+        function updateCreditTotals() {
+            if (!creditPaymentCtx) return;
+            var amount = parseFloat(creditPaymentCtx.amount).toFixed(2);
+            $('#subtotal').text('$' + amount);
+            $('.tax-row').addClass('d-none');
+            $('#discountRow').addClass('d-none');
+            $('#total').text('$' + amount);
+        }
+
+        function processCreditPayment(paymentMethod) {
+            var creditId    = creditPaymentCtx.creditId;
+            var amount      = parseFloat(creditPaymentCtx.amount);
+            var paymentDate = new Date().toISOString().split('T')[0];
+            var btn         = document.getElementById('processBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Procesando...';
+
+            $.ajax({
+                url: '/api/customer/credits/' + creditId + '/payment',
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('customerToken'), 'Content-Type': 'application/json' },
+                data: JSON.stringify({ amount: amount, paymentMethod: paymentMethod, paymentDate: paymentDate }),
+                success: function() {
+                    sessionStorage.removeItem('creditPayment');
+                    showAlert('¡Pago registrado exitosamente!', 'success');
+                    setTimeout(function() {
+                        if (window.spaNavigate) window.spaNavigate('/customer/credits');
+                        else window.location.href = '/customer/credits';
+                    }, 1800);
+                },
+                error: function(xhr) {
+                    if (xhr.status === 401) { window.location.href = '/customer/login'; return; }
+                    var msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Error al registrar el pago';
+                    showAlert(msg, 'danger');
+                    btn.disabled = false;
+                    btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Confirmar Pago';
+                }
+            });
+        }
+        // ────────────────────────────────────────────────────────
+
         function processOrder() {
             const paymentMethod = $('#paymentMethod').val();
 
@@ -1411,6 +1556,20 @@
                 return;
             }
 
+            if (paymentMethod === 'TRANSFER') {
+                var selectedRow = document.querySelector('.bank-row.selected');
+                if (!selectedRow) {
+                    showAlert('Por favor seleccione la cuenta bancaria a la que realizará la transferencia', 'warning');
+                    return;
+                }
+                var rowId = selectedRow.id;
+                var idx = parseInt(rowId.replace('bankRow', ''), 10);
+                if (isNaN(idx) || !_bankAccountsCache || !_bankAccountsCache[idx]) {
+                    showAlert('Cuenta bancaria no válida. Recargue la página e intente de nuevo.', 'warning');
+                    return;
+                }
+            }
+
             $.ajax({
                 url: '/api/customer/cart/validate',
                 method: 'POST',
@@ -1435,6 +1594,17 @@
                         paymentMethod,
                         notes: $('#notes').val() || null
                     };
+                    if (paymentMethod === 'TRANSFER') {
+                        var selRow = document.querySelector('.bank-row.selected');
+                        if (selRow && _bankAccountsCache) {
+                            var i = parseInt(selRow.id.replace('bankRow', ''), 10);
+                            if (!isNaN(i) && _bankAccountsCache[i]) {
+                                var acc = _bankAccountsCache[i];
+                                orderData.transferAccountIndex = i;
+                                orderData.transferAccountInfo = (acc.bankName || '') + ' - ' + (acc.accountNumber || '');
+                            }
+                        }
+                    }
 
                     $.ajax({
                         url: '/api/customer/checkout',
@@ -1645,44 +1815,56 @@
                 };
             };
 
-            const socket = io({
-                auth: { token: token },
-                query: { saleId: saleId }
-            });
-            socket.on('sale-confirmed', onConfirmed);
-            socket.on('sale-voided', function(payload) {
-                if (payload && payload.saleId === parseInt(saleId, 10)) {
-                    if (waitingCashModalShown) {
-                        waitingCashModalShown = false;
-                        if (saleStatusPollInterval) clearInterval(saleStatusPollInterval);
-                        waitModal.hide();
-                        showAlert('Su pedido fue rechazado. Si tiene dudas, contacte al local.', 'warning');
-                    }
-                }
-            });
-            socket.on('connect_error', function() {
-                // Fallback: poll status
-                saleStatusPollInterval = setInterval(function() {
-                    $.ajax({
-                        url: '/api/customer/sales/' + saleId + '/status',
-                        method: 'GET',
-                        headers: { 'Authorization': 'Bearer ' + token },
-                        success: function(data) {
-                            if (data.status === 'COMPLETED') {
-                                onConfirmed();
-                            } else if (data.status === 'VOIDED') {
-                                if (waitingCashModalShown) {
-                                    waitingCashModalShown = false;
-                                    clearInterval(saleStatusPollInterval);
-                                    saleStatusPollInterval = null;
-                                    waitModal.hide();
-                                    showAlert('Su pedido fue rechazado. Si tiene dudas, contacte al local.', 'warning');
-                                }
-                            }
+            const onCancelled = function() {
+                if (!waitingCashModalShown) return;
+                waitingCashModalShown = false;
+                if (saleStatusPollInterval) { clearInterval(saleStatusPollInterval); saleStatusPollInterval = null; }
+                waitModal.hide();
+                localStorage.removeItem('customerCart');
+                localStorage.removeItem('cartExpiresAt');
+                cart = [];
+                const cancelledModal = new bootstrap.Modal(document.getElementById('orderCancelledModal'));
+                cancelledModal.show();
+                document.getElementById('orderCancelledCloseBtn').onclick = function() {
+                    cancelledModal.hide();
+                    if (window.spaNavigate) window.spaNavigate('/customer/catalog'); else window.location.href = '/customer/catalog';
+                };
+            };
+
+            // Poll de respaldo: siempre verificar estado cada 3s (por si el socket falla o no entrega)
+            function pollSaleStatus() {
+                $.ajax({
+                    url: '/api/customer/sales/' + saleId + '/status',
+                    method: 'GET',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    success: function(data) {
+                        if (data.status === 'COMPLETED') {
+                            if (saleStatusPollInterval) { clearInterval(saleStatusPollInterval); saleStatusPollInterval = null; }
+                            onConfirmed();
+                        } else if (data.status === 'VOIDED') {
+                            onCancelled();
                         }
-                    });
-                }, 3000);
-            });
+                    }
+                });
+            }
+            pollSaleStatus(); // primera verificación inmediata
+            saleStatusPollInterval = setInterval(pollSaleStatus, 3000);
+
+            if (typeof io !== 'undefined') {
+                const socket = io({
+                    auth: { token: token },
+                    query: { saleId: saleId }
+                });
+                socket.on('sale-confirmed', function() {
+                    if (saleStatusPollInterval) { clearInterval(saleStatusPollInterval); saleStatusPollInterval = null; }
+                    onConfirmed();
+                });
+                socket.on('sale-voided', function(payload) {
+                    if (payload && payload.saleId === parseInt(saleId, 10)) {
+                        onCancelled();
+                    }
+                });
+            }
 
             setTimeout(function() {
                 if (waitingCashModalShown) {
@@ -1696,7 +1878,7 @@
                 clearInterval(window._cartTimerInterval);
                 window._cartTimerInterval = null;
             }
-            var totalDuration = 30 * 60 * 1000; // 30 min
+            var totalDuration = 15 * 60 * 1000; // 15 min
             function tick() {
                 var currentCart = JSON.parse(localStorage.getItem('customerCart')) || [];
                 var banner = document.getElementById('cartExpiryBanner');
@@ -1750,6 +1932,15 @@
 
         // Reinicializar checkout al navegar por SPA
         window.initCheckoutView = function() {
+            // Credit payment mode — si vino desde "Pagar ahora", priorizar crédito (aunque tenga carrito)
+            creditPaymentCtx = JSON.parse(sessionStorage.getItem('creditPayment') || 'null');
+            if (creditPaymentCtx) {
+                isCreditMode = true;
+                _initCreditMode();
+                return;
+            }
+            isCreditMode = false;
+
             var expiresAt = parseInt(localStorage.getItem('cartExpiresAt'), 10);
             if (expiresAt && Date.now() >= expiresAt) {
                 localStorage.removeItem('customerCart');

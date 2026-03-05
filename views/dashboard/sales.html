@@ -1,0 +1,98 @@
+<div id="spa-view-content">
+  <div id="sales" class="content-section active">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="bi bi-cash-stack"></i> Historial de Ventas
+                </h2>
+            </div>
+            
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" id="salesStatusFilter">
+                                <option value="">Todos</option>
+                                <option value="COMPLETED">Completadas</option>
+                                <option value="PENDING">Pendientes</option>
+                                <option value="VOIDED">Anuladas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Método de pago</label>
+                            <select class="form-select" id="salesPaymentMethodFilter">
+                                <option value="">Todos</option>
+                                <option value="CASH">Efectivo</option>
+                                <option value="CARD">Tarjeta</option>
+                                <option value="TRANSFER">Transferencia</option>
+                                <option value="CREDIT">Crédito</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Fecha Desde</label>
+                            <input type="date" class="form-control" id="salesStartDateFilter">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Fecha Hasta</label>
+                            <input type="date" class="form-control" id="salesEndDateFilter">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Cuenta (transferencia)</label>
+                            <select class="form-select" id="salesTransferAccountFilter">
+                                <option value="">Todas</option>
+                                <!-- Opciones cargadas por loadSalesTransferAccountFilter() -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales Table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="salesTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th>Subtotal</th>
+                                    <th>IVA</th>
+                                    <th>Total</th>
+                                    <th>Método Pago</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="9" class="text-center text-muted">
+                                        Cargando ventas...
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tfoot id="salesTableFoot" class="table-light d-none">
+                                <tr class="fw-bold">
+                                    <td colspan="3" class="text-end">Total filtrado:</td>
+                                    <td id="salesSumSubtotal">$0.00</td>
+                                    <td id="salesSumTax">$0.00</td>
+                                    <td id="salesSumTotal">$0.00</td>
+                                    <td colspan="3"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+  <script>
+    if (typeof window.resetSalesTransferAccountFilter === 'function') window.resetSalesTransferAccountFilter();
+    if (typeof loadSales === 'function') loadSales();
+    window.initSalesView = function() {
+      if (typeof window.resetSalesTransferAccountFilter === 'function') window.resetSalesTransferAccountFilter();
+      if (typeof loadSales === 'function') loadSales();
+    };
+  </script>
+</div>

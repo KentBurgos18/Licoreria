@@ -2,6 +2,7 @@ const express = require('express');
 const { Supplier, SupplierPrice, PurchaseOrder, Product } = require('../models');
 const { Op } = require('sequelize');
 const { requireRole } = require('./adminAuth');
+const AuditService = require('../services/AuditService');
 
 const router = express.Router();
 
@@ -134,6 +135,13 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
       isActive
     });
 
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'CREATE', entity: 'supplier', entityId: supplier.id,
+      description: `Creó proveedor "${name}"`,
+      metadata: { created: { name, ruc: ruc || null, creditDays: parseInt(creditDays) || 0 } }
+    });
+
     res.status(201).json(supplier);
   } catch (error) {
     console.error('Error creating supplier:', error);
@@ -178,6 +186,7 @@ router.put('/:id', requireRole('ADMIN'), async (req, res) => {
       });
     }
 
+    const beforeSnap = { name: supplier.name, ruc: supplier.ruc, creditDays: supplier.creditDays, isActive: supplier.isActive };
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (ruc !== undefined) {
@@ -193,6 +202,15 @@ router.put('/:id', requireRole('ADMIN'), async (req, res) => {
     if (isActive !== undefined) updates.isActive = isActive;
 
     await supplier.update(updates);
+
+    const afterSnap = { name: supplier.name, ruc: supplier.ruc, creditDays: supplier.creditDays, isActive: supplier.isActive };
+    const diff = AuditService.diffObjects(beforeSnap, afterSnap);
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'UPDATE', entity: 'supplier', entityId: id,
+      description: `Editó proveedor "${supplier.name}"`,
+      metadata: diff
+    });
 
     res.json(supplier);
   } catch (error) {
@@ -227,7 +245,15 @@ router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
       });
     }
 
+    const supplierName = supplier.name;
     await supplier.update({ isActive: false });
+
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'DELETE', entity: 'supplier', entityId: id,
+      description: `Desactivó proveedor "${supplierName}"`,
+      metadata: { deleted: { name: supplierName, ruc: supplier.ruc } }
+    });
 
     res.json({ message: 'Supplier deactivated successfully' });
   } catch (error) {

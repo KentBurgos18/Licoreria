@@ -4,6 +4,7 @@ const { sequelize } = require('../models');
 const { Op } = require('sequelize');
 const { resolveMovement } = require('../services/InventoryPoolHelper');
 const EmailService = require('../services/EmailService');
+const AuditService = require('../services/AuditService');
 
 const router = express.Router();
 
@@ -160,6 +161,13 @@ router.post('/', async (req, res) => {
     // Reload with supplier
     const fullOrder = await PurchaseOrder.findByPk(purchaseOrder.id, {
       include: [{ association: 'supplier' }]
+    });
+
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'CREATE', entity: 'purchase', entityId: purchaseOrder.id,
+      description: `Registró compra #${purchaseOrder.id} — $${totalAmount.toFixed(2)}${supplier ? ` de "${supplier.name}"` : ''}`,
+      metadata: { totalAmount, supplierId: supplierId || null, itemsCount: items.length, creditDays, status }
     });
 
     res.status(201).json({

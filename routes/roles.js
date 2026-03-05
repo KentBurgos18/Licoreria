@@ -6,6 +6,7 @@ const RoleModel = require('../models/Role');
 const Role = RoleModel(sequelize);
 
 const { requireRole } = require('./adminAuth');
+const AuditService = require('../services/AuditService');
 
 const SECTIONS = [
   'dashboard','products','suppliers','purchases','sell',
@@ -52,6 +53,14 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
       return res.status(400).json({ error: 'Permisos inválidos' });
 
     const role = await Role.create({ tenantId, name: name.trim(), permissions });
+
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'CREATE', entity: 'role', entityId: role.id,
+      description: `Creó rol "${role.name}"`,
+      metadata: { created: { name: role.name, permissions } }
+    });
+
     res.status(201).json({ role });
   } catch (err) {
     if (err.name === 'SequelizeUniqueConstraintError')
@@ -74,9 +83,20 @@ router.put('/:id', requireRole('ADMIN'), async (req, res) => {
     if (permissions !== undefined && !validatePermissions(permissions))
       return res.status(400).json({ error: 'Permisos inválidos' });
 
+    const beforeSnap = { name: role.name, permissions: role.permissions };
     if (name)        role.name        = name.trim();
     if (permissions) role.permissions = permissions;
     await role.save();
+
+    const afterSnap = { name: role.name, permissions: role.permissions };
+    const diff = AuditService.diffObjects(beforeSnap, afterSnap);
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'UPDATE', entity: 'role', entityId: role.id,
+      description: `Editó rol "${role.name}"`,
+      metadata: diff
+    });
+
     res.json({ role });
   } catch (err) {
     if (err.name === 'SequelizeUniqueConstraintError')
@@ -100,7 +120,16 @@ router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
     if (count > 0)
       return res.status(409).json({ error: `No se puede eliminar: ${count} usuario(s) tienen este rol` });
 
+    const snap = { name: role.name, permissions: role.permissions };
     await role.destroy();
+
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'DELETE', entity: 'role', entityId: req.params.id,
+      description: `Eliminó rol "${snap.name}"`,
+      metadata: { deleted: snap }
+    });
+
     res.json({ ok: true });
   } catch (err) {
     console.error('DELETE /api/roles/:id:', err);

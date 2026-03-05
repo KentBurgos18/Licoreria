@@ -1,0 +1,81 @@
+<div id="spa-view-content">
+  <div id="purchases" class="content-section active">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="bi bi-cart-plus"></i> Historial de Compras
+                </h2>
+                <button class="btn btn-success" onclick="showCreatePurchaseModal()">
+                    <i class="bi bi-plus"></i> Nueva Compra
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-3">
+                <div class="card-body py-2">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label form-label-sm mb-1">Proveedor</label>
+                            <select class="form-select form-select-sm" id="purchaseFilterSupplier">
+                                <option value="">Todos los proveedores</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label form-label-sm mb-1">Estado</label>
+                            <select class="form-select form-select-sm" id="purchaseFilterStatus">
+                                <option value="">Todos</option>
+                                <option value="PAID">Pagado</option>
+                                <option value="PENDING">Pendiente</option>
+                                <option value="PARTIAL">Parcial</option>
+                                <option value="OVERDUE">Vencido</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label form-label-sm mb-1">Desde</label>
+                            <input type="date" class="form-control form-control-sm" id="purchaseFilterFrom">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label form-label-sm mb-1">Hasta</label>
+                            <input type="date" class="form-control form-control-sm" id="purchaseFilterTo">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary btn-sm w-100" onclick="loadPurchases()">
+                                <i class="bi bi-funnel"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Purchases Table -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="purchasesTable">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Código Prov.</th>
+                                    <th>Proveedor</th>
+                                    <th>N° Factura</th>
+                                    <th>Ítems</th>
+                                    <th>Total</th>
+                                    <th>Días Créd.</th>
+                                    <th>Vence</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="9" class="text-center text-muted">Cargando compras...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+  <script>
+    if (typeof loadPurchases === 'function') loadPurchases();
+    window.initPurchasesView = function() { if (typeof loadPurchases === 'function') loadPurchases(); };
+  </script>
+</div>

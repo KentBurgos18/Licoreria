@@ -213,13 +213,14 @@
     </div>
 
     <script src="/libs/js/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="/libs/js/bootstrap.bundle.min.js"></script>
     <script>
         function logout() {
             localStorage.removeItem('customerToken');
             localStorage.removeItem('customer');
             localStorage.removeItem('customerCart');
-            window.location.href = '/customer/login';
+            window.location.href = '/login';
         }
 
         var customer = JSON.parse(localStorage.getItem('customer')) || null;
@@ -269,6 +270,46 @@
         }, 60 * 60 * 1000);
     </script>
     <script src="/js/customer-spa-router.js"></script>
+
+    <!-- ── Lightbox de imagen de producto ── -->
+    <style>
+        .img-lightbox {
+            display: none; position: fixed; inset: 0; z-index: 1200;
+            background: rgba(0,0,0,.88); align-items: center; justify-content: center;
+            cursor: zoom-out;
+        }
+        .img-lightbox.open { display: flex; }
+        .img-lightbox img {
+            max-width: 92vw; max-height: 88vh;
+            border-radius: 10px; object-fit: contain;
+            box-shadow: 0 8px 40px rgba(0,0,0,.6); cursor: default;
+        }
+        .img-lightbox-close {
+            position: absolute; top: 16px; right: 18px;
+            color: #fff; font-size: 2rem; line-height: 1;
+            cursor: pointer; opacity: .8;
+        }
+    </style>
+    <div class="img-lightbox" id="imgLightbox" onclick="closeImgLightbox()">
+        <span class="img-lightbox-close" onclick="closeImgLightbox()">&times;</span>
+        <img id="imgLightboxSrc" src="" alt="" onclick="event.stopPropagation()">
+    </div>
+    <script>
+        function closeImgLightbox() {
+            document.getElementById('imgLightbox').classList.remove('open');
+        }
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeImgLightbox();
+        });
+        document.addEventListener('click', function(e) {
+            var img = e.target.closest('img.lb-zoomable');
+            if (!img) return;
+            e.stopPropagation();
+            document.getElementById('imgLightboxSrc').src = img.dataset.src || img.src;
+            document.getElementById('imgLightboxSrc').alt = img.dataset.alt || img.alt || '';
+            document.getElementById('imgLightbox').classList.add('open');
+        }, true);
+    </script>
 
     <!-- PWA Install Prompt -->
     <div id="pwaPrompt" style="

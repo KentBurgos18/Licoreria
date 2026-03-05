@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOCOBAR – Diseño 1: Slate & Violet</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+/* ═══════════════════════════════════════
+   PALETA: SLATE & VIOLET
+   Dark:  #0f1117 base / #7c3aed accent
+   Light: #f8f9fc base / #7c3aed accent
+═══════════════════════════════════════ */
+
+[data-theme="dark"] {
+  --bg:        #0f1117;
+  --bg2:       #13161e;
+  --surf:      #181c27;
+  --surf2:     #1e2333;
+  --surf3:     #252c3f;
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(124,58,237,0.35);
+  --text:      #eef0f8;
+  --text2:     #7b88a8;
+  --text3:     #404d6a;
+  --accent:    #7c3aed;
+  --accent2:   #a78bfa;
+  --accentbg:  rgba(124,58,237,0.12);
+  --green:     #22c55e;
+  --greenbg:   rgba(34,197,94,0.1);
+  --red:       #f43f5e;
+  --redbg:     rgba(244,63,94,0.1);
+  --blue:      #3b82f6;
+  --shadow:    0 4px 24px rgba(0,0,0,0.5);
+}
+
+[data-theme="light"] {
+  --bg:        #f0f2f9;
+  --bg2:       #e8ecf5;
+  --surf:      #ffffff;
+  --surf2:     #f4f6fd;
+  --surf3:     #eaedfa;
+  --border:    rgba(0,0,0,0.07);
+  --border2:   rgba(124,58,237,0.3);
+  --text:      #0d1021;
+  --text2:     #5a6480;
+  --text3:     #9ba5be;
+  --accent:    #7c3aed;
+  --accent2:   #6d28d9;
+  --accentbg:  rgba(124,58,237,0.08);
+  --green:     #16a34a;
+  --greenbg:   rgba(22,163,74,0.08);
+  --red:       #dc2626;
+  --redbg:     rgba(220,38,38,0.08);
+  --blue:      #2563eb;
+  --shadow:    0 2px 16px rgba(99,102,241,0.1);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  min-height:100vh;
+  transition:background .35s,color .35s;
+  font-size:14px;
+}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:240px;
+  background:var(--surf);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  position:fixed;
+  inset:0 auto 0 0;
+  z-index:100;
+  transition:background .35s,border-color .35s;
+}
+
+.logo-area{
+  padding:22px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.logo{display:flex;align-items:center;gap:10px;}
+
+.logo-icon{
+  width:34px;height:34px;
+  background:var(--accent);
+  border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;
+  box-shadow:0 4px 12px rgba(124,58,237,0.4);
+}
+
+.logo-name{
+  font-size:15px;font-weight:700;
+  letter-spacing:0.06em;
+  color:var(--text);
+}
+
+/* toggle */
+.tog{
+  width:36px;height:20px;
+  background:var(--surf3);
+  border:1px solid var(--border);
+  border-radius:20px;
+  cursor:pointer;
+  position:relative;
+  transition:all .3s;
+  flex-shrink:0;
+}
+.tog::after{
+  content:'';
+  position:absolute;
+  top:2px;left:2px;
+  width:14px;height:14px;
+  border-radius:50%;
+  background:var(--accent);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 1px 4px rgba(0,0,0,0.3);
+}
+[data-theme="light"] .tog::after{transform:translateX(16px);}
+
+nav{padding:14px 12px;flex:1;overflow-y:auto;}
+
+.nlabel{
+  font-size:9px;font-weight:700;
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--text3);
+  padding:0 8px;
+  margin:18px 0 5px;
+  display:flex;align-items:center;gap:8px;
+}
+.nlabel::after{content:'';flex:1;height:1px;background:var(--border);}
+.nlabel:first-child{margin-top:0;}
+
+.ni{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;
+  border-radius:8px;
+  font-size:13px;font-weight:500;
+  color:var(--text2);
+  text-decoration:none;
+  margin-bottom:1px;
+  transition:all .15s;
+  position:relative;
+  border-left:2px solid transparent;
+}
+.ni svg{flex-shrink:0;opacity:.7;transition:opacity .15s;}
+.ni:hover{background:var(--surf2);color:var(--text);}
+.ni:hover svg{opacity:1;}
+.ni.active{
+  background:var(--accentbg);
+  color:var(--accent);
+  font-weight:600;
+  border-left-color:var(--accent);
+}
+.ni.active svg{opacity:1;color:var(--accent);}
+
+.sfooter{
+  padding:12px;
+  border-top:1px solid var(--border);
+}
+
+.ublock{
+  display:flex;align-items:center;gap:9px;
+  padding:9px 10px;
+  background:var(--surf2);
+  border:1px solid var(--border);
+  border-radius:9px;
+  margin-bottom:6px;
+}
+.uavatar{
+  width:30px;height:30px;
+  border-radius:8px;
+  background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:#fff;
+  flex-shrink:0;
+}
+.uname{font-size:12.5px;font-weight:600;color:var(--text);}
+.urole{font-size:10.5px;color:var(--text3);display:flex;align-items:center;gap:4px;}
+.udot{width:5px;height:5px;border-radius:50%;background:var(--green);}
+
+.lbtn{
+  width:100%;display:flex;align-items:center;gap:9px;
+  padding:8px 10px;border-radius:8px;
+  font-size:12.5px;font-weight:500;font-family:'Inter',sans-serif;
+  color:var(--text3);background:transparent;border:none;cursor:pointer;
+  transition:all .15s;
+}
+.lbtn:hover{background:var(--redbg);color:var(--red);}
+
+/* ── MAIN ── */
+.main{margin-left:240px;flex:1;display:flex;flex-direction:column;}
+
+.topbar{
+  height:56px;
+  background:var(--surf);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;
+  position:sticky;top:0;z-index:50;
+  transition:background .35s,border-color .35s;
+}
+
+.bc{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text2);}
+.bc strong{color:var(--text);font-weight:600;}
+.bc .sep{color:var(--text3);}
+
+.tright{display:flex;align-items:center;gap:8px;}
+
+.tibtn{
+  width:32px;height:32px;
+  background:var(--surf2);border:1px solid var(--border);
+  border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text2);
+  transition:all .15s;position:relative;
+}
+.tibtn:hover{border-color:var(--accent);color:var(--accent);}
+.ndot{
+  position:absolute;top:6px;right:6px;
+  width:6px;height:6px;
+  background:var(--red);border-radius:50%;
+  border:1.5px solid var(--surf);
+}
+
+.dchip{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;color:var(--text3);
+  background:var(--surf2);border:1px solid var(--border);
+  padding:4px 10px;border-radius:6px;
+}
+
+/* ── CONTENT ── */
+.content{padding:26px 28px;flex:1;}
+
+.phead{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  margin-bottom:22px;
+}
+.ptitle{
+  font-size:22px;font-weight:700;
+  color:var(--text);letter-spacing:-0.02em;
+}
+.ptitle span{color:var(--accent);}
+
+.hbtns{display:flex;gap:8px;}
+
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 15px;border-radius:7px;
+  font-size:12.5px;font-weight:600;font-family:'Inter',sans-serif;
+  cursor:pointer;border:none;transition:all .18s;
+}
+.btn-ghost{
+  background:var(--surf2);color:var(--text2);
+  border:1px solid var(--border);
+}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-accent{
+  background:var(--accent);color:#fff;
+  box-shadow:0 4px 14px rgba(124,58,237,0.35);
+}
+.btn-accent:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(124,58,237,0.45);}
+
+/* ── STATS ── */
+.sgrid{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:12px;margin-bottom:20px;
+}
+
+.scard{
+  background:var(--surf);border:1px solid var(--border);
+  border-radius:12px;padding:18px;
+  position:relative;overflow:hidden;
+  transition:background .35s,border-color .35s,transform .2s;
+  cursor:default;
+}
+.scard:hover{transform:translateY(-2px);box-shadow:var(--shadow);}
+
+.scard-top{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;
+}
+
+.sico{
+  width:36px;height:36px;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+}
+.sico.v{background:var(--accentbg);color:var(--accent);}
+.sico.g{background:var(--greenbg);color:var(--green);}
+.sico.r{background:var(--redbg);color:var(--red);}
+.sico.b{background:rgba(59,130,246,.1);color:var(--blue);}
+
+.schg{
+  font-size:11px;font-weight:600;
+  padding:2px 7px;border-radius:5px;
+}
+.up{background:var(--greenbg);color:var(--green);}
+.flat{background:var(--surf3);color:var(--text3);}
+
+.sval{
+  font-size:30px;font-weight:700;
+  color:var(--text);letter-spacing:-0.03em;
+  line-height:1;margin-bottom:4px;
+}
+.slbl{font-size:11.5px;color:var(--text2);}
+
+/* accent stripe */
+.sstripe{
+  position:absolute;bottom:0;left:0;right:0;
+  height:2px;
+}
+.sv .sstripe{background:linear-gradient(90deg,var(--accent),var(--accent2));}
+.sg .sstripe{background:linear-gradient(90deg,#22c55e,#86efac);}
+.sr .sstripe{background:linear-gradient(90deg,var(--red),#fb7185);}
+.sb .sstripe{background:linear-gradient(90deg,var(--blue),#93c5fd);}
+
+/* ── GRID ── */
+.mgrid{display:grid;grid-template-columns:1fr 320px;gap:16px;}
+
+.card{
+  background:var(--surf);border:1px solid var(--border);
+  border-radius:12px;overflow:hidden;
+  transition:background .35s,border-color .35s;
+}
+
+.chead{
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.chead-l{display:flex;align-items:center;gap:10px;}
+.cico{
+  width:30px;height:30px;border-radius:8px;
+  background:var(--accentbg);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+}
+.ctitle{font-size:13.5px;font-weight:700;color:var(--text);}
+.csub{font-size:11px;color:var(--text3);margin-top:1px;}
+
+.clink{
+  font-size:11.5px;color:var(--accent);
+  font-weight:600;background:none;border:none;
+  font-family:'Inter',sans-serif;cursor:pointer;
+  opacity:.8;transition:opacity .15s;
+}
+.clink:hover{opacity:1;}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;}
+thead th{
+  font-size:10px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--text3);padding:9px 20px;text-align:left;
+  background:var(--surf2);
+  transition:background .35s;
+}
+tbody tr{transition:background .12s;}
+tbody tr:hover{background:var(--surf2);}
+tbody td{
+  padding:11px 20px;font-size:12.5px;
+  color:var(--text);border-bottom:1px solid var(--border);
+}
+tbody tr:last-child td{border-bottom:none;}
+
+.idm{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11.5px;color:var(--text3);
+}
+.amt{
+  font-family:'JetBrains Mono',monospace;
+  font-size:13px;font-weight:600;color:var(--text);
+}
+.mp{
+  font-size:10.5px;font-weight:600;
+  padding:2px 8px;border-radius:5px;
+  font-family:'JetBrains Mono',monospace;
+  display:inline-block;
+}
+.mpc{background:var(--accentbg);color:var(--accent);}
+.mpt{background:rgba(139,92,246,.1);color:#8b5cf6;}
+.mpe{background:var(--greenbg);color:var(--green);}
+.mpf{background:rgba(59,130,246,.1);color:var(--blue);}
+
+.sp{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:600;
+  padding:3px 9px;border-radius:20px;
+  background:var(--greenbg);color:var(--green);
+}
+.sp::before{
+  content:'';width:5px;height:5px;border-radius:50%;
+  background:var(--green);
+}
+
+/* ── RIGHT ── */
+.rcol{display:flex;flex-direction:column;gap:14px;}
+
+.alrt{
+  display:flex;gap:11px;
+  padding:13px 14px;border-radius:9px;
+  background:rgba(245,158,11,.06);
+  border:1px solid rgba(245,158,11,.2);
+  transition:border-color .18s;cursor:default;
+}
+.alrt:hover{border-color:rgba(245,158,11,.38);}
+.aico{
+  width:32px;height:32px;border-radius:8px;flex-shrink:0;
+  background:rgba(245,158,11,.1);color:#f59e0b;
+  display:flex;align-items:center;justify-content:center;
+}
+.aname{font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.35;}
+.atags{display:flex;gap:5px;}
+.at{
+  font-size:10.5px;font-family:'JetBrains Mono',monospace;
+  padding:2px 7px;border-radius:4px;
+}
+.at-d{background:var(--redbg);color:var(--red);}
+.at-n{background:var(--surf3);color:var(--text2);}
+
+.qagrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.qa{
+  background:var(--surf2);border:1px solid var(--border);
+  border-radius:9px;padding:12px;cursor:pointer;
+  display:flex;flex-direction:column;gap:7px;
+  transition:all .15s;
+}
+.qa:hover{border-color:var(--accent);background:var(--accentbg);}
+.qaico{
+  width:28px;height:28px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+}
+.qlbl{font-size:11.5px;font-weight:600;color:var(--text2);}
+
+/* ── ANIM ── */
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.scard{animation:up .4s ease both;}
+.scard:nth-child(1){animation-delay:.05s}
+.scard:nth-child(2){animation-delay:.11s}
+.scard:nth-child(3){animation-delay:.17s}
+.scard:nth-child(4){animation-delay:.23s}
+.card,.rcol>*{animation:up .4s .28s ease both;}
+
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo-area">
+    <div class="logo">
+      <div class="logo-icon">🍸</div>
+      <span class="logo-name">LOCOBAR</span>
+    </div>
+    <div class="tog" id="tog1" title="Cambiar tema"></div>
+  </div>
+
+  <nav>
+    <div class="nlabel">Principal</div>
+    <a class="ni active" href="#">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+    </a>
+    <a class="ni" href="#">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 3H8L6 7h12l-2-4z"/><circle cx="12" cy="14" r="2"/></svg>
+      Productos
+    </a>
+    <a class="ni" href="#">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Proveedores
+    </a>
+    <a class="ni" href="#">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      Compras
+    </a>
+    <div class="nlabel">Ventas</div>
+    <a class="ni" href="#">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      Vender
+    </a>
+    <a class="ni" href="#">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+      Ventas
+    </a>
+    <a class="ni" href="#">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Compras Grupales
+    </a>
+    <div class="nlabel">Gestión</div>
+    <a class="ni" href="#">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Créditos
+    </a>
+    <a class="ni" href="#">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Clientes
+    </a>
+    <a class="ni" href="#">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/><path d="M19 11a3 3 0 0 1 0 6"/><path d="M5 11a3 3 0 0 0 0 6"/></svg>
+      Usuarios
+    </a>
+    <a class="ni" href="#">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Configuración
+    </a>
+  </nav>
+
+  <div class="sfooter">
+    <div class="ublock">
+      <div class="uavatar">A</div>
+      <div>
+        <div class="uname">Administrador</div>
+        <div class="urole"><span class="udot"></span> En línea</div>
+      </div>
+    </div>
+    <button class="lbtn">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Cerrar Sesión
+    </button>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="bc">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Panel <span class="sep">/</span> <strong>Dashboard</strong>
+    </div>
+    <div class="tright">
+      <div class="dchip">Mié 25 Feb 2026</div>
+      <div class="tibtn">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="ndot"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="phead">
+      <div class="ptitle">Dashboard <span>·</span> General</div>
+      <div class="hbtns">
+        <button class="btn btn-ghost">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar
+        </button>
+        <button class="btn btn-accent">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nueva Venta
+        </button>
+      </div>
+    </div>
+
+    <div class="sgrid">
+      <div class="scard sv">
+        <div class="scard-top">
+          <div class="sico v"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 3H8L6 7h12l-2-4z"/><circle cx="12" cy="14" r="2"/></svg></div>
+          <span class="schg flat">sin cambio</span>
+        </div>
+        <div class="sval">10</div>
+        <div class="slbl">Productos Totales</div>
+        <div class="sstripe"></div>
+      </div>
+      <div class="scard sg">
+        <div class="scard-top">
+          <div class="sico g"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 1 0 0-4h-.5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2H19a2 2 0 0 0 2-2V8m-14 0V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/></svg></div>
+          <span class="schg up">↑ +5%</span>
+        </div>
+        <div class="sval">730</div>
+        <div class="slbl">Stock Disponible</div>
+        <div class="sstripe"></div>
+      </div>
+      <div class="scard sr">
+        <div class="scard-top">
+          <div class="sico r"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></div>
+          <span class="schg up">↑ +12%</span>
+        </div>
+        <div class="sval">$383</div>
+        <div class="slbl">Ventas del Mes</div>
+        <div class="sstripe"></div>
+      </div>
+      <div class="scard sb">
+        <div class="scard-top">
+          <div class="sico b"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+          <span class="schg flat">activo</span>
+        </div>
+        <div class="sval">1</div>
+        <div class="slbl">Combos Activos</div>
+        <div class="sstripe"></div>
+      </div>
+    </div>
+
+    <div class="mgrid">
+      <div class="card">
+        <div class="chead">
+          <div class="chead-l">
+            <div class="cico"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></div>
+            <div>
+              <div class="ctitle">Ventas Recientes</div>
+              <div class="csub">9 transacciones este período</div>
+            </div>
+          </div>
+          <button class="clink">Ver todas →</button>
+        </div>
+        <table>
+          <thead><tr><th>ID</th><th>Fecha</th><th>Total</th><th>Método</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td class="idm">#36</td><td>23/02/2026, 21:27</td><td class="amt">$6.00</td><td><span class="mp mpc">CREDIT</span></td><td><span class="sp">Completada</span></td></tr>
+            <tr><td class="idm">#35</td><td>23/02/2026, 20:39</td><td class="amt">$6.00</td><td><span class="mp mpc">CREDIT</span></td><td><span class="sp">Completada</span></td></tr>
+            <tr><td class="idm">#34</td><td>23/02/2026, 20:37</td><td class="amt">$6.00</td><td><span class="mp mpc">CREDIT</span></td><td><span class="sp">Completada</span></td></tr>
+            <tr><td class="idm">#32</td><td>23/02/2026, 19:15</td><td class="amt">$18.00</td><td><span class="mp mpt">Tarjeta</span></td><td><span class="sp">Completada</span></td></tr>
+            <tr><td class="idm">#31</td><td>22/02/2026, 04:19</td><td class="amt">$6.00</td><td><span class="mp mpe">Efectivo</span></td><td><span class="sp">Completada</span></td></tr>
+            <tr><td class="idm">#29</td><td>19/02/2026, 23:33</td><td class="amt">$15.96</td><td><span class="mp mpe">Efectivo</span></td><td><span class="sp">Completada</span></td></tr>
+            <tr><td class="idm">#28</td><td>19/02/2026, 00:09</td><td class="amt">$12.99</td><td><span class="mp mpf">Transferencia</span></td><td><span class="sp">Completada</span></td></tr>
+            <tr><td class="idm">#27</td><td>19/02/2026, 00:08</td><td class="amt">$12.99</td><td><span class="mp mpf">Transferencia</span></td><td><span class="sp">Completada</span></td></tr>
+            <tr><td class="idm">#26</td><td>19/02/2026, 00:06</td><td class="amt">$15.00</td><td><span class="mp mpf">Transferencia</span></td><td><span class="sp">Completada</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="rcol">
+        <div class="card">
+          <div class="chead">
+            <div class="chead-l">
+              <div class="cico" style="background:rgba(245,158,11,.1);color:#f59e0b;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div>
+                <div class="ctitle">Stock Bajo</div>
+                <div class="csub">Requiere reposición</div>
+              </div>
+            </div>
+            <span style="font-size:10px;background:var(--redbg);color:var(--red);padding:2px 8px;border-radius:20px;font-weight:700;">1 alerta</span>
+          </div>
+          <div style="padding:12px;">
+            <div class="alrt">
+              <div class="aico"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 3H8L6 7h12l-2-4z"/><circle cx="12" cy="14" r="2"/></svg></div>
+              <div>
+                <div class="aname">Prueba Tomate, limon 25 kigl ksdsksmk kdssksd sjsufe</div>
+                <div class="atags">
+                  <span class="at at-d">Stock: 3</span>
+                  <span class="at at-n">Mín: 12</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="chead">
+            <div class="chead-l">
+              <div class="cico"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+              <div class="ctitle">Acciones Rápidas</div>
+            </div>
+          </div>
+          <div style="padding:12px;">
+            <div class="qagrid">
+              <div class="qa">
+                <div class="qaico" style="background:var(--accentbg);color:var(--accent);"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>
+                <div class="qlbl">Nueva Venta</div>
+              </div>
+              <div class="qa">
+                <div class="qaico" style="background:var(--greenbg);color:var(--green);"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+                <div class="qlbl">Agregar Producto</div>
+              </div>
+              <div class="qa">
+                <div class="qaico" style="background:rgba(59,130,246,.1);color:var(--blue);"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                <div class="qlbl">Nuevo Cliente</div>
+              </div>
+              <div class="qa">
+                <div class="qaico" style="background:rgba(245,158,11,.1);color:#f59e0b;"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+                <div class="qlbl">Exportar</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+document.getElementById('tog1').addEventListener('click',()=>{
+  const h=document.documentElement;
+  h.setAttribute('data-theme',h.getAttribute('data-theme')==='dark'?'light':'dark');
+});
+</script>
+</body>
+</html>

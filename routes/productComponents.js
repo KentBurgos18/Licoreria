@@ -90,11 +90,11 @@ router.post('/:id/components', requireRole('ADMIN'), async (req, res) => {
   }
 });
 
-// GET /products/:id/components - Get combo components
+// GET /products/:id/components - Get combo components (con stock y disponibilidad del combo)
 router.get('/:id/components', async (req, res) => {
   try {
     const { id } = req.params;
-    const { tenantId } = req.query;
+    const tenantId = parseInt(req.query.tenantId, 10) || 1;
 
     // Validate that the product exists and is a COMBO
     const product = await Product.findOne({
@@ -108,16 +108,21 @@ router.get('/:id/components', async (req, res) => {
       });
     }
 
-    const components = await ProductComponent.findByCombo(id, {
-      include: [{
-        association: 'component'
-      }]
-    });
+    const availability = await ComboService.getComboAvailability(tenantId, parseInt(id, 10));
 
     res.json({
       comboId: id,
       comboName: product.name,
-      components
+      availableStock: availability.availableStock,
+      components: availability.components.map(c => ({
+        componentProductId: c.componentId,
+        componentName: c.componentName,
+        componentSku: c.componentSku,
+        qty: c.requiredQty,
+        currentStock: c.currentStock,
+        maxCombosFromComponent: c.maxCombosFromComponent,
+        isLimiting: c.isLimiting
+      }))
     });
   } catch (error) {
     console.error('Error getting combo components:', error);

@@ -1,0 +1,97 @@
+<div id="spa-view-content">
+  <div id="audit" class="content-section active">
+            <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+                <h2 class="mb-0">
+                    <svg style="width:1.2em;height:1.2em;vertical-align:-0.2em;margin-right:8px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>Auditoría
+                </h2>
+                <button class="btn btn-sm btn-outline-secondary" onclick="exportAuditCSV()">
+                    <svg style="width:1em;height:1em;vertical-align:-0.1em;margin-right:4px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar CSV
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-3" style="background:var(--th-card);border:1px solid var(--th-border)">
+                <div class="card-body py-3">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-sm-6 col-md-3">
+                            <label class="form-label small mb-1">Usuario</label>
+                            <select id="auditFilterUser" class="form-select form-select-sm" onchange="loadAuditLogs(1)">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-6 col-md-2">
+                            <label class="form-label small mb-1">Módulo</label>
+                            <select id="auditFilterEntity" class="form-select form-select-sm" onchange="loadAuditLogs(1)">
+                                <option value="">Todos</option>
+                                <option value="product">Productos</option>
+                                <option value="product_stock">Stock</option>
+                                <option value="sale">Ventas</option>
+                                <option value="purchase">Compras</option>
+                                <option value="expense">Gastos</option>
+                                <option value="customer">Clientes</option>
+                                <option value="supplier">Proveedores</option>
+                                <option value="user">Usuarios</option>
+                                <option value="role">Roles</option>
+                                <option value="payment">Pagos</option>
+                                <option value="login">Login</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-6 col-md-2">
+                            <label class="form-label small mb-1">Acción</label>
+                            <select id="auditFilterAction" class="form-select form-select-sm" onchange="loadAuditLogs(1)">
+                                <option value="">Todas</option>
+                                <option value="CREATE">Creó</option>
+                                <option value="UPDATE">Editó</option>
+                                <option value="DELETE">Eliminó</option>
+                                <option value="LOGIN">Login</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-6 col-md-2">
+                            <label class="form-label small mb-1">Desde</label>
+                            <input type="date" id="auditFilterFrom" class="form-control form-control-sm" onchange="loadAuditLogs(1)">
+                        </div>
+                        <div class="col-sm-6 col-md-2">
+                            <label class="form-label small mb-1">Hasta</label>
+                            <input type="date" id="auditFilterTo" class="form-control form-control-sm" onchange="loadAuditLogs(1)">
+                        </div>
+                        <div class="col-sm-6 col-md-1">
+                            <button class="btn btn-sm btn-outline-secondary w-100" onclick="clearAuditFilters()">Limpiar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="card" style="background:var(--th-card);border:1px solid var(--th-border)">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0" id="auditTable">
+                            <thead>
+                                <tr style="border-bottom:1px solid var(--th-border)">
+                                    <th style="width:140px">Fecha/Hora</th>
+                                    <th>Usuario</th>
+                                    <th style="width:90px">Acción</th>
+                                    <th style="width:110px">Módulo</th>
+                                    <th>Descripción</th>
+                                    <th style="width:40px"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditTableBody">
+                                <tr><td colspan="6" class="text-center py-4 text-muted">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div id="auditPagination" class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                <span id="auditPaginationInfo" class="text-muted small"></span>
+                <div id="auditPaginationBtns" class="d-flex gap-1 flex-wrap"></div>
+            </div>
+        </div>
+  <script>
+    if (typeof initAuditSection === 'function') initAuditSection();
+    window.initAuditView = function() { if (typeof initAuditSection === 'function') initAuditSection(); };
+  </script>
+</div>

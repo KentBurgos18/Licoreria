@@ -4,6 +4,7 @@ const PaymentService = require('../services/PaymentService');
 const { sequelize } = require('../models');
 const { Op } = require('sequelize');
 const { requireRole } = require('./adminAuth');
+const AuditService = require('../services/AuditService');
 
 const router = express.Router();
 
@@ -61,6 +62,13 @@ router.post('/', async (req, res) => {
     }, transaction);
 
     await transaction.commit();
+
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'CREATE', entity: 'payment', entityId: payment.id,
+      description: `Registró pago de cliente #${customerId} — $${Number(amount).toFixed(2)} (${paymentMethod})`,
+      metadata: { customerId, amount: Number(amount), paymentMethod, groupPurchaseParticipantId: groupPurchaseParticipantId || null }
+    });
 
     res.status(201).json(payment);
   } catch (error) {

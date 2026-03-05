@@ -221,6 +221,25 @@
             var path = url.pathname;
             if (path === '/customer/login' || path === '/customer/register') return;
             if (getViewFromPath(path)) {
+                // Cerrar dropdown de Bootstrap abierto antes de navegar
+                var openToggle = document.querySelector('[data-bs-toggle="dropdown"][aria-expanded="true"]');
+                if (openToggle) {
+                    try {
+                        if (window.bootstrap && window.bootstrap.Dropdown) {
+                            var bsDd = window.bootstrap.Dropdown.getInstance(openToggle);
+                            if (bsDd) { bsDd.hide(); }
+                        }
+                    } catch (_) {}
+                    // Forzar cierre visual inmediato (sin esperar animación)
+                    openToggle.setAttribute('aria-expanded', 'false');
+                    openToggle.classList.remove('show');
+                    var ddParent = openToggle.closest('.dropdown,.dropup,.dropend,.dropstart');
+                    if (ddParent) {
+                        ddParent.classList.remove('show');
+                        var ddMenu = ddParent.querySelector('.dropdown-menu');
+                        if (ddMenu) ddMenu.classList.remove('show');
+                    }
+                }
                 e.preventDefault();
                 e.stopPropagation();
                 navigate(path);

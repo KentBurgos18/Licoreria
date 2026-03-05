@@ -20,7 +20,7 @@
   transition: background .3s;
 }
 .orders-inner {
-  max-width: 560px;
+  max-width: 860px;
   margin: 0 auto;
   padding: 18px 14px 56px;
 }
@@ -33,32 +33,33 @@
   gap: 10px;
 }
 .pticon {
-  width: 36px; height: 36px; border-radius: 10px;
+  width: 38px; height: 38px; border-radius: 11px;
   background: var(--accentbg); border: 1px solid var(--border);
   display: flex; align-items: center; justify-content: center;
   color: var(--accent2); flex-shrink: 0;
 }
-.page-title h1 { font-size: 18px; font-weight: 800; color: var(--text); margin: 0; }
-.page-title-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.page-title h1 { font-size: 20px; font-weight: 800; color: var(--text); margin: 0; }
+.page-title-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
 
 /* ── STATS ── */
-.stats-row { display: flex; gap: 7px; margin-bottom: 14px; flex-wrap: wrap; }
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+@media (max-width: 520px) { .stats-row { grid-template-columns: 1fr 1fr; } }
 .stat-pill {
-  flex: 1; min-width: 90px; display: flex; align-items: center; gap: 6px;
-  background: var(--surf); border: 1px solid var(--border); border-radius: 9px;
-  padding: 7px 10px; transition: background .3s;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surf); border: 1px solid var(--border); border-radius: 11px;
+  padding: 10px 13px; transition: background .3s;
 }
-.stat-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.stat-lbl { font-size: 10px; color: var(--text2); }
+.stat-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.stat-lbl { font-size: 12px; color: var(--text2); }
 .stat-val {
-  font-size: 13px; font-weight: 800;
+  font-size: 15px; font-weight: 800;
   font-family: 'JetBrains Mono', monospace; color: var(--text); margin-left: auto;
 }
 
 /* ── FILTER BAR ── */
-.filter-bar { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.filter-bar { display: flex; gap: 7px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
 .fb {
-  padding: 5px 11px; border-radius: 20px; font-size: 11px; font-weight: 700;
+  padding: 6px 13px; border-radius: 20px; font-size: 12px; font-weight: 700;
   font-family: 'Outfit', sans-serif; border: 1.5px solid var(--border);
   background: var(--surf); color: var(--text2); cursor: pointer;
   transition: all .15s; white-space: nowrap;
@@ -67,17 +68,17 @@
 .fb.active { background: var(--accentbg); border-color: var(--accent); color: var(--accent2); }
 .fcnt {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 14px; height: 14px; border-radius: 50%; background: var(--accent);
-  color: #fff; font-size: 8px; font-weight: 800; margin-left: 3px; vertical-align: middle;
+  width: 17px; height: 17px; border-radius: 50%; background: var(--accent);
+  color: #fff; font-size: 9px; font-weight: 800; margin-left: 4px; vertical-align: middle;
 }
-.sw { position: relative; flex: 1; min-width: 130px; }
+.sw { position: relative; flex: 1; min-width: 140px; }
 .si {
-  position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
   color: var(--text3); pointer-events: none;
 }
 .sinput {
   width: 100%; background: var(--surf); border: 1px solid var(--border);
-  border-radius: 8px; padding: 6px 10px 6px 29px; font-size: 12px;
+  border-radius: 9px; padding: 7px 12px 7px 32px; font-size: 13px;
   font-family: 'Outfit', sans-serif; color: var(--text); outline: none;
   transition: border-color .2s;
 }
@@ -366,6 +367,7 @@ window.initOrdersView = function() {
 var _ordAllOrders = [];        // pedidos normales (Sale)
 var _ordAllGroups = [];        // compras grupales (GroupPurchaseParticipant)
 var _ordMerged   = [];         // lista unificada ordenada por fecha
+var _ordCreditPayData = {};    // para redirigir al checkout desde "Pagar ahora"
 var _ordFilter = 'todos';
 var _ordSearch = '';
 var _ordPage = 1;
@@ -418,6 +420,7 @@ function loadOrdersData() {
     ordRenderStats();
     ordUpdateCounts();
     ordRenderList();
+    ordSetupSocket();
     var sub = document.getElementById('ordSubTitle');
     if (sub) {
       var total = _ordMerged.length;
@@ -428,6 +431,19 @@ function loadOrdersData() {
     if (e.message === 'unauth') return;
     var list2 = document.getElementById('ordersList');
     if (list2) list2.innerHTML = '<div style="color:var(--red,#dc3545);text-align:center;padding:30px;font-size:13px;">Error al cargar los pedidos</div>';
+  });
+}
+
+function ordSetupSocket() {
+  if (typeof io === 'undefined') return;
+  var tok = localStorage.getItem('customerToken');
+  if (!tok) return;
+  if (window._ordSocket && window._ordSocket.connected) return;
+  if (window._ordSocket) window._ordSocket.disconnect();
+  var s = io({ auth: { token: tok } });
+  window._ordSocket = s;
+  s.on('sale-voided', function() {
+    if (document.getElementById('ordersList')) loadOrdersData();
   });
 }
 
@@ -534,6 +550,9 @@ function ordRenderTicket(o, idx) {
   var sl  = ORD_STATUS_LABEL[o.status] || o.status;
   var pi  = ORD_PAY_ICONS[o.paymentMethod] || ORD_PAY_ICONS.CARD;
   var pn  = ORD_PAY_NAMES[o.paymentMethod] || o.paymentMethod || '';
+  if (o.paymentMethod === 'TRANSFER' && o.transferAccountInfo) {
+    pn += ' — ' + (o.transferAccountInfo || '').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
   var items = Array.isArray(o.items) ? o.items : [];
   var tot = parseFloat(o.totalAmount || 0);
   var scol = o.status==='COMPLETED' ? 'green' : o.status==='VOIDED' ? 'red' : 'amber';
@@ -550,6 +569,9 @@ function ordRenderTicket(o, idx) {
 
   var notesHtml = (o.notes && o.notes.trim())
     ? '<div class="di"><div class="di-lbl">Notas</div><div class="di-val">' + o.notes + '</div></div>'
+    : '';
+  var voidReasonHtml = (o.status === 'VOIDED' && o.voidReason && o.voidReason.trim())
+    ? '<div class="di" style="grid-column:1/-1;"><div class="di-lbl">Motivo de cancelación</div><div class="di-val" style="color:var(--red);">' + String(o.voidReason).replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') + '</div></div>'
     : '';
 
   return '<div class="ticket-wrap" id="tk-' + o.id + '" style="animation-delay:' + (idx*.06) + 's" onclick="ordToggle(' + o.id + ')">' +
@@ -581,6 +603,7 @@ function ordRenderTicket(o, idx) {
             '<div class="di"><div class="di-lbl">Método de pago</div><div class="di-val">' + pn + '</div></div>' +
             '<div class="di"><div class="di-lbl">Estado</div><div class="di-val" style="color:var(--' + scol + ')">' + sl + '</div></div>' +
             notesHtml +
+            voidReasonHtml +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -623,8 +646,11 @@ function ordRenderGroupTicket(p, idx) {
     ? '<div class="tk-credit-row"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> En crédito — saldo pendiente: <strong>$' + credBal + '</strong></div>'
     : '';
 
+  if (hasCred && st !== 'PAID') {
+    _ordCreditPayData[credit.id] = { creditId: credit.id, amount: parseFloat(credit.currentBalance), productName: prodName };
+  }
   var payBtn = (st !== 'PAID' && hasCred)
-    ? '<button class="tk-pay-btn" onclick="event.stopPropagation();ordPayGroup(' + credit.id + ',' + credBal + ')"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Pagar Ahora</button>'
+    ? '<button class="tk-pay-btn" onclick="event.stopPropagation();ordGoToCheckoutCredit(' + credit.id + ')"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Pagar Ahora</button>'
     : '';
 
   return '<div class="ticket-wrap" id="tk-' + uid + '" style="animation-delay:' + (idx*.06) + 's" onclick="ordToggle(\'' + uid + '\')">' +
@@ -659,6 +685,15 @@ function ordRenderGroupTicket(p, idx) {
         '</div>' +
       '</div>' +
     '</div></div>';
+}
+
+// Ir al checkout para pagar crédito (desde Mis pedidos)
+function ordGoToCheckoutCredit(creditId) {
+  var ctx = _ordCreditPayData[creditId];
+  if (!ctx) return;
+  sessionStorage.setItem('creditPayment', JSON.stringify(ctx));
+  if (window.spaNavigate) window.spaNavigate('/customer/checkout');
+  else window.location.href = '/customer/checkout';
 }
 
 function ordPayGroup(creditId, balance) {

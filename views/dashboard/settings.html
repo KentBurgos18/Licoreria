@@ -1,0 +1,686 @@
+<div id="spa-view-content">
+  <div id="settings" class="content-section active">
+            <h2 class="mb-4">
+                <i class="bi bi-gear"></i> Configuración
+            </h2>
+
+            <!-- Settings Tabs -->
+            <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general-settings" type="button" role="tab">
+                        <i class="bi bi-pencil-square"></i> General
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tax-tab" data-bs-toggle="tab" data-bs-target="#tax-settings" type="button" role="tab">
+                        <i class="bi bi-percent"></i> IVA
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="smtp-tab" data-bs-toggle="tab" data-bs-target="#smtp-settings" type="button" role="tab">
+                        <i class="bi bi-envelope"></i> SMTP / Correo
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="payphone-tab" data-bs-toggle="tab" data-bs-target="#payphone-settings" type="button" role="tab">
+                        <i class="bi bi-credit-card"></i> PayPhone
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="backup-tab" data-bs-toggle="tab" data-bs-target="#backup-settings" type="button" role="tab">
+                        <i class="bi bi-database"></i> Respaldo
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="bank-tab" data-bs-toggle="tab" data-bs-target="#bank-settings" type="button" role="tab">
+                        <i class="bi bi-bank"></i> Datos Bancarios
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="appearance-tab" data-bs-toggle="tab" data-bs-target="#appearance-settings" type="button" role="tab">
+                        <i class="bi bi-palette"></i> Apariencia
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="roles-tab" data-bs-toggle="tab" data-bs-target="#roles-settings" type="button" role="tab" onclick="rolesLoad()">
+                        <i class="bi bi-shield-lock"></i> Roles y Permisos
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="settingsTabContent">
+                <!-- General Settings Tab -->
+                <div class="tab-pane fade show active" id="general-settings" role="tabpanel">
+                    <!-- Imágenes de marca -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-image"></i> Imágenes de marca</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">Estas imágenes se usan en el login, favicon del navegador y la app del cliente. Formatos admitidos: PNG, JPG, WEBP (máx. 5 MB).</p>
+                            <div class="row g-4" id="brandImagesGrid">
+                                <!-- Logo -->
+                                <div class="col-6 col-md-3 text-center">
+                                    <div class="mb-2 fw-semibold small">Icono / Logo</div>
+                                    <div class="border rounded p-2 mb-2" style="background:var(--bg2,#1a1a2e);min-height:80px;display:flex;align-items:center;justify-content:center">
+                                        <img id="brandPreview_logo" src="/public/img/icono-LB.png" alt="Logo" style="max-height:72px;max-width:100%;object-fit:contain">
+                                    </div>
+                                    <div class="small text-muted mb-2">Login + app cliente</div>
+                                    <input type="file" id="brandImg_logo" accept="image/*" class="form-control form-control-sm mb-2">
+                                    <button type="button" class="btn btn-sm btn-primary w-100" onclick="uploadBrandImage('logo')"><i class="bi bi-upload"></i> Subir</button>
+                                </div>
+                                <!-- Favicon -->
+                                <div class="col-6 col-md-3 text-center">
+                                    <div class="mb-2 fw-semibold small">Favicon</div>
+                                    <div class="border rounded p-2 mb-2" style="background:var(--bg2,#1a1a2e);min-height:80px;display:flex;align-items:center;justify-content:center">
+                                        <img id="brandPreview_favicon" src="/public/img/pestana-LB.png" alt="Favicon" style="max-height:72px;max-width:100%;object-fit:contain">
+                                    </div>
+                                    <div class="small text-muted mb-2">Ícono pestaña navegador</div>
+                                    <input type="file" id="brandImg_favicon" accept="image/*" class="form-control form-control-sm mb-2">
+                                    <button type="button" class="btn btn-sm btn-primary w-100" onclick="uploadBrandImage('favicon')"><i class="bi bi-upload"></i> Subir</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-pencil-square"></i> Texto y marca
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Este texto se muestra en la pantalla de login bajo el nombre LOCOBAR y en el título del navegador del dashboard.</p>
+                            <form id="generalSettingsForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Frase / eslogan (login y correos)</label>
+                                    <input type="text" class="form-control" id="brandSlogan" 
+                                           placeholder="Donde el sabor se vuelve locura" maxlength="200">
+                                    <small class="form-text text-muted">Ejemplo: Donde el sabor se vuelve locura. Se usa en login, asunto de correos y cabeceras de los emails.</small>
+                                </div>
+                                <hr class="my-4">
+                                <h6 class="mb-3"><i class="bi bi-window"></i> Títulos de la pestaña del navegador</h6>
+                                <p class="text-muted small">Texto que aparece en la pestaña del navegador en cada página o formulario.</p>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Dashboard (panel admin)</label>
+                                            <input type="text" class="form-control" id="pageTitleDashboard" 
+                                                   placeholder="Donde el sabor se vuelve locura - Dashboard" maxlength="150">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Login (iniciar sesión)</label>
+                                            <input type="text" class="form-control" id="pageTitleLogin" 
+                                                   placeholder="Iniciar Sesión - LOCOBAR" maxlength="150">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Registro (cliente)</label>
+                                            <input type="text" class="form-control" id="pageTitleRegister" 
+                                                   placeholder="Registro - LOCOBAR" maxlength="150">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Catálogo</label>
+                                            <input type="text" class="form-control" id="pageTitleCatalog" 
+                                                   placeholder="Catálogo - LOCOBAR" maxlength="150">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Carrito</label>
+                                            <input type="text" class="form-control" id="pageTitleCart" 
+                                                   placeholder="Carrito - LOCOBAR" maxlength="150">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Checkout</label>
+                                            <input type="text" class="form-control" id="pageTitleCheckout" 
+                                                   placeholder="Checkout - LOCOBAR" maxlength="150">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Mis Créditos</label>
+                                            <input type="text" class="form-control" id="pageTitleCredits" 
+                                                   placeholder="Mis Créditos - LOCOBAR" maxlength="150">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Compras grupales</label>
+                                            <input type="text" class="form-control" id="pageTitleGroupPurchases" 
+                                                   placeholder="Mis Compras Grupales - LOCOBAR" maxlength="150">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Mis Pedidos</label>
+                                            <input type="text" class="form-control" id="pageTitleOrders" 
+                                                   placeholder="Mis Pedidos - LOCOBAR" maxlength="150">
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr class="my-4">
+                                <h6 class="mb-3"><i class="bi bi-envelope-at"></i> Asuntos de correo</h6>
+                                <p class="text-muted small">Texto que aparece como asunto en cada tipo de correo enviado por el sistema.</p>
+                                <div class="mb-3">
+                                    <label class="form-label">Código de verificación (registro)</label>
+                                    <input type="text" class="form-control" id="emailSubjectVerificationCode" 
+                                           placeholder="Código de Verificación" maxlength="150">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Bienvenida (nuevo cliente)</label>
+                                    <input type="text" class="form-control" id="emailSubjectWelcome" 
+                                           placeholder="Bienvenido" maxlength="150">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Código recuperación de contraseña</label>
+                                    <input type="text" class="form-control" id="emailSubjectPasswordReset" 
+                                           placeholder="Código de Recuperación de Contraseña" maxlength="150">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Clave temporal (cambio de contraseña)</label>
+                                    <input type="text" class="form-control" id="emailSubjectTemporaryPassword" 
+                                           placeholder="Clave Temporal" maxlength="150">
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Guardar
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IVA Settings Tab -->
+                <div class="tab-pane fade" id="tax-settings" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-percent"></i> Configuración de IVA
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> 
+                                <strong>Importante:</strong> El cambio del IVA solo afectará a las nuevas ventas. 
+                                Las ventas históricas mantendrán el IVA que se usó en el momento de la venta.
+                            </div>
+                            <form id="taxSettingsForm">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="taxEnabled" checked>
+                                    <label class="form-check-label fw-bold" for="taxEnabled">
+                                        Activar IVA en el sistema
+                                    </label>
+                                    <small class="form-text text-muted d-block">
+                                        Si está desactivado, no se calculará ni mostrará IVA en ventas ni en el catálogo del cliente.
+                                    </small>
+                                </div>
+                                <div class="row" id="taxRateSection">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Porcentaje de IVA (%)</label>
+                                            <input type="number" class="form-control" id="taxRate"
+                                                   step="0.01" min="0" max="100" placeholder="Ej: 12">
+                                            <small class="form-text text-muted">
+                                                El IVA se aplica en carrito, checkout, ventas y POS según esta configuración.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                                <h6 class="fw-bold mb-3"><i class="bi bi-tag"></i> Descuento por Efectivo / Transferencia</h6>
+                                <p class="text-muted small mb-3">
+                                    Los precios del sistema incluyen el recargo de tarjeta. Al pagar en efectivo o transferencia
+                                    se aplica este descuento automáticamente sobre el total (subtotal + IVA).
+                                </p>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Porcentaje de descuento (%)</label>
+                                            <input type="number" class="form-control" id="discountRate"
+                                                   step="0.01" min="0" max="100" placeholder="Ej: 5.75">
+                                            <small class="form-text text-muted">
+                                                Pon 0 para deshabilitar el descuento.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Guardar Configuración de IVA y Descuento
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SMTP Settings Tab -->
+                <div class="tab-pane fade" id="smtp-settings" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-envelope"></i> Configuración SMTP
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i> 
+                                <strong>Seguridad:</strong> Las credenciales se guardan de forma encriptada.
+                            </div>
+                            <form id="smtpSettingsForm">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Servidor SMTP (Host)</label>
+                                            <input type="text" class="form-control" id="smtpHost" 
+                                                   placeholder="smtp.gmail.com" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Puerto</label>
+                                            <input type="number" class="form-control" id="smtpPort" 
+                                                   placeholder="587" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Usuario / Email</label>
+                                            <input type="email" class="form-control" id="smtpUser" 
+                                                   placeholder="tu-email@gmail.com" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Contraseña</label>
+                                            <input type="password" class="form-control" id="smtpPassword" 
+                                                   placeholder="Tu contraseña de aplicación" required autocomplete="off">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Email Remitente</label>
+                                            <input type="email" class="form-control" id="smtpFromEmail" 
+                                                   placeholder="noreply@licoreria.com">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Nombre Remitente</label>
+                                            <input type="text" class="form-control" id="smtpFromName" 
+                                                   placeholder="Sistema de Licorería">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="smtpSecure">
+                                        <label class="form-check-label" for="smtpSecure">
+                                            Usar SSL/TLS (Secure)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save"></i> Guardar Configuración SMTP
+                                    </button>
+                                    <button type="button" class="btn btn-info" onclick="testSMTPConnection()">
+                                        <i class="bi bi-check-circle"></i> Probar Conexión
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PayPhone Settings Tab -->
+                <div class="tab-pane fade" id="payphone-settings" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-credit-card"></i> Configuración PayPhone (Cajita de Pagos)
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                Obtén tus credenciales en el portal de desarrolladores:
+                                <a href="https://appdeveloper.payphonetodoesposible.com/login" target="_blank" rel="noopener">
+                                    appdeveloper.payphonetodoesposible.com
+                                </a>
+                                → Cajita → Configuración → Token de acceso y Store ID.
+                            </div>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-shield-lock"></i>
+                                <strong>Seguridad:</strong> El Token se guarda de forma protegida. No compartas estas credenciales.
+                            </div>
+                            <form id="payphoneSettingsForm">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Token de Acceso <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="payphoneToken"
+                                               placeholder="Pega aquí tu token de PayPhone" autocomplete="off">
+                                        <button class="btn btn-outline-secondary" type="button" id="togglePayphoneToken">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">Si ya tienes un token guardado, déjalo en blanco para no modificarlo.</div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">Store ID <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="payphoneStoreId"
+                                           placeholder="Ej: 1234567">
+                                    <div class="form-text">Identificador de tu tienda en PayPhone.</div>
+                                </div>
+                                <div id="payphoneStatus" class="mb-3" style="display:none;"></div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Guardar Configuración PayPhone
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Respaldo -->
+                <div class="tab-pane fade" id="backup-settings" role="tabpanel">
+                    <div class="row g-4">
+
+                        <!-- Descargar backup -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="bi bi-download"></i> Generar Backup</h5>
+                                </div>
+                                <div class="card-body d-flex flex-column">
+                                    <p class="text-muted">Descarga un archivo <code>.tar.gz</code> con la base de datos <strong>e imágenes de productos</strong>. Guárdalo en un lugar seguro.</p>
+                                    <ul class="text-muted small mb-4">
+                                        <li>Incluye todas las tablas, datos y configuraciones</li>
+                                        <li>Incluye todas las imágenes de productos</li>
+                                        <li>Nombre: <code>licoreria_backup_YYYY-MM-DD.tar.gz</code></li>
+                                    </ul>
+                                    <div class="mt-auto">
+                                        <button class="btn btn-primary w-100" onclick="downloadBackup()" id="btnDownloadBackup">
+                                            <i class="bi bi-cloud-download"></i> Descargar Backup
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Restaurar backup -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-warning">
+                                <div class="card-header bg-warning bg-opacity-10">
+                                    <h5 class="mb-0"><i class="bi bi-upload text-warning"></i> Restaurar Backup</h5>
+                                </div>
+                                <div class="card-body d-flex flex-column">
+                                    <div class="alert alert-warning py-2 small">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        <strong>Atención:</strong> Esto borrará y reemplazará <strong>todos los datos actuales</strong> con los del archivo. Esta acción no se puede deshacer.
+                                    </div>
+                                    <p class="text-muted small">Se aceptan archivos <code>.tar.gz</code> (con imágenes) o <code>.sql</code> (solo BD, backups anteriores).</p>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Archivo de backup (.tar.gz o .sql)</label>
+                                        <input type="file" class="form-control" id="backupFileInput" accept=".tar.gz,.sql">
+                                        <div class="form-text" id="backupFileName">Ningún archivo seleccionado</div>
+                                    </div>
+                                    <div class="mt-auto">
+                                        <button class="btn btn-warning w-100" onclick="confirmRestore()" id="btnRestoreBackup" disabled>
+                                            <i class="bi bi-arrow-counterclockwise"></i> Restaurar Backup
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Datos Bancarios -->
+                <div class="tab-pane fade" id="bank-settings" role="tabpanel">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex align-items-center justify-content-between">
+                            <h5 class="mb-0"><i class="bi bi-bank"></i> Cuentas Bancarias para Transferencia</h5>
+                            <button class="btn btn-sm btn-primary" onclick="bankShowAddForm()">
+                                <i class="bi bi-plus-lg"></i> Agregar Cuenta
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">Estas cuentas aparecerán en el checkout cuando el cliente seleccione <strong>Transferencia Bancaria</strong>.</p>
+
+                            <!-- Formulario agregar/editar (oculto por defecto) -->
+                            <div id="bankAddForm" class="card card-body bg-light border mb-3 d-none">
+                                <h6 class="mb-3"><i class="bi bi-pencil-square"></i> <span id="bankFormTitle">Nueva Cuenta</span></h6>
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Banco <span class="text-danger">*</span></label>
+                                        <select class="form-select form-select-sm" id="bankNameSelect" onchange="bankNameToggleCustom()">
+                                            <option value="">— Selecciona un banco —</option>
+                                            <optgroup label="Bancos Privados">
+                                                <option>Banco Pichincha</option>
+                                                <option>Banco del Pacífico</option>
+                                                <option>Banco de Guayaquil</option>
+                                                <option>Produbanco</option>
+                                                <option>Banco Internacional</option>
+                                                <option>Banco Bolivariano</option>
+                                                <option>Banco del Austro</option>
+                                                <option>BGR Banco General Rumiñahui</option>
+                                                <option>Banco Solidario</option>
+                                                <option>Banco D-MIRO</option>
+                                                <option>BancoDesarrollo</option>
+                                                <option>Banco Finca</option>
+                                                <option>Banco ProCredit</option>
+                                                <option>Banco Capital</option>
+                                            </optgroup>
+                                            <optgroup label="Bancos Públicos">
+                                                <option>Banco del Estado (BDE)</option>
+                                                <option>BanEcuador</option>
+                                                <option>CFN (Corporación Financiera Nacional)</option>
+                                            </optgroup>
+                                            <optgroup label="Cooperativas">
+                                                <option>Cooperativa JEP</option>
+                                                <option>Cooperativa Jardín Azuayo</option>
+                                                <option>Cooperativa Cacpeco</option>
+                                                <option>Cooperativa 29 de Octubre</option>
+                                                <option>Cooperativa Cooprogreso</option>
+                                                <option>Cooperativa Pablo Muñoz Vega</option>
+                                                <option>Cooperativa Mego</option>
+                                                <option>Cooperativa Erco</option>
+                                                <option>Cooperativa Policía Nacional</option>
+                                                <option>Cooperativa Riobamba</option>
+                                                <option>Cooperativa Oscus</option>
+                                                <option>Cooperativa Mushuc Runa</option>
+                                                <option>Cooperativa San Francisco</option>
+                                                <option>Cooperativa Andina</option>
+                                            </optgroup>
+                                            <option value="__otro__">Otro (especificar)...</option>
+                                        </select>
+                                        <input type="text" class="form-control form-control-sm mt-1 d-none" id="bankNameCustom" placeholder="Nombre del banco o cooperativa">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Tipo de cuenta</label>
+                                        <select class="form-select form-select-sm" id="bankAccountType">
+                                            <option value="Ahorro">Ahorro</option>
+                                            <option value="Corriente">Corriente</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">N° de cuenta <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm" id="bankAccountNumber" placeholder="Ej: 2200912345">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Beneficiario <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm" id="bankBeneficiary" placeholder="Ej: LOCOBAR S.A.">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">RUC / Cédula</label>
+                                        <input type="text" class="form-control form-control-sm" id="bankIdentification" placeholder="Ej: 1792345678001">
+                                    </div>
+                                </div>
+                                <input type="hidden" id="bankEditId">
+                                <div class="d-flex gap-2 mt-3">
+                                    <button class="btn btn-sm btn-primary" onclick="bankSave()"><i class="bi bi-save"></i> Guardar</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="bankHideForm()">Cancelar</button>
+                                </div>
+                            </div>
+
+                            <!-- Lista de cuentas -->
+                            <div id="bankAccountsList">
+                                <div class="text-muted small text-center py-3" id="bankEmptyMsg">No hay cuentas bancarias configuradas.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Apariencia -->
+                <div class="tab-pane fade" id="appearance-settings" role="tabpanel">
+                    <!-- Selector de modo -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-circle-half"></i> Modo de color</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">Elige si quieres el panel en modo claro, oscuro, o que cambie automáticamente según la hora del día (claro de 07:00 a 21:00, oscuro el resto).</p>
+                            <div class="theme-mode-selector">
+                                <button class="theme-mode-btn btn" data-mode="auto" onclick="setThemeMode('auto')">
+                                    <i class="bi bi-circle-half"></i>
+                                    Automático
+                                    <div class="small">Claro de día, oscuro de noche</div>
+                                </button>
+                                <button class="theme-mode-btn btn" data-mode="light" onclick="setThemeMode('light')">
+                                    <i class="bi bi-sun-fill"></i>
+                                    Claro
+                                </button>
+                                <button class="theme-mode-btn btn" data-mode="dark" onclick="setThemeMode('dark')">
+                                    <i class="bi bi-moon-fill"></i>
+                                    Oscuro
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selector de tema -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-palette"></i> Tema visual</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">Cada tema tiene su propia paleta de colores y tipografía. Tu preferencia se guarda por usuario.</p>
+                            <div class="theme-picker-grid">
+                                <div class="theme-picker-card" data-theme-id="1" onclick="setThemeId(1)">
+                                    <div class="theme-preview-swatches">
+                                        <span style="background:#0f1117;flex:2"></span>
+                                        <span style="background:#7c3aed;flex:1"></span>
+                                        <span style="background:#a78bfa;flex:1"></span>
+                                    </div>
+                                    <div class="theme-picker-name">Slate &amp; Violet</div>
+                                    <i class="bi bi-check-circle-fill theme-check"></i>
+                                </div>
+                                <div class="theme-picker-card" data-theme-id="2" onclick="setThemeId(2)">
+                                    <div class="theme-preview-swatches">
+                                        <span style="background:#080d0d;flex:2"></span>
+                                        <span style="background:#0d9488;flex:1"></span>
+                                        <span style="background:#2dd4bf;flex:1"></span>
+                                    </div>
+                                    <div class="theme-picker-name">Midnight Teal</div>
+                                    <i class="bi bi-check-circle-fill theme-check"></i>
+                                </div>
+                                <div class="theme-picker-card" data-theme-id="3" onclick="setThemeId(3)">
+                                    <div class="theme-preview-swatches">
+                                        <span style="background:#111114;flex:2"></span>
+                                        <span style="background:#e11d48;flex:1"></span>
+                                        <span style="background:#fb7185;flex:1"></span>
+                                    </div>
+                                    <div class="theme-picker-name">Rose &amp; Charcoal</div>
+                                    <i class="bi bi-check-circle-fill theme-check"></i>
+                                </div>
+                                <div class="theme-picker-card" data-theme-id="4" onclick="setThemeId(4)">
+                                    <div class="theme-preview-swatches">
+                                        <span style="background:#0a0e1a;flex:2"></span>
+                                        <span style="background:#38bdf8;flex:1"></span>
+                                        <span style="background:#7dd3fc;flex:1"></span>
+                                    </div>
+                                    <div class="theme-picker-name">Navy &amp; Sky</div>
+                                    <i class="bi bi-check-circle-fill theme-check"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Roles y Permisos -->
+                <div class="tab-pane fade" id="roles-settings" role="tabpanel">
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-shield-lock"></i> Roles personalizados</h5>
+                            <button class="btn btn-primary btn-sm" onclick="rolesShowForm(null)">
+                                <i class="bi bi-plus-lg"></i> Nuevo rol
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="rolesListWrap" class="p-3">
+                                <p class="text-muted text-center my-3">Cargando...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulario crear/editar rol -->
+                    <div id="rolesFormWrap" class="card" style="display:none">
+                        <div class="card-header">
+                            <h5 class="mb-0" id="rolesFormTitle">Nuevo rol</h5>
+                        </div>
+                        <div class="card-body">
+                            <input type="hidden" id="rolesEditId">
+                            <div class="mb-3">
+                                <label class="form-label">Nombre del rol <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="rolesName" placeholder="Ej: Cajero, Bodeguero...">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Permisos por sección</label>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered align-middle mb-0" id="rolesPermTable">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:40%">Sección</th>
+                                                <th class="text-center">Sin acceso</th>
+                                                <th class="text-center">Solo lectura</th>
+                                                <th class="text-center">Completo</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="rolesPermBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary" onclick="rolesSave()"><i class="bi bi-check-lg"></i> Guardar</button>
+                                <button class="btn btn-secondary" onclick="rolesHideForm()">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+  <script>
+    if (typeof loadSettings === 'function') loadSettings();
+    window.initSettingsView = function() { if (typeof loadSettings === 'function') loadSettings(); };
+  </script>
+</div>

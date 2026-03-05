@@ -4,6 +4,7 @@ const CreditService = require('../services/CreditService');
 const ComboService = require('../services/ComboService');
 const WebPushService = require('../services/WebPushService');
 const { getSimpleProductAvailability, validateSimpleSaleQuantity, resolveMovement } = require('../services/InventoryPoolHelper');
+const { getCartAwareAvailability } = require('../services/CartAvailabilityHelper');
 const { sequelize } = require('../models');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
@@ -44,10 +45,30 @@ const authenticateCustomer = (req, res, next) => {
 
 const router = express.Router();
 
+// Parse cartItems from query: JSON array or "productId:qty,productId:qty"
+function parseCartItems(cartItemsParam) {
+  if (!cartItemsParam) return [];
+  if (typeof cartItemsParam === 'string') {
+    try {
+      const parsed = JSON.parse(cartItemsParam);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (_) {}
+    const items = [];
+    cartItemsParam.split(',').forEach(pair => {
+      const [pid, qty] = pair.split(':');
+      const p = parseInt(pid, 10);
+      const q = parseFloat(qty) || 1;
+      if (!isNaN(p) && q > 0) items.push({ productId: p, quantity: q });
+    });
+    return items;
+  }
+  return Array.isArray(cartItemsParam) ? cartItemsParam : [];
+}
+
 // GET /customer/products - Get available products for customers
 router.get('/products', async (req, res) => {
   try {
-    const { tenantId = 1, search, productType, categoryId, presentationId } = req.query;
+    const { tenantId = 1, search, productType, categoryId, presentationId, cartItems } = req.query;
 
     const whereClause = {
       tenantId,
@@ -96,36 +117,38 @@ router.get('/products', async (req, res) => {
       limit: 100
     });
 
-    // Get availability for all products
-    const productIds = products.map(p => p.id);
-    const availabilityMap = {};
+    const cartItemsParsed = parseCartItems(cartItems);
+    let availabilityMap = {};
 
-    if (productIds.length > 0) {
-      const availabilityPromises = products.map(async (product) => {
-        if (product.productType === 'SIMPLE') {
-          const av = await getSimpleProductAvailability(tenantId, product);
-          return {
-            productId: product.id,
-            currentStock: av.currentStock,
-            availableForSale: av.availableForSale
-          };
-        } else {
-          const availability = await ComboService.getComboAvailability(tenantId, product.id);
-          return {
-            productId: product.id,
-            currentStock: availability.availableStock || 0,
-            availableForSale: availability.availableStock > 0
-          };
-        }
-      });
-
-      const availabilityResults = await Promise.all(availabilityPromises);
-      availabilityResults.forEach(av => {
-        availabilityMap[av.productId] = av;
-      });
+    if (products.length > 0) {
+      if (cartItemsParsed.length > 0) {
+        availabilityMap = await getCartAwareAvailability(tenantId, cartItemsParsed, products);
+      } else {
+        const availabilityPromises = products.map(async (product) => {
+          if (product.productType === 'SIMPLE') {
+            const av = await getSimpleProductAvailability(tenantId, product);
+            return {
+              productId: product.id,
+              currentStock: av.currentStock,
+              availableForSale: av.availableForSale
+            };
+          } else {
+            const availability = await ComboService.getComboAvailability(tenantId, product.id);
+            return {
+              productId: product.id,
+              currentStock: availability.availableStock || 0,
+              availableForSale: availability.availableStock > 0
+            };
+          }
+        });
+        const availabilityResults = await Promise.all(availabilityPromises);
+        availabilityResults.forEach(av => {
+          availabilityMap[av.productId] = av;
+        });
+      }
     }
 
-    // Merge availability into products
+    // Merge availability into products (incluir productos con stock 0 cuando hay carrito, para mostrar "Sin stock")
     const productsWithStock = products.map(product => {
       const availability = availabilityMap[product.id];
       return {
@@ -140,13 +163,22 @@ router.get('/products', async (req, res) => {
         presentationId: product.presentationId || null,
         presentationName: product.presentation ? product.presentation.name : null,
         taxApplies: product.taxApplies !== false,
-        currentStock: availability?.currentStock || 0,
-        availableForSale: availability?.availableForSale || false,
+        currentStock: availability?.currentStock ?? 0,
+        availableForSale: availability?.availableForSale ?? false,
         components: product.components || []
       };
-    }).filter(p => p.availableForSale);
+    });
 
-    res.json({ products: productsWithStock });
+    const inCartIds = new Set(cartItemsParsed.map(item => parseInt(item.productId, 10)));
+    const hasActiveFilter = !!(search || productType || categoryId || presentationId);
+
+    const filtered = productsWithStock.filter(p =>
+      p.availableForSale ||
+      inCartIds.has(p.id) ||
+      hasActiveFilter
+    );
+
+    res.json({ products: filtered });
   } catch (error) {
     console.error('Error getting customer products:', error);
     res.status(500).json({
@@ -387,12 +419,10 @@ router.post('/checkout/prepare-payphone', authenticateCustomer, async (req, res)
     }
 
     let subtotal = 0;
-    let taxableSubtotal = 0;
     validItems.forEach(item => {
       const product = productMap[item.productId];
       const lineTotal = parseFloat(product.salePrice) * item.quantity;
       subtotal += lineTotal;
-      if (product.taxApplies !== false) taxableSubtotal += lineTotal;
     });
 
     const taxEnabledRaw = await Setting.getSetting(tenantId, 'tax_enabled', 'true');
@@ -409,7 +439,7 @@ router.post('/checkout/prepare-payphone', authenticateCustomer, async (req, res)
           code: 'TAX_RATE_NOT_CONFIGURED'
         });
       }
-      taxAmount = taxableSubtotal * (taxRate / 100);
+      taxAmount = subtotal * (taxRate / 100);
     }
 
     const totalAmount = subtotal + taxAmount;
@@ -663,8 +693,18 @@ router.post('/checkout', authenticateCustomer, async (req, res) => {
   const transaction = await sequelize.transaction();
   
   try {
-    const { items, paymentMethod, notes } = req.body;
+    const { items, paymentMethod, notes, transferAccountIndex, transferAccountInfo } = req.body;
     const { tenantId, customerId } = req;
+
+    if (paymentMethod === 'TRANSFER') {
+      if (transferAccountIndex == null || transferAccountIndex === '' || isNaN(parseInt(transferAccountIndex, 10))) {
+        await transaction.rollback();
+        return res.status(400).json({
+          error: 'Debe seleccionar la cuenta bancaria a la que realizará la transferencia',
+          code: 'TRANSFER_ACCOUNT_REQUIRED'
+        });
+      }
+    }
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       await transaction.rollback();
@@ -749,12 +789,10 @@ router.post('/checkout', authenticateCustomer, async (req, res) => {
     }
 
     let subtotal = 0;
-    let taxableSubtotal = 0;
     validItems.forEach(item => {
       const product = productMap[item.productId];
       const lineTotal = parseFloat(product.salePrice) * item.quantity;
       subtotal += lineTotal;
-      if (product.taxApplies !== false) taxableSubtotal += lineTotal;
     });
 
     const taxEnabledRaw2 = await Setting.getSetting(tenantId, 'tax_enabled', 'true');
@@ -772,7 +810,7 @@ router.post('/checkout', authenticateCustomer, async (req, res) => {
           code: 'TAX_RATE_NOT_CONFIGURED'
         });
       }
-      taxAmount = taxableSubtotal * (taxRate / 100);
+      taxAmount = subtotal * (taxRate / 100);
     }
 
     const totalAmount = subtotal + taxAmount;
@@ -846,7 +884,7 @@ router.post('/checkout', authenticateCustomer, async (req, res) => {
           staffIds,
           title,
           body,
-          { saleId: sale.id, url: '/dashboard', tag: 'cash-pending-' + sale.id }
+          { saleId: sale.id, url: '/dashboard', tag: 'cash-pending-' + sale.id, staffOnly: true }
         ).catch(err => console.warn('Web Push:', err.message));
       } catch (notifErr) {
         console.error('Checkout CASH: error creating notifications (sale already saved):', notifErr.message);
@@ -870,6 +908,8 @@ router.post('/checkout', authenticateCustomer, async (req, res) => {
         taxAmount: taxAmount,
         paymentMethod: 'TRANSFER',
         notes,
+        transferAccountIndex: parseInt(transferAccountIndex, 10),
+        transferAccountInfo: transferAccountInfo || null,
         createdAt: new Date()
       }, { transaction });
 
@@ -927,7 +967,7 @@ router.post('/checkout', authenticateCustomer, async (req, res) => {
           staffIds,
           title,
           body,
-          { saleId: sale.id, url: '/dashboard', tag: 'transfer-pending-' + sale.id }
+          { saleId: sale.id, url: '/dashboard', tag: 'transfer-pending-' + sale.id, staffOnly: true }
         ).catch(err => console.warn('Web Push:', err.message));
       } catch (notifErr) {
         console.error('Checkout TRANSFER: error creating notifications (sale already saved):', notifErr.message);
@@ -1219,6 +1259,144 @@ router.get('/credits/:id', authenticateCustomer, async (req, res) => {
   } catch (error) {
     console.error('Error getting credit:', error);
     res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
+  }
+});
+
+// POST /customer/credits/:id/prepare-payphone — prepara pago con tarjeta para un crédito
+router.post('/credits/:id/prepare-payphone', authenticateCustomer, async (req, res) => {
+  try {
+    const { customerId, tenantId } = req;
+    const { id } = req.params;
+
+    const credit = await CustomerCredit.findOne({ where: { id, customerId, tenantId } });
+    if (!credit) return res.status(404).json({ error: 'Crédito no encontrado', code: 'NOT_FOUND' });
+    if (credit.status !== 'ACTIVE') return res.status(400).json({ error: 'Crédito no activo', code: 'CREDIT_NOT_ACTIVE' });
+
+    const balance = parseFloat(credit.currentBalance);
+    if (balance <= 0.01) return res.status(400).json({ error: 'Sin saldo pendiente', code: 'NO_BALANCE' });
+
+    const { token, storeId } = await getPayphoneCredentials(tenantId);
+    if (!token || !storeId) {
+      return res.status(503).json({ error: 'Pago con tarjeta no configurado. Contacte al administrador.', code: 'PAYPHONE_NOT_CONFIGURED' });
+    }
+
+    const clientTransactionId = `credit-${id}-${Date.now()}-${customerId}`;
+
+    await PayphonePendingPayment.create({
+      clientTransactionId,
+      tenantId,
+      customerId,
+      itemsJson: [{ type: 'credit', creditId: parseInt(id, 10) }],
+      subtotal: balance,
+      taxAmount: 0,
+      totalAmount: balance,
+      taxRate: 0,
+      notes: null
+    });
+
+    const amountCents = Math.round(balance * 100);
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+    res.json({
+      clientTransactionId,
+      token,
+      storeId,
+      amount: amountCents,
+      amountWithoutTax: amountCents,
+      amountWithTax: 0,
+      tax: 0,
+      currency: 'USD',
+      reference: `Crédito CR-${String(id).padStart(4, '0')}`,
+      returnUrl: `${baseUrl}/customer/credit-resultado.html`
+    });
+  } catch (error) {
+    console.error('Error preparing PayPhone credit payment:', error);
+    res.status(500).json({ error: 'Error al preparar el pago', code: 'INTERNAL_ERROR' });
+  }
+});
+
+// POST /customer/credits/confirm-payphone — confirma pago con tarjeta para un crédito
+router.post('/credits/confirm-payphone', authenticateCustomer, async (req, res) => {
+  try {
+    const { id, clientTransactionId } = req.body;
+    const { tenantId, customerId } = req;
+
+    if (!id || !clientTransactionId) {
+      return res.status(400).json({ error: 'Faltan parámetros id o clientTransactionId', code: 'MISSING_PARAMS' });
+    }
+
+    const { token } = await getPayphoneCredentials(tenantId);
+    if (!token) {
+      return res.status(503).json({ error: 'Pago con tarjeta no configurado.', code: 'PAYPHONE_NOT_CONFIGURED' });
+    }
+
+    let payphoneResult = null;
+    let confirmError = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const response = await fetch('https://pay.payphonetodoesposible.com/api/button/V2/Confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ id: parseInt(id, 10), clientTxId: clientTransactionId })
+        });
+        const responseText = await response.text();
+        try {
+          payphoneResult = JSON.parse(responseText);
+          break;
+        } catch {
+          confirmError = `Status ${response.status} - respuesta no JSON`;
+          if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
+        }
+      } catch (fetchError) {
+        confirmError = fetchError.message;
+        if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
+      }
+    }
+
+    if (payphoneResult && payphoneResult.statusCode !== 3) {
+      return res.status(400).json({ error: payphoneResult.message || 'Pago no aprobado', code: 'PAYMENT_NOT_APPROVED' });
+    }
+
+    if (!payphoneResult) {
+      console.warn('PayPhone credit confirm falló. Error:', confirmError, 'payphone_id:', id, 'clientTxId:', clientTransactionId);
+    }
+
+    const pending = await PayphonePendingPayment.findOne({ where: { clientTransactionId, tenantId, customerId } });
+    if (!pending) return res.status(404).json({ error: 'No se encontró el pago pendiente', code: 'PENDING_NOT_FOUND' });
+
+    const creditItem = (pending.itemsJson || []).find(i => i.type === 'credit');
+    if (!creditItem) return res.status(400).json({ error: 'Tipo de pago inválido', code: 'INVALID_TYPE' });
+
+    const credit = await CustomerCredit.findOne({ where: { id: creditItem.creditId, customerId, tenantId } });
+    if (!credit) return res.status(404).json({ error: 'Crédito no encontrado', code: 'NOT_FOUND' });
+
+    const transaction = await sequelize.transaction();
+    try {
+      const payAmt = parseFloat(pending.totalAmount);
+      const today = new Date().toISOString().split('T')[0];
+
+      await CustomerPayment.create({
+        tenantId,
+        customerId,
+        groupPurchaseParticipantId: credit.groupPurchaseParticipantId || null,
+        amount: payAmt,
+        paymentMethod: 'CARD',
+        paymentDate: today,
+        notes: `Pago con tarjeta - PayPhone TX: ${id}`
+      }, { transaction });
+
+      await CreditService.applyPayment(credit.id, payAmt, transaction);
+      await pending.destroy({ transaction });
+      await transaction.commit();
+
+      res.json({ ok: true, amount: payAmt, creditId: credit.id });
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
+  } catch (error) {
+    console.error('Error confirming PayPhone credit payment:', error);
+    res.status(500).json({ error: 'Error al confirmar el pago', code: 'INTERNAL_ERROR' });
   }
 });
 

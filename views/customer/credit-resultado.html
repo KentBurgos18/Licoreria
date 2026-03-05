@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
+    <title>Resultado de Pago - LOCOBAR</title>
+    <link href="/public/css/theme.css" rel="stylesheet">
+    <link href="/public/css/customer-themes.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+        .cr-box {
+            max-width: 400px; width: 100%;
+            background: var(--surf); border: 1px solid var(--border);
+            border-radius: 18px; padding: 36px 28px;
+            box-shadow: 0 8px 32px rgba(0,0,0,.12);
+            text-align: center;
+        }
+        .cr-icon {
+            width: 72px; height: 72px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 30px;
+        }
+        .cr-icon.success { background: var(--gbg); color: var(--green); border: 2px solid var(--green); }
+        .cr-icon.error   { background: var(--rbg); color: var(--red);   border: 2px solid var(--red); }
+        .cr-icon.loading { background: var(--accentbg); color: var(--accent); border: 2px solid var(--accent); }
+        .cr-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+        .cr-subtitle { font-size: 13px; color: var(--text2); margin-bottom: 24px; line-height: 1.5; }
+        .cr-amount {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px; font-weight: 900; color: var(--green);
+            margin-bottom: 4px;
+        }
+        .cr-amount-lbl { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 24px; }
+        .cr-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+            padding: 12px 28px; border-radius: 11px;
+            background: linear-gradient(135deg, var(--accent), var(--accent));
+            border: none; color: #fff; font-size: 13.5px; font-weight: 800;
+            font-family: 'Outfit', sans-serif; cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 4px 14px rgba(0,0,0,.18);
+            transition: opacity .15s;
+        }
+        .cr-btn:hover { opacity: .88; color: #fff; }
+        .cr-btn-sec {
+            display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+            padding: 11px 24px; border-radius: 11px;
+            background: var(--surf2); border: 1px solid var(--border);
+            color: var(--text2); font-size: 13px; font-weight: 700;
+            font-family: 'Outfit', sans-serif; cursor: pointer;
+            text-decoration: none; margin-top: 10px;
+            transition: border-color .15s, color .15s;
+        }
+        .cr-btn-sec:hover { border-color: var(--accent); color: var(--accent); }
+        .cr-spinner { display: inline-block; width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;900&display=swap');
+    </style>
+</head>
+<body>
+
+<div class="cr-box" id="resultBox">
+    <div class="cr-icon loading">
+        <div class="cr-spinner"></div>
+    </div>
+    <div class="cr-title">Confirmando pago...</div>
+    <div class="cr-subtitle">Verificando el resultado de tu pago con tarjeta. Por favor espera.</div>
+</div>
+
+<script>
+    // Apply theme
+    (function() {
+        var theme = localStorage.getItem('lb_theme') || 'theme2';
+        var mode  = localStorage.getItem('lb_mode')  || 'auto';
+        if (mode === 'auto') {
+            var h = new Date().getHours();
+            mode = (h >= 7 && h < 20) ? 'light' : 'dark';
+        }
+        document.documentElement.setAttribute('data-lb-theme', theme);
+        document.documentElement.setAttribute('data-lb-mode', mode);
+        document.documentElement.classList.add('lb-themed');
+    })();
+
+    var token = localStorage.getItem('customerToken');
+    if (!token) { window.location.href = '/customer/login'; }
+
+    // PayPhone returns: ?id=TXID&clientTransactionId=...&statusCode=...
+    var params            = new URLSearchParams(window.location.search);
+    var payphoneId        = params.get('id');
+    var clientTxId        = params.get('clientTransactionId');
+    var statusCode        = params.get('statusCode');
+
+    function showSuccess(amount) {
+        var box = document.getElementById('resultBox');
+        box.innerHTML =
+            '<div class="cr-icon success">' +
+                '<svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' +
+            '</div>' +
+            '<div class="cr-title">¡Pago exitoso!</div>' +
+            (amount ? '<div class="cr-amount">$' + parseFloat(amount).toFixed(2) + '</div><div class="cr-amount-lbl">Monto pagado</div>' : '') +
+            '<div class="cr-subtitle">Tu pago con tarjeta fue procesado y registrado correctamente.</div>' +
+            '<a href="/customer/credits" class="cr-btn">' +
+                '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>' +
+                'Ver mis créditos' +
+            '</a>';
+    }
+
+    function showError(message) {
+        var box = document.getElementById('resultBox');
+        box.innerHTML =
+            '<div class="cr-icon error">' +
+                '<svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+            '</div>' +
+            '<div class="cr-title">Pago no completado</div>' +
+            '<div class="cr-subtitle">' + escHtml(message || 'El pago no pudo ser procesado. Intenta nuevamente.') + '</div>' +
+            '<a href="/customer/credits" class="cr-btn">' +
+                'Volver a créditos' +
+            '</a>';
+    }
+
+    function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    if (!payphoneId || !clientTxId) {
+        showError('Parámetros de pago inválidos.');
+    } else if (statusCode && String(statusCode) !== '3') {
+        // PayPhone already indicates failure in the redirect
+        showError('El pago fue rechazado o cancelado.');
+    } else {
+        // Confirm with our backend
+        fetch('/api/customer/credits/confirm-payphone', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ id: payphoneId, clientTransactionId: clientTxId })
+        })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+        .then(function(result) {
+            if (result.ok && result.data.ok) {
+                showSuccess(result.data.amount);
+            } else {
+                showError(result.data.error || 'No se pudo confirmar el pago.');
+            }
+        })
+        .catch(function() {
+            showError('Error de conexión al confirmar el pago. Contacta al negocio.');
+        });
+    }
+</script>
+
+</body>
+</html>

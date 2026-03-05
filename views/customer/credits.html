@@ -186,12 +186,13 @@
             display: flex; align-items: center; justify-content: space-between;
             padding: 6px 14px 10px; gap: 10px;
         }
+
         .cr-rate {
             display: flex; align-items: center; gap: 4px;
             font-size: 9.5px; color: var(--text3);
         }
         .cr-pay-btn {
-            display: flex; align-items: center; gap: 6px;
+            display: inline-flex; align-items: center; gap: 6px;
             padding: 7px 16px; border-radius: 9px;
             background: linear-gradient(135deg, var(--accent), var(--accent));
             border: none; color: #fff;
@@ -257,37 +258,6 @@
             .cr-stat-val { font-size: 20px; }
         }
 
-        /* ── MODAL (tema) ── */
-        .modal-content {
-            background: var(--surf) !important;
-            border: 1px solid var(--border) !important;
-            color: var(--text) !important;
-        }
-        .modal-header {
-            border-bottom: 1px solid var(--border) !important;
-            background: var(--accentbg) !important;
-        }
-        .modal-footer { border-top: 1px solid var(--border) !important; }
-        .modal-title  { color: var(--text) !important; font-weight: 700; }
-        .form-label   { color: var(--text2); font-size: 12px; font-weight: 600; }
-        .form-control, .form-select {
-            background: var(--surf2) !important;
-            border: 1px solid var(--border) !important;
-            color: var(--text) !important;
-            border-radius: 8px !important;
-        }
-        .form-control:focus, .form-select:focus {
-            border-color: var(--accent) !important;
-            box-shadow: 0 0 0 3px var(--accentbg) !important;
-        }
-        .form-control[readonly] { color: var(--text3) !important; }
-        .btn-primary {
-            background: var(--accent) !important;
-            border-color: var(--accent) !important;
-            font-weight: 700;
-        }
-        .btn-secondary { font-weight: 600; }
-
         /* ── Toast ── */
         .lb-toast {
             background: var(--surf); border: 1px solid var(--border);
@@ -312,13 +282,10 @@
         .lb-toast-close:hover { color: var(--text); background: var(--surf2); }
         @media (max-width: 576px) {
             .lb-toast {
-                top: auto; bottom: 24px; right: auto; left: 50%;
-                transform: translateX(-50%) translateY(16px);
                 min-width: min(340px, calc(100vw - 32px));
                 max-width: calc(100vw - 32px);
+                right: 16px;
             }
-            .lb-toast.lb-toast-show { transform: translateX(-50%) translateY(0); }
-            .lb-toast.lb-toast-hide { transform: translateX(-50%) translateY(16px); }
         }
     </style>
 </head>
@@ -371,68 +338,11 @@
 
 </div><!-- .credits-view -->
 
-<!-- Payment Modal -->
-<div class="modal fade" id="paymentModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:6px;color:var(--accent)">
-                        <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
-                    </svg>
-                    Registrar Pago
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="paymentForm">
-                    <input type="hidden" id="paymentCreditId">
-                    <div class="mb-3">
-                        <label class="form-label">Saldo Actual</label>
-                        <input type="text" class="form-control" id="paymentBalance" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Monto a Pagar <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="paymentAmount" step="0.01" min="0.01" required>
-                        <div class="form-text" style="color:var(--text3);font-size:11px;">Puede ser un pago parcial</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Método de Pago <span class="text-danger">*</span></label>
-                        <select class="form-select" id="paymentMethod" required>
-                            <option value="">Seleccione...</option>
-                            <option value="CASH">Efectivo</option>
-                            <option value="CARD">Tarjeta</option>
-                            <option value="TRANSFER">Transferencia</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Fecha de Pago <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" id="paymentDate" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Notas</label>
-                        <textarea class="form-control" id="paymentNotes" rows="2" placeholder="Opcional..."></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="savePayment()">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:4px">
-                        <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
-                    </svg>
-                    Registrar Pago
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script src="/libs/js/jquery.min.js"></script>
-<script src="/libs/js/bootstrap.bundle.min.js"></script>
 <script>
     var token    = localStorage.getItem('customerToken');
     var customer = JSON.parse(localStorage.getItem('customer') || '{}');
+    var _creditPayData = {};
 
     if (!token) { window.location.href = '/customer/login'; }
 
@@ -576,7 +486,8 @@
             if (credit.status === 'PAID') {
                 actionHtml = '<span class="cr-paid-badge"><i class="bi bi-check-circle-fill"></i> Pagado</span>';
             } else if (parseFloat(currentBalance) > 0.01) {
-                actionHtml = '<button class="cr-pay-btn" onclick="openPaymentModal(' + credit.id + ', ' + currentBalance + ')">' +
+                _creditPayData[credit.id] = { creditId: credit.id, amount: parseFloat(currentBalance), productName: productName };
+                actionHtml = '<button class="cr-pay-btn" onclick="goToCheckoutCredit(' + credit.id + ')">' +
                     '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>' +
                     'Pagar Ahora</button>';
             } else {
@@ -628,54 +539,13 @@
         });
     }
 
-    // ── Payment modal ─────────────────────────────────────────
-    function openPaymentModal(creditId, balance) {
-        $('#paymentCreditId').val(creditId);
-        $('#paymentBalance').val('$' + parseFloat(balance).toFixed(2));
-        $('#paymentAmount').val(parseFloat(balance).toFixed(2));
-        $('#paymentMethod').val('CASH');
-        $('#paymentDate').val(new Date().toISOString().split('T')[0]);
-        $('#paymentNotes').val('');
-        new bootstrap.Modal(document.getElementById('paymentModal')).show();
-    }
-
-    function savePayment() {
-        var creditId      = $('#paymentCreditId').val();
-        var amount        = parseFloat($('#paymentAmount').val());
-        var paymentMethod = $('#paymentMethod').val();
-        var paymentDate   = $('#paymentDate').val();
-        var notes         = $('#paymentNotes').val() || null;
-
-        if (!creditId || !amount || amount <= 0 || !paymentMethod || !paymentDate) {
-            showAlert('Complete todos los campos requeridos', 'warning');
-            return;
-        }
-
-        $.ajax({
-            url: '/api/customer/credits/' + creditId + '/payment',
-            method: 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + token,
-                'Content-Type': 'application/json'
-            },
-            data: JSON.stringify({
-                amount: amount,
-                paymentMethod: paymentMethod,
-                paymentDate: paymentDate,
-                notes: notes
-            }),
-            success: function() {
-                showAlert('Pago registrado exitosamente.', 'success');
-                bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
-                loadCredits();
-                loadCreditSummary();
-            },
-            error: function(xhr) {
-                if (xhr.status === 401) { window.location.href = '/customer/login'; return; }
-                var msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Error al registrar pago';
-                showAlert(msg, 'danger');
-            }
-        });
+    // ── Ir al checkout para pagar crédito ────────────────────
+    function goToCheckoutCredit(creditId) {
+        var ctx = _creditPayData[creditId];
+        if (!ctx) return;
+        sessionStorage.setItem('creditPayment', JSON.stringify(ctx));
+        if (window.spaNavigate) window.spaNavigate('/customer/checkout');
+        else window.location.href = '/customer/checkout';
     }
 
     // ── Toast ─────────────────────────────────────────────────

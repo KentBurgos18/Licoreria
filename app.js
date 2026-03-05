@@ -320,6 +320,7 @@ app.use('/api/customers', authenticateAdmin, require('./routes/customers'));
 app.use('/api/suppliers', authenticateAdmin, require('./routes/suppliers'));
 app.use('/api/supplier-prices', authenticateAdmin, require('./routes/supplierPrices'));
 app.use('/api/settings', authenticateAdmin, require('./routes/settings'));
+app.use('/api/audit',   authenticateAdmin, require('./routes/audit'));
 app.use('/api/notifications', authenticateAdmin, require('./routes/notifications'));
 app.use('/api/email', require('./routes/email'));
 app.use('/api/backup', authenticateAdmin, require('./routes/backup'));
@@ -327,54 +328,29 @@ app.use('/api/backup', authenticateAdmin, require('./routes/backup'));
 // View routes (continuación - rutas adicionales)
 app.get('/dashboard.html', (req, res) => res.redirect(302, '/dashboard'));
 
-// Dashboard con rutas reales (para uso online)
-app.get('/dashboard', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
-});
+// Dashboard SPA: shell para carga inicial, fragmentos para navegación on-demand (como cliente)
+function sendDashboardView(req, res, viewFile) {
+  const wantFragment = req.get('X-SPA-Fragment') || req.xhr;
+  if (wantFragment) {
+    res.sendFile(path.join(__dirname, 'views', 'dashboard', viewFile));
+  } else {
+    res.sendFile(path.join(__dirname, 'views', 'dashboard-shell.html'));
+  }
+}
 
-app.get('/dashboard/products', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
-});
-
-app.get('/dashboard/suppliers', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
-});
-
-app.get('/dashboard/purchases', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
-});
-
-app.get('/dashboard/sell', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
-});
-
-app.get('/dashboard/sales', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
-});
-
-app.get('/dashboard/group-purchases', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
-});
-
-app.get('/dashboard/credits', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
-});
-
-app.get('/dashboard/customers', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
-});
-
-app.get('/dashboard/users', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
-});
-
-app.get('/dashboard/settings', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
-});
-
-app.get('/dashboard/expenses', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
-});
+app.get('/dashboard', (req, res) => sendDashboardView(req, res, 'dashboard.html'));
+app.get('/dashboard/products', (req, res) => sendDashboardView(req, res, 'products.html'));
+app.get('/dashboard/suppliers', (req, res) => sendDashboardView(req, res, 'suppliers.html'));
+app.get('/dashboard/purchases', (req, res) => sendDashboardView(req, res, 'purchases.html'));
+app.get('/dashboard/sell', (req, res) => sendDashboardView(req, res, 'sell.html'));
+app.get('/dashboard/sales', (req, res) => sendDashboardView(req, res, 'sales.html'));
+app.get('/dashboard/group-purchases', (req, res) => sendDashboardView(req, res, 'group-purchases.html'));
+app.get('/dashboard/credits', (req, res) => sendDashboardView(req, res, 'credits.html'));
+app.get('/dashboard/customers', (req, res) => sendDashboardView(req, res, 'customers.html'));
+app.get('/dashboard/users', (req, res) => sendDashboardView(req, res, 'users.html'));
+app.get('/dashboard/audit', (req, res) => sendDashboardView(req, res, 'audit.html'));
+app.get('/dashboard/settings', (req, res) => sendDashboardView(req, res, 'settings.html'));
+app.get('/dashboard/expenses', (req, res) => sendDashboardView(req, res, 'expenses.html'));
 
 app.get('/products', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'create-product.html'));
@@ -1032,6 +1008,51 @@ async function initializeApp() {
       console.warn('⚠️ Migración customer_credits/customer_payments:', e.message);
     }
 
+    // Migración: dashboard_config en users
+    try {
+      await sequelize.query(`
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS dashboard_config JSONB DEFAULT '{}'
+      `);
+      console.log('✅ Migración dashboard_config completada');
+    } catch (e) {
+      console.warn('⚠️ Migración dashboard_config:', e.message);
+    }
+
+    // Migración: audit_logs
+    try {
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS audit_logs (
+          id          BIGSERIAL PRIMARY KEY,
+          tenant_id   BIGINT NOT NULL,
+          user_id     BIGINT,
+          user_name   VARCHAR(100),
+          user_email  VARCHAR(150),
+          action      VARCHAR(20) NOT NULL,
+          entity      VARCHAR(50) NOT NULL,
+          entity_id   VARCHAR(50),
+          description TEXT NOT NULL,
+          metadata    JSONB,
+          ip_address  VARCHAR(50),
+          created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_audit_tenant  ON audit_logs(tenant_id)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_audit_user    ON audit_logs(user_id)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_audit_entity  ON audit_logs(entity, entity_id)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at DESC)`);
+      console.log('✅ Migración audit_logs completada');
+    } catch (e) {
+      console.warn('⚠️ Migración audit_logs:', e.message);
+    }
+
+    // Migración: transfer_account en sales (para filtrar por cuenta bancaria)
+    try {
+      await sequelize.query(`ALTER TABLE sales ADD COLUMN IF NOT EXISTS transfer_account_index INTEGER`);
+      await sequelize.query(`ALTER TABLE sales ADD COLUMN IF NOT EXISTS transfer_account_info VARCHAR(150)`);
+    } catch (e) {
+      console.warn('⚠️ Migración transfer_account:', e.message);
+    }
+
     // Sync models (create tables if they don't exist)
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: true });
@@ -1091,7 +1112,8 @@ async function initializeApp() {
           socket.join('staff');
           return;
         }
-        if (decoded.customerId != null && saleId) {
+        if (decoded.customerId != null) {
+          socket.join(`customer:${decoded.customerId}`);
           const sid = parseInt(saleId, 10);
           if (!isNaN(sid)) {
             Sale.findOne({ where: { id: sid, customerId: decoded.customerId } })

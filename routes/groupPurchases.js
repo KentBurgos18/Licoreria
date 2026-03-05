@@ -148,16 +148,14 @@ router.post('/from-cart', async (req, res) => {
 
     // Compute subtotals and total (prices come from product.salePrice; unitPrice from item is used for overrides)
     let subtotal = 0;
-    let taxableSubtotal = 0;
     for (const item of items) {
       const product = productMap[parseInt(item.productId, 10)];
       const unitPrice = item.unitPrice != null ? parseFloat(item.unitPrice) : parseFloat(product.salePrice);
       const lineTotal = unitPrice * parseFloat(item.quantity);
       subtotal += lineTotal;
-      if (product.taxApplies !== false) taxableSubtotal += lineTotal;
     }
 
-    // IVA
+    // IVA (aplicado al subtotal completo para coincidir con POS y catálogo)
     const taxEnabledRaw = await Setting.getSetting(tenantId, 'tax_enabled', 'true');
     const isTaxEnabled = taxEnabledRaw === 'true' || taxEnabledRaw === true;
     let taxRate = 0;
@@ -169,7 +167,7 @@ router.post('/from-cart', async (req, res) => {
         await transaction.rollback();
         return res.status(400).json({ error: 'El IVA no está configurado. Configúrelo en Ajustes.', code: 'TAX_RATE_NOT_CONFIGURED' });
       }
-      taxAmount = taxableSubtotal * (taxRate / 100);
+      taxAmount = subtotal * (taxRate / 100);
     }
     const totalAmount = subtotal + taxAmount;
 

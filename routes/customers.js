@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const { Customer, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const { requireRole } = require('./adminAuth');
+const AuditService = require('../services/AuditService');
 
 const router = express.Router();
 
@@ -213,6 +214,13 @@ router.post('/', async (req, res) => {
 
     const customer = await Customer.create(customerData);
 
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'CREATE', entity: 'customer', entityId: customer.id,
+      description: `Creó cliente "${name}"`,
+      metadata: { created: { name, cedula: cedula.trim(), email: email || null, phone: phone || null } }
+    });
+
     res.status(201).json({
       id: customer.id,
       name: customer.name,
@@ -259,6 +267,7 @@ router.put('/:id', async (req, res) => {
       });
     }
 
+    const beforeSnap = { name: customer.name, cedula: customer.cedula, email: customer.email, phone: customer.phone, isActive: customer.isActive };
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (phone !== undefined) updates.phone = phone;
@@ -326,6 +335,15 @@ router.put('/:id', async (req, res) => {
 
     await customer.update(updates);
 
+    const afterSnap = { name: customer.name, cedula: customer.cedula, email: customer.email, phone: customer.phone, isActive: customer.isActive };
+    const diff = AuditService.diffObjects(beforeSnap, afterSnap);
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'UPDATE', entity: 'customer', entityId: id,
+      description: `Editó cliente "${customer.name}"`,
+      metadata: diff
+    });
+
     res.json({
       id: customer.id,
       name: customer.name,
@@ -383,9 +401,21 @@ router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
       }
 
       await customer.destroy();
+      AuditService.log({
+        ...AuditService.fromReq(req),
+        action: 'DELETE', entity: 'customer', entityId: id,
+        description: `Eliminó cliente "${customer.name}"`,
+        metadata: { deleted: { name: customer.name, cedula: customer.cedula, email: customer.email } }
+      });
       res.json({ message: 'Cliente eliminado permanentemente' });
     } else {
       await customer.update({ isActive: false });
+      AuditService.log({
+        ...AuditService.fromReq(req),
+        action: 'UPDATE', entity: 'customer', entityId: id,
+        description: `Desactivó cliente "${customer.name}"`,
+        metadata: { before: { isActive: true }, after: { isActive: false } }
+      });
       res.json({ message: 'Cliente desactivado exitosamente' });
     }
   } catch (error) {

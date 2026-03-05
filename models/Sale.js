@@ -47,6 +47,16 @@ module.exports = (sequelize) => {
       allowNull: true,
       field: 'transfer_reference'
     },
+    transferAccountIndex: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'transfer_account_index'
+    },
+    transferAccountInfo: {
+      type: DataTypes.STRING(150),
+      allowNull: true,
+      field: 'transfer_account_info'
+    },
     notes: {
       type: DataTypes.TEXT,
       allowNull: true

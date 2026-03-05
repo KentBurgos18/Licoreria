@@ -56,13 +56,10 @@
         .lb-toast-close:hover { color: var(--text); background: var(--surf2); }
         @media (max-width: 576px) {
             .lb-toast {
-                top: auto; bottom: 24px; right: auto; left: 50%;
-                transform: translateX(-50%) translateY(16px);
                 min-width: min(340px, calc(100vw - 32px));
                 max-width: calc(100vw - 32px);
+                right: 16px;
             }
-            .lb-toast.lb-toast-show { transform: translateX(-50%) translateY(0); }
-            .lb-toast.lb-toast-hide { transform: translateX(-50%) translateY(16px); }
         }
     </style>
 </head>
@@ -159,8 +156,8 @@
     <script src="/libs/js/jquery.min.js"></script>
     <script src="/libs/js/bootstrap.bundle.min.js"></script>
     <script>
-        const token = localStorage.getItem('customerToken');
-        const customer = JSON.parse(localStorage.getItem('customer') || '{}');
+        var token = localStorage.getItem('customerToken');
+        var customer = JSON.parse(localStorage.getItem('customer') || '{}');
 
         if (!token) {
             window.location.href = '/customer/login';
