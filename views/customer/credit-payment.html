@@ -88,13 +88,15 @@
         }
         #ppSection.show { display: block; }
         /* PayPhone widget: overrides para integrar con el diseño de la página */
+        #pp-button-credit { max-width: 100%; overflow: visible; }
+        #pp-button-credit .ppb-input-group { max-width: 100%; }
         #pp-button-credit .ppb-form-control,
         #pp-button-credit .ppb-input-group-text {
             background: var(--surf2) !important;
             border-color: var(--border) !important;
             color: var(--text) !important;
             font-family: inherit;
-            border-radius: 10px !important;
+            box-sizing: border-box;
         }
         #pp-button-credit .ppb-form-control:focus {
             border-color: var(--accent) !important;
@@ -103,7 +105,6 @@
         #pp-button-credit .ppb-form-control::placeholder { color: var(--text3); }
         #pp-button-credit .ppb-p,
         #pp-button-credit .ppb-message { color: var(--text2) !important; }
-        #pp-button-credit .ppb-input-group { border-radius: 10px; }
         #pp-button-credit .payment-box,
         #pp-button-credit .ppb-content { background: transparent !important; }
         #pp-button-credit button[type="submit"],
@@ -417,14 +418,7 @@
         script.src = url;
         script.type = 'module';
         script.setAttribute('data-payphone-sdk', '1');
-        script.onload = function() {
-            if (typeof window.PPaymentButtonBox !== 'undefined') { cb(); return; }
-            import(url).then(function(m) {
-                var P = m.PPaymentButtonBox || (m.default && m.default.PPaymentButtonBox) || m.default;
-                window.PPaymentButtonBox = (typeof P === 'function') ? P : (m.PPaymentButtonBox || m.default || m);
-                cb();
-            }).catch(function() { cb(); });
-        };
+        script.onload = function() { cb(); };
         script.onerror = function() { cb(); };
         document.head.appendChild(script);
     }
