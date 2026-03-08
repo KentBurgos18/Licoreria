@@ -301,11 +301,14 @@ window.initPosView = function() {
 };
 
 function posUpdateLayout() {
-    var isEmpty = !window.sellCart || window.sellCart.length === 0;
     var emptyEl = document.getElementById('posEmptyState');
     var gridEl  = document.getElementById('posCheckoutGrid');
-    if (emptyEl) emptyEl.style.display = isEmpty ? '' : 'none';
-    if (gridEl)  gridEl.style.display  = isEmpty ? 'none' : '';
+    if (!emptyEl || !gridEl) return;
+    // Detectar si hay ítems mirando el DOM (updateSellCartModal ya habrá renderizado)
+    var itemsEl = document.getElementById('sellCartModalItems');
+    var isEmpty = !itemsEl || !!itemsEl.querySelector('.scm-empty');
+    emptyEl.style.display = isEmpty ? '' : 'none';
+    gridEl.style.display  = isEmpty ? 'none' : '';
 }
 </script>
 </div>
