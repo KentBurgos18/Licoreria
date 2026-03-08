@@ -210,7 +210,10 @@ router.get('/check-email', async (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     const { tenantId = 1, firstName, lastName, birthDate, cedula, email, phone, address, latitude, longitude, password } = req.body;
-    const name = [firstName, lastName].filter(Boolean).join(' ').trim() || firstName || '';
+    const toTitleCase = s => s ? s.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : '';
+    const firstNameClean = toTitleCase(firstName);
+    const lastNameClean = toTitleCase(lastName);
+    const name = [firstNameClean, lastNameClean].filter(Boolean).join(' ') || firstNameClean || '';
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password || !cedula) {
@@ -335,8 +338,8 @@ router.post('/register', async (req, res) => {
       registrationData: {
         tenantId,
         name,
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
+        firstName: firstNameClean,
+        lastName: lastNameClean,
         birthDate: birthDate || null,
         cedula: cedula.trim(),
         email: emailNormalized,
