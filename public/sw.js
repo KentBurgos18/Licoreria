@@ -11,7 +11,10 @@ const PRECACHE_URLS = [
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(SW_CACHE).then(function(cache) {
-      return cache.addAll(PRECACHE_URLS);
+      // allSettled: si un recurso falla no aborta el install del SW
+      return Promise.allSettled(
+        PRECACHE_URLS.map(function(url) { return cache.add(url); })
+      );
     })
   );
   self.skipWaiting();
