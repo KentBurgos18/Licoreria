@@ -7340,6 +7340,8 @@
                     updateGroupSaleParticipantsTableModal();
                 }
             }
+            // Actualizar layout de la vista POS si está activa
+            if (typeof posUpdateLayout === 'function') posUpdateLayout();
         }
         
         // ── Custom payment select helpers ──────────────────────────
@@ -7373,6 +7375,12 @@
         // ───────────────────────────────────────────────────────────
 
         function openSellCartModal() {
+            // Navegar a la vista POS dedicada
+            if (window.dashboardNavigate) {
+                window.dashboardNavigate('/dashboard/pos');
+                return;
+            }
+            // fallback: abrir modal
             // Sincronizar estado de venta grupal
             $('#sellCartModalGroupSaleToggle').prop('checked', isGroupSale);
             if (isGroupSale) {
