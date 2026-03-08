@@ -503,7 +503,7 @@
                         </div>
                         <div class="lb-iw">
                             <span class="lb-ico"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-                            <input type="text" id="firstName" placeholder="Ej: Juan Carlos">
+                            <input type="text" id="firstName" placeholder="Ej: Juan Carlos" oninput="validateField('firstName')">
                         </div>
                         <div class="lb-err-msg" id="err-firstName">
                             <svg width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
@@ -517,7 +517,7 @@
                         </div>
                         <div class="lb-iw">
                             <span class="lb-ico"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-                            <input type="text" id="lastName" placeholder="Ej: Pérez López">
+                            <input type="text" id="lastName" placeholder="Ej: Pérez López" oninput="validateField('lastName')">
                         </div>
                         <div class="lb-err-msg" id="err-lastName">
                             <svg width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
@@ -533,7 +533,7 @@
                     </div>
                     <div class="lb-iw">
                         <span class="lb-ico"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
-                        <input type="text" id="cedula" placeholder="Ej: 1234567890" maxlength="13">
+                        <input type="text" id="cedula" placeholder="Ej: 1234567890" maxlength="13" oninput="validateField('cedula')">
                     </div>
                     <div class="lb-err-msg" id="err-cedula">
                         <svg width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
@@ -578,7 +578,7 @@
                     </div>
                     <div class="lb-iw">
                         <span class="lb-ico"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
-                        <input type="date" id="birthDate" style="padding-left:36px;">
+                        <input type="date" id="birthDate" onchange="validateField('birthDate')" style="padding-left:36px;">
                     </div>
                     <div class="lb-err-msg" id="err-birthDate">
                         <svg width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
@@ -617,7 +617,7 @@
                     </div>
                     <div class="lb-iw">
                         <span class="lb-ico"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-                        <input type="password" id="password" placeholder="Mínimo 6 caracteres" oninput="checkStrength()" style="padding-right:40px;">
+                        <input type="password" id="password" placeholder="Mínimo 6 caracteres" oninput="checkStrength(); validateField('password'); if(document.getElementById('confirmPassword').value) validateField('confirmPassword');" style="padding-right:40px;">
                         <button class="lb-eye" type="button" onclick="togglePwd('password','eyeP')">
                             <svg id="eyeP" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
@@ -642,7 +642,7 @@
                     </div>
                     <div class="lb-iw">
                         <span class="lb-ico"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-                        <input type="password" id="confirmPassword" placeholder="Repite tu contraseña" style="padding-right:40px;">
+                        <input type="password" id="confirmPassword" placeholder="Repite tu contraseña" oninput="validateField('confirmPassword')" style="padding-right:40px;">
                         <button class="lb-eye" type="button" onclick="togglePwd('confirmPassword','eyeP2')">
                             <svg id="eyeP2" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
