@@ -9497,8 +9497,20 @@
 
         $('#smtpSettingsForm').on('submit', function(e) {
             e.preventDefault();
+            if (!$('#smtpHost').val().trim()) {
+                showAlert('El Servidor SMTP (Host) es requerido', 'warning');
+                return;
+            }
+            if (!$('#smtpPort').val()) {
+                showAlert('El Puerto SMTP es requerido', 'warning');
+                return;
+            }
+            if (!$('#smtpUser').val().trim()) {
+                showAlert('El Usuario/Email SMTP es requerido', 'warning');
+                return;
+            }
             const settings = [
-                { key: 'smtp_host', value: $('#smtpHost').val(), type: 'string' },
+                { key: 'smtp_host', value: $('#smtpHost').val().trim(), type: 'string' },
                 { key: 'smtp_port', value: $('#smtpPort').val(), type: 'number' },
                 { key: 'smtp_user', value: $('#smtpUser').val(), type: 'string' },
                 { key: 'smtp_password', value: $('#smtpPassword').val(), type: 'string' },
