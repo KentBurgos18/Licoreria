@@ -9513,11 +9513,15 @@
                 { key: 'smtp_host', value: $('#smtpHost').val().trim(), type: 'string' },
                 { key: 'smtp_port', value: $('#smtpPort').val(), type: 'number' },
                 { key: 'smtp_user', value: $('#smtpUser').val(), type: 'string' },
-                { key: 'smtp_password', value: $('#smtpPassword').val(), type: 'string' },
                 { key: 'smtp_secure', value: $('#smtpSecure').is(':checked'), type: 'boolean' },
                 { key: 'smtp_from_email', value: $('#smtpFromEmail').val(), type: 'string' },
                 { key: 'smtp_from_name', value: $('#smtpFromName').val(), type: 'string' }
             ];
+            // Solo guardar contraseña si el usuario escribió algo (no sobreescribir con vacío)
+            var smtpPassVal = $('#smtpPassword').val();
+            if (smtpPassVal) {
+                settings.push({ key: 'smtp_password', value: smtpPassVal, type: 'string' });
+            }
 
             $.ajax({
                 url: '/api/settings/bulk',
