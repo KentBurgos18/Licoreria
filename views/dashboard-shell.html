@@ -386,7 +386,8 @@
         }
         
         /* ══ SELL CART MODAL — diseño renovado ══════════════════════════ */
-        #sellCartModal .modal-dialog { max-width: 580px; }
+        #sellCartModal { overflow: hidden !important; }
+        #sellCartModal .modal-dialog { max-width: 580px; height: calc(100% - 60px); }
         #sellCartModal .modal-content {
             background: var(--th-surf);
             border: 1px solid var(--th-border);
@@ -394,6 +395,7 @@
             box-shadow: 0 24px 60px rgba(0,0,0,.55), 0 0 0 1px var(--th-border2);
             display: flex; flex-direction: column;
             max-height: min(90vh, 820px);
+            height: 100%;
             overflow: hidden;
         }
         /* Head */
