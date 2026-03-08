@@ -385,128 +385,270 @@
             transform: translateY(-50%);
         }
         
-        /* Carrito del modal Vender: estilo como carrito del cliente */
-        #sellCartModal .cart-item {
-            border: 1px solid var(--th-border);
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 12px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            display: flex;
-            flex-direction: row;
-            align-items: stretch;
-            gap: 12px;
-            background: var(--th-surf2);
-        }
-        #sellCartModal .cart-item:hover {
-            box-shadow: var(--th-shadow);
-        }
-        #sellCartModal .cart-item-image-wrap {
-            flex-shrink: 0;
-            width: 90px;
-            height: 90px;
-            border-radius: 8px;
-            overflow: hidden;
-            background: var(--th-surf3);
-        }
-        #sellCartModal .cart-item-image-wrap img,
-        #sellCartModal .cart-item-image-wrap .cart-image-placeholder {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        #sellCartModal .cart-image-placeholder {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--th-text3);
-            font-size: 2em;
-        }
-        #sellCartModal .cart-item-body {
-            flex: 1;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        #sellCartModal .cart-item-body h5 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0;
-            line-height: 1.3;
-        }
-        #sellCartModal .cart-item-price-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 2px;
-        }
-        #sellCartModal .quantity-controls {
-            display: inline-flex;
-            align-items: stretch;
+        /* ══ SELL CART MODAL — diseño renovado ══════════════════════════ */
+        #sellCartModal .modal-dialog { max-width: 580px; margin: auto; }
+        #sellCartModal .modal-content {
             background: var(--th-surf);
-            border-radius: 20px;
             border: 1px solid var(--th-border);
+            border-radius: 18px;
+            box-shadow: 0 24px 60px rgba(0,0,0,.55), 0 0 0 1px var(--th-border2);
             overflow: hidden;
-            height: 36px;
+            display: flex; flex-direction: column;
         }
-        #sellCartModal .quantity-controls .btn {
-            flex: 1;
-            min-width: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            border: none;
-            background: transparent;
-            padding: 0;
-            margin: 0;
-            cursor: pointer;
-            transition: background 0.2s;
+        /* Head */
+        #sellCartModal .scm-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--th-abg);
+            border-bottom: 1.5px dashed var(--th-border2);
+            flex-shrink: 0;
         }
-        #sellCartModal .quantity-controls .btn:hover {
-            background: rgba(0,0,0,0.08);
+        #sellCartModal .scm-title {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 15px; font-weight: 800; color: var(--th-text);
         }
-        #sellCartModal .quantity-controls .btn-danger {
-            color: #dc3545;
+        #sellCartModal .scm-title-icon {
+            width: 32px; height: 32px; border-radius: 9px;
+            background: var(--th-abg); border: 1px solid var(--th-border);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--th-accent2); flex-shrink: 0;
         }
-        #sellCartModal .quantity-controls .btn-danger:hover {
-            background: rgba(220, 53, 69, 0.1);
+        #sellCartModal .scm-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 22px; height: 22px; border-radius: 7px; padding: 0 5px;
+            background: var(--th-accent); color: #fff;
+            font-size: 11px; font-weight: 800;
         }
-        #sellCartModal .quantity-controls span {
-            flex: 1;
-            min-width: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 0.95rem;
-            border-left: 1px solid var(--th-border);
-            border-right: 1px solid var(--th-border);
-            color: var(--th-text);
+        #sellCartModal .scm-close {
+            width: 30px; height: 30px; border-radius: 8px;
+            background: var(--th-surf2); border: 1px solid var(--th-border);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--th-text2); cursor: pointer; transition: all .14s;
         }
-        /* Evitar que el dropdown del método de pago quede detrás del modal o sin poder seleccionar */
-        #sellCartModal .modal-footer {
-            position: relative;
-            z-index: 1060;
-            overflow: visible;
+        #sellCartModal .scm-close:hover { background: var(--th-rbg); border-color: rgba(244,63,94,.3); color: var(--th-red); }
+        /* Body */
+        #sellCartModal .scm-body {
+            flex: 1; overflow-y: auto; padding: 16px 20px;
+            display: flex; flex-direction: column; gap: 14px;
+            max-height: 65vh;
         }
-        #sellCartModal #sellCartModalPaymentMethod {
-            position: relative;
-            z-index: 1061;
-            pointer-events: auto;
-            min-height: 38px;
-            cursor: pointer;
+        #sellCartModal .scm-body::-webkit-scrollbar { width: 4px; }
+        #sellCartModal .scm-body::-webkit-scrollbar-track { background: transparent; }
+        #sellCartModal .scm-body::-webkit-scrollbar-thumb { background: var(--th-border2); border-radius: 4px; }
+        /* Section label */
+        #sellCartModal .scm-section-lbl {
+            display: flex; align-items: center; gap: 7px;
+            font-size: 10px; font-weight: 800; letter-spacing: .1em;
+            text-transform: uppercase; color: var(--th-text3);
+            margin-bottom: 6px;
         }
-        #sellCartModal #sellCartModalNormalSaleFields .row {
-            overflow: visible;
+        /* Cart items */
+        #sellCartModal .scm-item {
+            display: flex; align-items: center; gap: 12px;
+            background: var(--th-surf2); border: 1px solid var(--th-border);
+            border-radius: 12px; padding: 10px 12px;
+            transition: border-color .15s; margin-bottom: 6px;
         }
-        #sellCartModal #sellCartModalPaymentMethodCol {
-            position: relative;
-            z-index: 1060;
+        #sellCartModal .scm-item:last-child { margin-bottom: 0; }
+        #sellCartModal .scm-item:hover { border-color: var(--th-border2); }
+        #sellCartModal .scm-item-img {
+            width: 52px; height: 52px; flex-shrink: 0; border-radius: 9px;
+            background: var(--th-surf3); border: 1px solid var(--th-border);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--th-text3); overflow: hidden;
         }
-        @media (max-width: 768px) {
-            #sellCartModal .cart-item-image-wrap { width: 70px; height: 70px; }
+        #sellCartModal .scm-item-img img { width: 100%; height: 100%; object-fit: cover; }
+        #sellCartModal .scm-item-info { flex: 1; min-width: 0; }
+        #sellCartModal .scm-item-name {
+            font-size: 13px; font-weight: 700; color: var(--th-text);
+            margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        #sellCartModal .scm-item-unit { font-size: 10.5px; color: var(--th-text3); }
+        #sellCartModal .scm-item-price {
+            font-size: 13px; font-weight: 800; color: var(--th-accent2); margin-top: 3px;
+        }
+        #sellCartModal .scm-qty { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        #sellCartModal .scm-qty-del {
+            width: 28px; height: 28px; border-radius: 7px;
+            background: var(--th-rbg); border: 1px solid rgba(244,63,94,.2);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--th-red); cursor: pointer; transition: all .14s;
+        }
+        #sellCartModal .scm-qty-del:hover { background: var(--th-red); color: #fff; border-color: var(--th-red); }
+        #sellCartModal .scm-qty-btn {
+            width: 28px; height: 28px; border-radius: 7px;
+            background: var(--th-surf3); border: 1px solid var(--th-border);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--th-text2); cursor: pointer; transition: all .14s;
+        }
+        #sellCartModal .scm-qty-btn:hover { background: var(--th-abg); border-color: var(--th-accent); color: var(--th-accent2); }
+        #sellCartModal .scm-qty-btn:active { transform: scale(.92); }
+        #sellCartModal .scm-qty-btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+        #sellCartModal .scm-qty-num {
+            font-size: 13px; font-weight: 700; color: var(--th-text);
+            min-width: 20px; text-align: center;
+        }
+        #sellCartModal .scm-item-total {
+            font-size: 12.5px; font-weight: 700; color: var(--th-text);
+            min-width: 52px; text-align: right; flex-shrink: 0;
+        }
+        /* Empty */
+        #sellCartModal .scm-empty { text-align: center; padding: 32px 20px; }
+        #sellCartModal .scm-empty-icon {
+            width: 48px; height: 48px; border-radius: 13px;
+            background: var(--th-abg); border: 1px solid var(--th-border);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--th-accent2); margin: 0 auto 10px;
+        }
+        #sellCartModal .scm-empty-t { font-size: 14px; font-weight: 700; color: var(--th-text2); margin-bottom: 4px; }
+        #sellCartModal .scm-empty-s { font-size: 11.5px; color: var(--th-text3); }
+        /* Fields section */
+        #sellCartModal .scm-fields {
+            background: var(--th-surf2); border: 1px solid var(--th-border);
+            border-radius: 12px; padding: 12px 14px;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        #sellCartModal .scm-field-group { display: flex; flex-direction: column; gap: 4px; }
+        #sellCartModal .scm-field-lbl {
+            font-size: 9.5px; font-weight: 700; letter-spacing: .1em;
+            text-transform: uppercase; color: var(--th-text3); display: block;
+        }
+        #sellCartModal .scm-field-lbl.req { color: var(--th-amber); }
+        #sellCartModal .scm-inp {
+            background: rgba(255,255,255,.04); border: 1px solid var(--th-border);
+            border-radius: 9px; padding: 8px 12px;
+            font-size: 12.5px; color: var(--th-text);
+            outline: none; transition: border-color .15s, box-shadow .15s; width: 100%;
+        }
+        #sellCartModal .scm-inp::placeholder { color: var(--th-text3); }
+        #sellCartModal .scm-inp:focus { border-color: var(--th-accent); box-shadow: 0 0 0 3px var(--th-abg); }
+        #sellCartModal .scm-fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        /* Custom payment select */
+        #sellCartModal .scm-sel {
+            position: relative; background: rgba(255,255,255,.04);
+            border: 1px solid var(--th-border); border-radius: 9px;
+            padding: 8px 36px 8px 12px; font-size: 12.5px; color: var(--th-text);
+            cursor: pointer; user-select: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        #sellCartModal .scm-sel:hover { border-color: var(--th-border2); }
+        #sellCartModal .scm-sel.open { border-color: var(--th-accent); box-shadow: 0 0 0 3px var(--th-abg); }
+        #sellCartModal .scm-sel-val { display: flex; align-items: center; gap: 7px; }
+        #sellCartModal .scm-sel-arrow {
+            position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+            color: var(--th-text3); transition: transform .2s; pointer-events: none;
+        }
+        #sellCartModal .scm-sel.open .scm-sel-arrow { transform: translateY(-50%) rotate(180deg); }
+        #sellCartModal .scm-sel-opts {
+            display: none; position: absolute; top: calc(100% + 5px); left: 0; right: 0;
+            background: var(--th-surf); border: 1px solid var(--th-border2);
+            border-radius: 10px; overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0,0,0,.35); z-index: 1100;
+        }
+        #sellCartModal .scm-sel.open .scm-sel-opts { display: block; }
+        #sellCartModal .scm-sel-opt {
+            display: flex; align-items: center; gap: 8px;
+            padding: 9px 13px; font-size: 12.5px; color: var(--th-text);
+            cursor: pointer; transition: background .12s;
+        }
+        #sellCartModal .scm-sel-opt:hover { background: var(--th-abg); color: var(--th-accent2); }
+        #sellCartModal .scm-sel-opt.selected { color: var(--th-accent2); font-weight: 700; }
+        /* Grupal toggle */
+        #sellCartModal .scm-grupal-row {
+            display: flex; align-items: center; gap: 10px;
+            padding-top: 4px; border-top: 1.5px dashed var(--th-border2); margin-top: 2px;
+        }
+        #sellCartModal .scm-grupal-lbl {
+            font-size: 12.5px; font-weight: 700; color: var(--th-text);
+            display: flex; align-items: center; gap: 6px; flex: 1;
+        }
+        #sellCartModal .scm-toggle {
+            position: relative; width: 38px; height: 22px; flex-shrink: 0;
+            cursor: pointer; display: block; margin: 0;
+        }
+        #sellCartModal .scm-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+        #sellCartModal .scm-toggle-track {
+            position: absolute; inset: 0; border-radius: 11px;
+            background: var(--th-surf3); border: 1px solid var(--th-border);
+            transition: background .2s, border-color .2s;
+        }
+        #sellCartModal .scm-toggle input:checked ~ .scm-toggle-track { background: var(--th-accent); border-color: var(--th-accent); }
+        #sellCartModal .scm-toggle-thumb {
+            position: absolute; top: 3px; left: 3px;
+            width: 14px; height: 14px; border-radius: 7px; background: #fff;
+            transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,.25); pointer-events: none;
+        }
+        #sellCartModal .scm-toggle input:checked ~ .scm-toggle-thumb { transform: translateX(16px); }
+        /* Customer search */
+        #sellCartModal .scm-customer-wrap { position: relative; }
+        #sellCartModal .scm-customer-inp {
+            background: rgba(255,255,255,.04); border: 1px solid var(--th-border);
+            border-radius: 9px; padding: 8px 12px 8px 34px;
+            font-size: 12.5px; color: var(--th-text);
+            outline: none; transition: border-color .15s, box-shadow .15s; width: 100%;
+        }
+        #sellCartModal .scm-customer-inp:focus { border-color: var(--th-accent); box-shadow: 0 0 0 3px var(--th-abg); }
+        #sellCartModal .scm-customer-icon {
+            position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+            color: var(--th-text3); pointer-events: none; display: flex;
+        }
+        /* Summary */
+        #sellCartModal .scm-resumen {
+            background: var(--th-surf2); border: 1px solid var(--th-border); border-radius: 12px; overflow: hidden;
+        }
+        #sellCartModal .scm-resumen-head {
+            background: var(--th-abg); border-bottom: 1.5px dashed var(--th-border2);
+            padding: 9px 14px; display: flex; align-items: center; gap: 7px;
+            font-size: 12px; font-weight: 800; color: var(--th-text);
+        }
+        #sellCartModal .scm-resumen-body { padding: 10px 14px; }
+        #sellCartModal .scm-res-row {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 12px; color: var(--th-text2); padding: 3px 0;
+        }
+        #sellCartModal .scm-res-divider { border: none; border-top: 1.5px dashed var(--th-border2); margin: 6px 0; }
+        #sellCartModal .scm-res-total {
+            display: flex; justify-content: space-between; align-items: center; padding: 4px 0 2px;
+        }
+        #sellCartModal .scm-res-total-lbl { font-size: 13px; font-weight: 800; color: var(--th-text); }
+        #sellCartModal .scm-res-total-val {
+            font-size: 22px; font-weight: 900; color: var(--th-accent2); line-height: 1;
+        }
+        /* Footer */
+        #sellCartModal .scm-foot {
+            padding: 14px 20px; border-top: 1.5px dashed var(--th-border2);
+            display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+        }
+        #sellCartModal .scm-btn-vaciar {
+            display: flex; align-items: center; gap: 6px;
+            padding: 9px 16px; border-radius: 10px;
+            background: var(--th-rbg); border: 1px solid rgba(244,63,94,.25);
+            font-size: 12px; font-weight: 700; color: var(--th-red);
+            cursor: pointer; transition: all .14s; white-space: nowrap; flex-shrink: 0;
+        }
+        #sellCartModal .scm-btn-vaciar:hover { background: var(--th-red); color: #fff; border-color: var(--th-red); }
+        #sellCartModal .scm-btn-cerrar {
+            flex: 1; padding: 9px 16px; border-radius: 10px;
+            background: var(--th-surf2); border: 1px solid var(--th-border);
+            font-size: 12.5px; font-weight: 700; color: var(--th-text2);
+            cursor: pointer; transition: all .14s; text-align: center;
+        }
+        #sellCartModal .scm-btn-cerrar:hover { border-color: var(--th-border2); color: var(--th-text); }
+        #sellCartModal .scm-btn-procesar {
+            flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+            padding: 9px 20px; border-radius: 10px;
+            background: linear-gradient(135deg, var(--th-accent), var(--th-accent2));
+            border: none; color: #fff; font-size: 13px; font-weight: 800;
+            cursor: pointer; box-shadow: 0 4px 14px var(--th-abg);
+            transition: opacity .15s, transform .12s; white-space: nowrap;
+        }
+        #sellCartModal .scm-btn-procesar:hover { opacity: .92; transform: translateY(-1px); }
+        #sellCartModal .scm-btn-procesar:active { transform: scale(.98); }
+        #sellCartModal .scm-btn-procesar:disabled { opacity: .4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+        #sellCartModal .scm-fields-credit { display: flex; flex-direction: column; gap: 10px; }
+        @media (max-width: 576px) {
+            #sellCartModal .scm-item-img { width: 42px; height: 42px; }
+            #sellCartModal .scm-fields-row { grid-template-columns: 1fr; }
         }
 
         /* Burbuja flotante del carrito */
@@ -7121,10 +7263,12 @@
             
             if (sellCart.length === 0) {
                 cartModalItems.html(`
-                    <div class="text-center py-5">
-                        <i class="bi bi-cart-x" style="font-size: 4em; color: #ccc;"></i>
-                        <h5 class="mt-3 text-muted">El carrito está vacío</h5>
-                        <p class="text-muted small">Agregue productos desde el catálogo de venta</p>
+                    <div class="scm-empty">
+                        <div class="scm-empty-icon">
+                            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                        </div>
+                        <div class="scm-empty-t">Carrito vacío</div>
+                        <div class="scm-empty-s">Agrega productos para continuar</div>
                     </div>
                 `);
                 $('#sellCartModalPay').prop('disabled', true);
@@ -7136,27 +7280,27 @@
                     const itemTotal = item.unitPrice * item.quantity;
                     subtotal += itemTotal;
                     const nameEscaped = (item.productName || '').replace(/"/g, '&quot;');
-                    const imageHtml = item.imageUrl ?
-                        `<img src="${item.imageUrl}" alt="${nameEscaped}">` :
-                        `<div class="cart-image-placeholder"><i class="bi bi-image"></i></div>`;
+                    const imageHtml = item.imageUrl
+                        ? `<img src="${item.imageUrl}" alt="${nameEscaped}">`
+                        : `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
                     const leftBtn = item.quantity === 1
-                        ? `<button class="btn btn-sm btn-danger" onclick="removeFromSellCart(${index}); updateSellCartModal();" title="Eliminar"><i class="bi bi-trash"></i></button>`
-                        : `<button class="btn btn-sm" onclick="updateSellCartQuantity(${index}, ${item.quantity - 1}); updateSellCartModal();"><i class="bi bi-dash"></i></button>`;
+                        ? `<button class="scm-qty-del" onclick="removeFromSellCart(${index}); updateSellCartModal();" title="Eliminar"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>`
+                        : `<button class="scm-qty-btn" onclick="updateSellCartQuantity(${index}, ${item.quantity - 1}); updateSellCartModal();"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>`;
 
                     cartHtml += `
-                        <div class="cart-item">
-                            <div class="cart-item-image-wrap">${imageHtml}</div>
-                            <div class="cart-item-body">
-                                <h5>${item.productName}</h5>
-                                <div class="cart-item-price-row">
-                                    <strong class="text-primary">$${itemTotal.toFixed(2)}</strong>
-                                    <div class="quantity-controls">
-                                        ${leftBtn}
-                                        <span>${item.quantity}</span>
-                                        <button class="btn btn-sm" onclick="updateSellCartQuantity(${index}, ${item.quantity + 1}); updateSellCartModal();" ${item.quantity >= item.maxAvailable ? 'disabled' : ''}><i class="bi bi-plus"></i></button>
-                                    </div>
-                                </div>
+                        <div class="scm-item">
+                            <div class="scm-item-img">${imageHtml}</div>
+                            <div class="scm-item-info">
+                                <div class="scm-item-name">${item.productName}</div>
+                                <div class="scm-item-unit">${item.unit || item.presentation || ''}</div>
+                                <div class="scm-item-price">$${item.unitPrice.toFixed(2)}</div>
                             </div>
+                            <div class="scm-qty">
+                                ${leftBtn}
+                                <span class="scm-qty-num">${item.quantity}</span>
+                                <button class="scm-qty-btn" onclick="updateSellCartQuantity(${index}, ${item.quantity + 1}); updateSellCartModal();" ${item.quantity >= item.maxAvailable ? 'disabled' : ''}><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+                            </div>
+                            <span class="scm-item-total">$${itemTotal.toFixed(2)}</span>
                         </div>`;
                 });
 
@@ -7192,6 +7336,36 @@
             }
         }
         
+        // ── Custom payment select helpers ──────────────────────────
+        function toggleScmPagoSel(e) {
+            e && e.stopPropagation();
+            document.getElementById('scmPagoSel').classList.toggle('open');
+        }
+        function scmSelectPago(el, val, icon, label) {
+            document.getElementById('scmPagoVal').innerHTML = '<span>' + icon + '</span> ' + label;
+            document.querySelectorAll('#scmPagoSel .scm-sel-opt').forEach(function(o) { o.classList.remove('selected'); });
+            el.classList.add('selected');
+            document.getElementById('scmPagoSel').classList.remove('open');
+            $('#sellCartModalPaymentMethod').val(val).trigger('change');
+        }
+        function scmSyncPago() {
+            var val = $('#sellCartModalPaymentMethod').val() || 'CASH';
+            var map = { CASH: ['💵','Efectivo'], CARD: ['💳','Tarjeta'], TRANSFER: ['📲','Transferencia'], CREDIT: ['🏦','Crédito'] };
+            var pair = map[val] || map['CASH'];
+            var el = document.getElementById('scmPagoVal');
+            if (el) el.innerHTML = '<span>' + pair[0] + '</span> ' + pair[1];
+            document.querySelectorAll('#scmPagoSel .scm-sel-opt').forEach(function(o) {
+                o.classList.toggle('selected', o.dataset.val === val);
+            });
+        }
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#scmPagoSel')) {
+                var sel = document.getElementById('scmPagoSel');
+                if (sel) sel.classList.remove('open');
+            }
+        });
+        // ───────────────────────────────────────────────────────────
+
         function openSellCartModal() {
             // Sincronizar estado de venta grupal
             $('#sellCartModalGroupSaleToggle').prop('checked', isGroupSale);
@@ -7217,7 +7391,8 @@
             $('#clearCustomerBtn').hide();
             $('#sellCartModalCustomersList').hide();
             togglePaymentMethodFieldsModal();
-            
+            scmSyncPago();
+
             updateSellCartModal();
             const cartModal = new bootstrap.Modal(document.getElementById('sellCartModal'));
             cartModal.show();
@@ -10353,151 +10528,161 @@
 
     <!-- Sell Cart Modal -->
     <div class="modal fade" id="sellCartModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
+        <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">
-                        <i class="bi bi-cart3"></i> Carrito de Compras
-                        <span class="badge bg-light text-dark ms-2" id="sellCartModalCount">0</span>
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
-                    <!-- Cart Items -->
-                    <div id="sellCartModalItems">
-                        <div class="text-center text-muted py-5">
-                            <i class="bi bi-cart" style="font-size: 3em;"></i>
-                            <p class="mt-2">Carrito vacío</p>
+                <!-- HEAD -->
+                <div class="scm-head">
+                    <div class="scm-title">
+                        <div class="scm-title-icon">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
                         </div>
+                        Carrito de Compras
+                        <span class="scm-badge" id="sellCartModalCount">0</span>
                     </div>
+                    <button class="scm-close" data-bs-dismiss="modal">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
                 </div>
-                <div class="modal-footer">
-                    <div class="w-100">
-                        <!-- Group Sale Toggle -->
-                        <div class="mb-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="sellCartModalGroupSaleToggle" onchange="toggleGroupSaleModal()">
-                                <label class="form-check-label" for="sellCartModalGroupSaleToggle">
-                                    <strong><i class="bi bi-people"></i> Venta Grupal</strong>
-                                </label>
-                            </div>
+                <!-- BODY -->
+                <div class="scm-body">
+                    <!-- Productos -->
+                    <div>
+                        <div class="scm-section-lbl">
+                            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+                            Productos
                         </div>
-
-                        <!-- Normal Sale Fields (hidden when group sale is active) -->
+                        <div id="sellCartModalItems"></div>
+                    </div>
+                    <!-- Campos -->
+                    <div class="scm-fields">
+                        <!-- Método de pago -->
+                        <div class="scm-field-group" id="sellCartModalPaymentMethodCol">
+                            <label class="scm-field-lbl">Método de Pago</label>
+                            <div class="scm-sel" id="scmPagoSel" onclick="toggleScmPagoSel(event)">
+                                <span class="scm-sel-val" id="scmPagoVal"><span>💵</span> Efectivo</span>
+                                <svg class="scm-sel-arrow" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                                <div class="scm-sel-opts">
+                                    <div class="scm-sel-opt selected" data-val="CASH"     onclick="scmSelectPago(this,'CASH','💵','Efectivo')"><span>💵</span> Efectivo</div>
+                                    <div class="scm-sel-opt"          data-val="CARD"     onclick="scmSelectPago(this,'CARD','💳','Tarjeta')"><span>💳</span> Tarjeta</div>
+                                    <div class="scm-sel-opt"          data-val="TRANSFER" onclick="scmSelectPago(this,'TRANSFER','📲','Transferencia')"><span>📲</span> Transferencia</div>
+                                    <div class="scm-sel-opt"          data-val="CREDIT"   onclick="scmSelectPago(this,'CREDIT','🏦','Crédito')"><span>🏦</span> Crédito</div>
+                                </div>
+                            </div>
+                            <select id="sellCartModalPaymentMethod" style="display:none" onchange="togglePaymentMethodFieldsModal()">
+                                <option value="CASH">Efectivo</option>
+                                <option value="CARD">Tarjeta</option>
+                                <option value="TRANSFER">Transferencia</option>
+                                <option value="CREDIT">Crédito</option>
+                            </select>
+                        </div>
+                        <!-- Campos venta normal -->
                         <div id="sellCartModalNormalSaleFields">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label" id="sellCartModalCustomerLabel">Cliente (Opcional)</label>
-                                    <div id="sellCartModalCustomerTextContainer">
-                                        <input type="text" class="form-control" id="sellCartModalCustomer" placeholder="Nombre del cliente">
+                            <div class="scm-field-group">
+                                <label class="scm-field-lbl" id="sellCartModalCustomerLabel">Cliente (Opcional)</label>
+                                <div id="sellCartModalCustomerTextContainer">
+                                    <input type="text" class="scm-inp" id="sellCartModalCustomer" placeholder="Nombre del cliente" autocomplete="off">
+                                </div>
+                                <div id="sellCartModalCustomerSelectContainer" style="display:none; position:relative;">
+                                    <div style="display:flex;gap:6px;align-items:center;">
+                                        <div class="scm-customer-wrap" style="flex:1;">
+                                            <span class="scm-customer-icon"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                                            <input type="text" class="scm-customer-inp" id="sellCartModalCustomerSearch"
+                                                   placeholder="Buscar cliente..."
+                                                   onkeyup="filterCustomersForCredit(this.value); if($('#sellCartModalPaymentMethod').val()==='CREDIT') showCustomersDropdown();"
+                                                   onfocus="if($('#sellCartModalPaymentMethod').val()==='CREDIT') showCustomersDropdown();"
+                                                   autocomplete="off">
+                                        </div>
+                                        <button class="scm-qty-del" type="button" onclick="clearCustomerSelection()" id="clearCustomerBtn" style="display:none;" title="Limpiar">
+                                            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                        </button>
+                                        <button class="scm-qty-btn" onclick="showCreateCustomerModal()" type="button" title="Agregar cliente">
+                                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg>
+                                        </button>
                                     </div>
-                                    <div id="sellCartModalCustomerSelectContainer" style="display: none; position: relative;">
-                                        <div class="input-group mb-2">
-                                            <input type="text" class="form-control" id="sellCartModalCustomerSearch" placeholder="Buscar cliente..." onkeyup="filterCustomersForCredit(this.value); if($('#sellCartModalPaymentMethod').val() === 'CREDIT') showCustomersDropdown();" onfocus="if($('#sellCartModalPaymentMethod').val() === 'CREDIT') showCustomersDropdown();" autocomplete="off">
-                                            <button class="btn btn-outline-secondary" type="button" onclick="clearCustomerSelection()" id="clearCustomerBtn" style="display: none;" title="Limpiar selección">
-                                                <i class="bi bi-x"></i>
-                                            </button>
-                                            <button class="btn btn-outline-primary" onclick="showCreateCustomerModal()" title="Agregar Cliente" type="button">
-                                                <i class="bi bi-person-plus"></i>
-                                            </button>
-                                        </div>
-                                        <input type="hidden" id="sellCartModalCustomerId" value="">
-                                        <div id="sellCartModalCustomersList" class="customer-dropdown" style="display: none; position: fixed; z-index: 9999; max-height: 250px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                                            <div class="text-muted text-center py-3">Cargando clientes...</div>
-                                        </div>
+                                    <input type="hidden" id="sellCartModalCustomerId" value="">
+                                    <div id="sellCartModalCustomersList" class="customer-dropdown" style="display:none; position:fixed; z-index:9999; max-height:250px; overflow-y:auto; border:1px solid var(--th-border); border-radius:10px; background:var(--th-surf); box-shadow:0 8px 24px rgba(0,0,0,.35);">
+                                        <div class="text-muted text-center py-3" style="font-size:12px;">Cargando clientes...</div>
                                     </div>
                                 </div>
-                                <div class="col-md-6" id="sellCartModalPaymentMethodCol">
-                                    <label class="form-label">Método de Pago</label>
-                                    <select class="form-select" id="sellCartModalPaymentMethod" onchange="togglePaymentMethodFieldsModal()">
-                                        <option value="CASH">Efectivo</option>
-                                        <option value="CARD">Tarjeta</option>
-                                        <option value="TRANSFER">Transferencia</option>
-                                        <option value="CREDIT">Crédito</option>
-                                    </select>
-                                </div>
                             </div>
-                            <div class="mb-3" id="sellCartModalTransferReferenceField" style="display: none;">
-                                <label class="form-label">Referencia de Transferencia <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="sellCartModalTransferReference" placeholder="Número de referencia de la transferencia">
-                                <small class="form-text text-muted">Ingrese el número de referencia de la transferencia bancaria</small>
+                            <!-- Referencia transferencia -->
+                            <div id="sellCartModalTransferReferenceField" style="display:none" class="scm-field-group" style="margin-top:6px;">
+                                <label class="scm-field-lbl req">Referencia de Transferencia *</label>
+                                <input type="text" class="scm-inp" id="sellCartModalTransferReference" placeholder="Número de referencia bancaria">
                             </div>
-                            <div class="mb-3" id="sellCartModalCreditFields" style="display: none;">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Fecha Límite de Pago <span class="text-danger">*</span></label>
-                                        <input type="date" class="form-control" id="sellCartModalCreditDueDate" min="" required>
-                                        <small class="form-text text-muted">Fecha límite para el pago del crédito</small>
+                            <!-- Campos crédito -->
+                            <div id="sellCartModalCreditFields" style="display:none" class="scm-fields-credit" style="margin-top:6px;">
+                                <div class="scm-fields-row">
+                                    <div class="scm-field-group">
+                                        <label class="scm-field-lbl req">Fecha Límite de Pago *</label>
+                                        <input type="date" class="scm-inp" id="sellCartModalCreditDueDate" required>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Tasa de Interés Diaria (%)</label>
-                                        <input type="number" class="form-control" id="sellCartModalCreditInterestRate" value="1" step="0.01" min="0" max="100">
-                                        <small class="form-text text-muted">Porcentaje de interés diario (opcional, por defecto 1%)</small>
+                                    <div class="scm-field-group">
+                                        <label class="scm-field-lbl">Tasa Interés Diaria (%)</label>
+                                        <input type="number" class="scm-inp" id="sellCartModalCreditInterestRate" value="1" step="0.01" min="0" max="100">
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Group Sale Fields (shown when group sale is active) -->
-                        <div id="sellCartModalGroupSaleFields" style="display: none;">
-                            <!-- Customer search -->
-                            <div class="mb-2" style="position: relative;">
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                    <input type="text" class="form-control" id="gsSearch"
-                                           placeholder="Buscar cliente para agregar..."
-                                           oninput="gsSearchCustomer(this.value)"
-                                           autocomplete="off">
+                        <!-- Toggle Grupal -->
+                        <div class="scm-grupal-row">
+                            <span class="scm-grupal-lbl">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                Venta Grupal
+                            </span>
+                            <label class="scm-toggle">
+                                <input type="checkbox" id="sellCartModalGroupSaleToggle" onchange="toggleGroupSaleModal()">
+                                <div class="scm-toggle-track"></div>
+                                <div class="scm-toggle-thumb"></div>
+                            </label>
+                        </div>
+                        <!-- Campos venta grupal -->
+                        <div id="sellCartModalGroupSaleFields" style="display:none">
+                            <div class="scm-field-group" style="position:relative;">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--th-text3);flex-shrink:0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                    <input type="text" class="scm-inp" id="gsSearch" placeholder="Buscar cliente para agregar..." oninput="gsSearchCustomer(this.value)" autocomplete="off" style="flex:1;">
                                 </div>
-                                <div id="gsDropdown" class="list-group list-group-flush"
-                                     style="position: absolute; top: 100%; left: 0; right: 0; z-index: 1100;
-                                            max-height: 160px; overflow-y: auto;
-                                            border: 1px solid #dee2e6; border-radius: 4px;
-                                            background: #fff; display: none;
-                                            box-shadow: 0 4px 6px rgba(0,0,0,.1);"></div>
+                                <div id="gsDropdown" class="list-group list-group-flush" style="position:absolute;top:100%;left:0;right:0;z-index:1100;max-height:160px;overflow-y:auto;border:1px solid var(--th-border);border-radius:10px;background:var(--th-surf);display:none;box-shadow:0 8px 24px rgba(0,0,0,.35);"></div>
                             </div>
-                            <!-- Participant cards -->
-                            <div id="gsParticipantes" class="mb-2" style="max-height: 200px; overflow-y: auto;"></div>
-                            <!-- Divide + validation -->
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <button class="btn btn-sm btn-outline-secondary" type="button" onclick="gsDividirIgualmente()">
-                                    <i class="bi bi-distribute-vertical"></i> Dividir igualmente
+                            <div id="gsParticipantes" style="max-height:200px;overflow-y:auto;margin-top:6px;"></div>
+                            <div class="d-flex align-items-center gap-2 mt-2">
+                                <button class="scm-btn-cerrar" type="button" onclick="gsDividirIgualmente()" style="flex:0;white-space:nowrap;padding:6px 14px;font-size:11.5px;">
+                                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:3px;vertical-align:middle;"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                                    Dividir igualmente
                                 </button>
-                                <div id="gsValidacion" class="small flex-fill text-end"></div>
+                                <div id="gsValidacion" class="flex-fill text-end" style="font-size:11px;"></div>
                             </div>
-                        </div>
-
-                        <!-- Resumen del pedido (como carrito cliente) -->
-                        <div class="card mb-3">
-                            <div class="card-body">
-                                <h5 class="card-title mb-3"><i class="bi bi-receipt"></i> Resumen del pedido</h5>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>Subtotal:</span>
-                                    <span id="sellCartModalSubtotal">$0.00</span>
-                                </div>
-                                <div class="justify-content-between mb-2 tax-row-pos d-none">
-                                    <span id="sellCartModalTaxLabel">IVA:</span>
-                                    <span id="sellCartModalTax">$0.00</span>
-                                </div>
-                                <hr>
-                                <div class="d-flex justify-content-between mb-0">
-                                    <strong>Total:</strong>
-                                    <strong id="sellCartModalTotal" class="text-primary">$0.00</strong>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Action Buttons -->
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-outline-danger flex-fill" id="sellCartModalClear">
-                                <i class="bi bi-trash"></i> Vaciar Carrito
-                            </button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                            <button type="button" class="btn btn-success flex-fill" id="sellCartModalPay" disabled>
-                                <i class="bi bi-credit-card"></i> <span id="sellCartModalPayButtonText">Procesar Venta</span>
-                            </button>
                         </div>
                     </div>
+                    <!-- Resumen -->
+                    <div class="scm-resumen">
+                        <div class="scm-resumen-head">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                            Resumen del Pedido
+                        </div>
+                        <div class="scm-resumen-body">
+                            <div class="scm-res-row"><span>Subtotal</span><span id="sellCartModalSubtotal">$0.00</span></div>
+                            <div class="scm-res-row tax-row-pos d-none"><span id="sellCartModalTaxLabel">IVA</span><span id="sellCartModalTax">$0.00</span></div>
+                            <hr class="scm-res-divider">
+                            <div class="scm-res-total">
+                                <span class="scm-res-total-lbl">Total</span>
+                                <span class="scm-res-total-val" id="sellCartModalTotal">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- FOOT -->
+                <div class="scm-foot">
+                    <button class="scm-btn-vaciar" id="sellCartModalClear">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                        Vaciar
+                    </button>
+                    <button class="scm-btn-cerrar" data-bs-dismiss="modal">Cerrar</button>
+                    <button class="scm-btn-procesar" id="sellCartModalPay" disabled>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                        <span id="sellCartModalPayButtonText">Procesar Venta</span>
+                    </button>
                 </div>
             </div>
         </div>
