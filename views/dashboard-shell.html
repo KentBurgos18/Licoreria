@@ -392,6 +392,9 @@
             border: 1px solid var(--th-border);
             border-radius: 18px;
             box-shadow: 0 24px 60px rgba(0,0,0,.55), 0 0 0 1px var(--th-border2);
+            display: flex; flex-direction: column;
+            max-height: min(90vh, 820px);
+            overflow: hidden;
         }
         /* Head */
         #sellCartModal .scm-head {
@@ -426,6 +429,7 @@
         #sellCartModal .scm-close:hover { background: var(--th-rbg); border-color: rgba(244,63,94,.3); color: var(--th-red); }
         /* Body */
         #sellCartModal .scm-body {
+            flex: 1; min-height: 0; overflow-y: auto;
             padding: 16px 20px;
             display: flex; flex-direction: column; gap: 14px;
         }
@@ -10525,7 +10529,7 @@
 
     <!-- Sell Cart Modal -->
     <div class="modal fade" id="sellCartModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <!-- HEAD -->
                 <div class="scm-head">
@@ -10541,7 +10545,7 @@
                     </button>
                 </div>
                 <!-- BODY -->
-                <div class="scm-body modal-body">
+                <div class="scm-body">
                     <!-- Productos -->
                     <div>
                         <div class="scm-section-lbl">
