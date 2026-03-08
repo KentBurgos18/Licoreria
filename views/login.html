@@ -116,10 +116,6 @@
       font-size: 13px; padding: 8px 12px;
       border-radius: 8px; border: none;
     }
-    #alertContainer .alert-success {
-      background: rgba(13,148,136,.15); color: #2dd4bf;
-      border: 1px solid rgba(13,148,136,.25);
-    }
     #alertContainer .alert-danger {
       background: rgba(244,63,94,.12); color: #fb7185;
       border: 1px solid rgba(244,63,94,.2);
@@ -129,6 +125,62 @@
       border: 1px solid rgba(245,158,11,.2);
     }
     #alertContainer .btn-close { filter: invert(1); opacity: .5; }
+
+    /* Toast flotante */
+    #lb-toast-wrap {
+      position: fixed;
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      pointer-events: none;
+    }
+    .lb-toast {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      color: #1a1a2e;
+      border-radius: 10px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.18), 0 1px 4px rgba(0,0,0,.10);
+      padding: 11px 16px 11px 13px;
+      font-size: 13.5px;
+      font-weight: 500;
+      min-width: 220px;
+      max-width: 380px;
+      pointer-events: all;
+      opacity: 0;
+      transform: translateY(-14px) scale(.97);
+      transition: opacity .22s ease, transform .22s ease;
+    }
+    .lb-toast.lb-toast-in {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .lb-toast-icon {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .lb-toast-icon.success { background: #16a34a; }
+    .lb-toast-icon.danger  { background: #dc2626; }
+    .lb-toast-msg { flex: 1; line-height: 1.35; }
+    .lb-toast-close {
+      background: none; border: none; cursor: pointer;
+      color: #9ca3af; font-size: 16px; line-height: 1;
+      padding: 0 0 0 6px; flex-shrink: 0;
+    }
+    .lb-toast-close:hover { color: #6b7280; }
+    html[data-mode="dark"] .lb-toast {
+      background: #1e293b;
+      color: #e2e8f0;
+      box-shadow: 0 4px 24px rgba(0,0,0,.45), 0 1px 4px rgba(0,0,0,.3);
+    }
 
     /* Form groups */
     .lb-fgroup { margin-bottom: 13px; }
@@ -391,6 +443,7 @@
     </style>
 </head>
 <body>
+    <div id="lb-toast-wrap"></div>
     <div class="lb-bg"></div>
     <div class="lb-grid"></div>
 
@@ -744,13 +797,32 @@
         });
 
         function showAlert(message, type) {
-            const alertHtml = `
-                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-            $('#alertContainer').html(alertHtml);
+            if (type === 'success') {
+                // Toast flotante
+                var iconSvg = '<svg width="13" height="13" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+                var toast = document.createElement('div');
+                toast.className = 'lb-toast';
+                toast.innerHTML =
+                    '<div class="lb-toast-icon success">' + iconSvg + '</div>' +
+                    '<div class="lb-toast-msg">' + message + '</div>' +
+                    '<button class="lb-toast-close" onclick="this.closest(\'.lb-toast\').remove()">×</button>';
+                document.getElementById('lb-toast-wrap').appendChild(toast);
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(function() { toast.classList.add('lb-toast-in'); });
+                });
+                setTimeout(function() {
+                    toast.classList.remove('lb-toast-in');
+                    setTimeout(function() { toast.remove(); }, 250);
+                }, 3500);
+            } else {
+                // Inline dentro del formulario
+                var alertHtml =
+                    '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
+                    message +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                    '</div>';
+                $('#alertContainer').html(alertHtml);
+            }
         }
 
         // ── Verificación de email pendiente ────────────────────────────────────
