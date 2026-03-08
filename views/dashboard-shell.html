@@ -7372,12 +7372,6 @@
         // ───────────────────────────────────────────────────────────
 
         function openSellCartModal() {
-            // Navegar a la vista POS dedicada
-            if (window.dashboardNavigate) {
-                window.dashboardNavigate('/dashboard/sell/pos');
-                return;
-            }
-            // fallback: abrir modal
             // Sincronizar estado de venta grupal
             $('#sellCartModalGroupSaleToggle').prop('checked', isGroupSale);
             if (isGroupSale) {
