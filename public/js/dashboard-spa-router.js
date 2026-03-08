@@ -22,7 +22,8 @@
         '/dashboard/users': 'users',
         '/dashboard/audit': 'audit',
         '/dashboard/settings': 'settings',
-        '/dashboard/expenses': 'expenses'
+        '/dashboard/expenses': 'expenses',
+        '/dashboard/pos': 'pos'
     };
 
     var SECTION_INIT = {
@@ -38,7 +39,8 @@
         users: 'initUsersView',
         audit: 'initAuditView',
         settings: 'initSettingsView',
-        expenses: 'initExpensesView'
+        expenses: 'initExpensesView',
+        pos: 'initPosView'
     };
 
     var SECTION_META = {
@@ -54,7 +56,8 @@
         users: { label: 'Usuarios', icon: 'bi-person-gear' },
         audit: { label: 'Auditoría', icon: 'bi-shield-check' },
         settings: { label: 'Configuración', icon: 'bi-sliders' },
-        expenses: { label: 'Gastos', icon: 'bi-cash-stack' }
+        expenses: { label: 'Gastos', icon: 'bi-cash-stack' },
+        pos: { label: 'POS', icon: 'bi-display' }
     };
 
     function getViewFromPath(pathname) {

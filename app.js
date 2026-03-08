@@ -365,6 +365,7 @@ app.get('/dashboard/users', (req, res) => sendDashboardView(req, res, 'users.htm
 app.get('/dashboard/audit', (req, res) => sendDashboardView(req, res, 'audit.html'));
 app.get('/dashboard/settings', (req, res) => sendDashboardView(req, res, 'settings.html'));
 app.get('/dashboard/expenses', (req, res) => sendDashboardView(req, res, 'expenses.html'));
+app.get('/dashboard/pos', (req, res) => sendDashboardView(req, res, 'pos.html'));
 
 app.get('/products', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'create-product.html'));

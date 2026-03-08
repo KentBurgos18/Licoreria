@@ -385,7 +385,7 @@
             transform: translateY(-50%);
         }
         
-        /* ══ SELL CART MODAL — diseño renovado ══════════════════════════ */
+        /* ══ SELL CART MODAL + POS PANEL — diseño compartido (.scm-wrap) ════ */
         #sellCartModal { overflow: hidden !important; }
         #sellCartModal .modal-dialog { max-width: 580px; height: calc(100% - 60px); }
         #sellCartModal .modal-content {
@@ -399,245 +399,245 @@
             overflow: hidden;
         }
         /* Head */
-        #sellCartModal .scm-head {
+        .scm-wrap .scm-head {
             display: flex; align-items: center; justify-content: space-between;
             padding: 16px 20px;
             background: var(--th-abg);
             border-bottom: 1.5px dashed var(--th-border2);
             flex-shrink: 0;
         }
-        #sellCartModal .scm-title {
+        .scm-wrap .scm-title {
             display: flex; align-items: center; gap: 10px;
             font-size: 15px; font-weight: 800; color: var(--th-text);
         }
-        #sellCartModal .scm-title-icon {
+        .scm-wrap .scm-title-icon {
             width: 32px; height: 32px; border-radius: 9px;
             background: var(--th-abg); border: 1px solid var(--th-border);
             display: flex; align-items: center; justify-content: center;
             color: var(--th-accent2); flex-shrink: 0;
         }
-        #sellCartModal .scm-badge {
+        .scm-wrap .scm-badge {
             display: inline-flex; align-items: center; justify-content: center;
             min-width: 22px; height: 22px; border-radius: 7px; padding: 0 5px;
             background: var(--th-accent); color: #fff;
             font-size: 11px; font-weight: 800;
         }
-        #sellCartModal .scm-close {
+        .scm-wrap .scm-close {
             width: 30px; height: 30px; border-radius: 8px;
             background: var(--th-surf2); border: 1px solid var(--th-border);
             display: flex; align-items: center; justify-content: center;
             color: var(--th-text2); cursor: pointer; transition: all .14s;
         }
-        #sellCartModal .scm-close:hover { background: var(--th-rbg); border-color: rgba(244,63,94,.3); color: var(--th-red); }
+        .scm-wrap .scm-close:hover { background: var(--th-rbg); border-color: rgba(244,63,94,.3); color: var(--th-red); }
         /* Body */
-        #sellCartModal .scm-body {
+        .scm-wrap .scm-body {
             flex: 1; min-height: 0; overflow-y: auto;
             padding: 16px 20px;
             display: flex; flex-direction: column; gap: 14px;
         }
-        #sellCartModal .scm-body::-webkit-scrollbar { width: 4px; }
-        #sellCartModal .scm-body::-webkit-scrollbar-track { background: transparent; }
-        #sellCartModal .scm-body::-webkit-scrollbar-thumb { background: var(--th-border2); border-radius: 4px; }
+        .scm-wrap .scm-body::-webkit-scrollbar { width: 4px; }
+        .scm-wrap .scm-body::-webkit-scrollbar-track { background: transparent; }
+        .scm-wrap .scm-body::-webkit-scrollbar-thumb { background: var(--th-border2); border-radius: 4px; }
         /* Section label */
-        #sellCartModal .scm-section-lbl {
+        .scm-wrap .scm-section-lbl {
             display: flex; align-items: center; gap: 7px;
             font-size: 10px; font-weight: 800; letter-spacing: .1em;
             text-transform: uppercase; color: var(--th-text3);
             margin-bottom: 6px;
         }
         /* Cart items */
-        #sellCartModal .scm-item {
+        .scm-wrap .scm-item {
             display: flex; align-items: center; gap: 12px;
             background: var(--th-surf2); border: 1px solid var(--th-border);
             border-radius: 12px; padding: 10px 12px;
             transition: border-color .15s; margin-bottom: 6px;
         }
-        #sellCartModal .scm-item:last-child { margin-bottom: 0; }
-        #sellCartModal .scm-item:hover { border-color: var(--th-border2); }
-        #sellCartModal .scm-item-img {
+        .scm-wrap .scm-item:last-child { margin-bottom: 0; }
+        .scm-wrap .scm-item:hover { border-color: var(--th-border2); }
+        .scm-wrap .scm-item-img {
             width: 52px; height: 52px; flex-shrink: 0; border-radius: 9px;
             background: var(--th-surf3); border: 1px solid var(--th-border);
             display: flex; align-items: center; justify-content: center;
             color: var(--th-text3); overflow: hidden;
         }
-        #sellCartModal .scm-item-img img { width: 100%; height: 100%; object-fit: cover; }
-        #sellCartModal .scm-item-info { flex: 1; min-width: 0; }
-        #sellCartModal .scm-item-name {
+        .scm-wrap .scm-item-img img { width: 100%; height: 100%; object-fit: cover; }
+        .scm-wrap .scm-item-info { flex: 1; min-width: 0; }
+        .scm-wrap .scm-item-name {
             font-size: 13px; font-weight: 700; color: var(--th-text);
             margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        #sellCartModal .scm-item-unit { font-size: 10.5px; color: var(--th-text3); }
-        #sellCartModal .scm-item-price {
+        .scm-wrap .scm-item-unit { font-size: 10.5px; color: var(--th-text3); }
+        .scm-wrap .scm-item-price {
             font-size: 13px; font-weight: 800; color: var(--th-accent2); margin-top: 3px;
         }
-        #sellCartModal .scm-qty { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-        #sellCartModal .scm-qty-del {
+        .scm-wrap .scm-qty { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .scm-wrap .scm-qty-del {
             width: 28px; height: 28px; border-radius: 7px;
             background: var(--th-rbg); border: 1px solid rgba(244,63,94,.2);
             display: flex; align-items: center; justify-content: center;
             color: var(--th-red); cursor: pointer; transition: all .14s;
         }
-        #sellCartModal .scm-qty-del:hover { background: var(--th-red); color: #fff; border-color: var(--th-red); }
-        #sellCartModal .scm-qty-btn {
+        .scm-wrap .scm-qty-del:hover { background: var(--th-red); color: #fff; border-color: var(--th-red); }
+        .scm-wrap .scm-qty-btn {
             width: 28px; height: 28px; border-radius: 7px;
             background: var(--th-surf3); border: 1px solid var(--th-border);
             display: flex; align-items: center; justify-content: center;
             color: var(--th-text2); cursor: pointer; transition: all .14s;
         }
-        #sellCartModal .scm-qty-btn:hover { background: var(--th-abg); border-color: var(--th-accent); color: var(--th-accent2); }
-        #sellCartModal .scm-qty-btn:active { transform: scale(.92); }
-        #sellCartModal .scm-qty-btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
-        #sellCartModal .scm-qty-num {
+        .scm-wrap .scm-qty-btn:hover { background: var(--th-abg); border-color: var(--th-accent); color: var(--th-accent2); }
+        .scm-wrap .scm-qty-btn:active { transform: scale(.92); }
+        .scm-wrap .scm-qty-btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+        .scm-wrap .scm-qty-num {
             font-size: 13px; font-weight: 700; color: var(--th-text);
             min-width: 20px; text-align: center;
         }
-        #sellCartModal .scm-item-total {
+        .scm-wrap .scm-item-total {
             font-size: 12.5px; font-weight: 700; color: var(--th-text);
             min-width: 52px; text-align: right; flex-shrink: 0;
         }
         /* Empty */
-        #sellCartModal .scm-empty { text-align: center; padding: 32px 20px; }
-        #sellCartModal .scm-empty-icon {
+        .scm-wrap .scm-empty { text-align: center; padding: 32px 20px; }
+        .scm-wrap .scm-empty-icon {
             width: 48px; height: 48px; border-radius: 13px;
             background: var(--th-abg); border: 1px solid var(--th-border);
             display: flex; align-items: center; justify-content: center;
             color: var(--th-accent2); margin: 0 auto 10px;
         }
-        #sellCartModal .scm-empty-t { font-size: 14px; font-weight: 700; color: var(--th-text2); margin-bottom: 4px; }
-        #sellCartModal .scm-empty-s { font-size: 11.5px; color: var(--th-text3); }
+        .scm-wrap .scm-empty-t { font-size: 14px; font-weight: 700; color: var(--th-text2); margin-bottom: 4px; }
+        .scm-wrap .scm-empty-s { font-size: 11.5px; color: var(--th-text3); }
         /* Fields section */
-        #sellCartModal .scm-fields {
+        .scm-wrap .scm-fields {
             background: var(--th-surf2); border: 1px solid var(--th-border);
             border-radius: 12px; padding: 12px 14px;
             display: flex; flex-direction: column; gap: 10px;
         }
-        #sellCartModal .scm-field-group { display: flex; flex-direction: column; gap: 4px; }
-        #sellCartModal .scm-field-lbl {
+        .scm-wrap .scm-field-group { display: flex; flex-direction: column; gap: 4px; }
+        .scm-wrap .scm-field-lbl {
             font-size: 9.5px; font-weight: 700; letter-spacing: .1em;
             text-transform: uppercase; color: var(--th-text3); display: block;
         }
-        #sellCartModal .scm-field-lbl.req { color: var(--th-amber); }
-        #sellCartModal .scm-inp {
+        .scm-wrap .scm-field-lbl.req { color: var(--th-amber); }
+        .scm-wrap .scm-inp {
             background: rgba(255,255,255,.04); border: 1px solid var(--th-border);
             border-radius: 9px; padding: 8px 12px;
             font-size: 12.5px; color: var(--th-text);
             outline: none; transition: border-color .15s, box-shadow .15s; width: 100%;
         }
-        #sellCartModal .scm-inp::placeholder { color: var(--th-text3); }
-        #sellCartModal .scm-inp:focus { border-color: var(--th-accent); box-shadow: 0 0 0 3px var(--th-abg); }
-        #sellCartModal .scm-fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .scm-wrap .scm-inp::placeholder { color: var(--th-text3); }
+        .scm-wrap .scm-inp:focus { border-color: var(--th-accent); box-shadow: 0 0 0 3px var(--th-abg); }
+        .scm-wrap .scm-fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         /* Custom payment select */
-        #sellCartModal .scm-sel {
+        .scm-wrap .scm-sel {
             position: relative; background: rgba(255,255,255,.04);
             border: 1px solid var(--th-border); border-radius: 9px;
             padding: 8px 36px 8px 12px; font-size: 12.5px; color: var(--th-text);
             cursor: pointer; user-select: none;
             transition: border-color .15s, box-shadow .15s;
         }
-        #sellCartModal .scm-sel:hover { border-color: var(--th-border2); }
-        #sellCartModal .scm-sel.open { border-color: var(--th-accent); box-shadow: 0 0 0 3px var(--th-abg); }
-        #sellCartModal .scm-sel-val { display: flex; align-items: center; gap: 7px; }
-        #sellCartModal .scm-sel-arrow {
+        .scm-wrap .scm-sel:hover { border-color: var(--th-border2); }
+        .scm-wrap .scm-sel.open { border-color: var(--th-accent); box-shadow: 0 0 0 3px var(--th-abg); }
+        .scm-wrap .scm-sel-val { display: flex; align-items: center; gap: 7px; }
+        .scm-wrap .scm-sel-arrow {
             position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
             color: var(--th-text3); transition: transform .2s; pointer-events: none;
         }
-        #sellCartModal .scm-sel.open .scm-sel-arrow { transform: translateY(-50%) rotate(180deg); }
-        #sellCartModal .scm-sel-opts {
+        .scm-wrap .scm-sel.open .scm-sel-arrow { transform: translateY(-50%) rotate(180deg); }
+        .scm-wrap .scm-sel-opts {
             display: none; position: absolute; top: calc(100% + 5px); left: 0; right: 0;
             background: var(--th-surf); border: 1px solid var(--th-border2);
             border-radius: 10px; overflow: hidden;
             box-shadow: 0 8px 24px rgba(0,0,0,.35); z-index: 1100;
         }
-        #sellCartModal .scm-sel.open .scm-sel-opts { display: block; }
-        #sellCartModal .scm-sel-opt {
+        .scm-wrap .scm-sel.open .scm-sel-opts { display: block; }
+        .scm-wrap .scm-sel-opt {
             display: flex; align-items: center; gap: 8px;
             padding: 9px 13px; font-size: 12.5px; color: var(--th-text);
             cursor: pointer; transition: background .12s;
         }
-        #sellCartModal .scm-sel-opt:hover { background: var(--th-abg); color: var(--th-accent2); }
-        #sellCartModal .scm-sel-opt.selected { color: var(--th-accent2); font-weight: 700; }
+        .scm-wrap .scm-sel-opt:hover { background: var(--th-abg); color: var(--th-accent2); }
+        .scm-wrap .scm-sel-opt.selected { color: var(--th-accent2); font-weight: 700; }
         /* Grupal toggle */
-        #sellCartModal .scm-grupal-row {
+        .scm-wrap .scm-grupal-row {
             display: flex; align-items: center; gap: 10px;
             padding-top: 4px; border-top: 1.5px dashed var(--th-border2); margin-top: 2px;
         }
-        #sellCartModal .scm-grupal-lbl {
+        .scm-wrap .scm-grupal-lbl {
             font-size: 12.5px; font-weight: 700; color: var(--th-text);
             display: flex; align-items: center; gap: 6px; flex: 1;
         }
-        #sellCartModal .scm-toggle {
+        .scm-wrap .scm-toggle {
             position: relative; width: 38px; height: 22px; flex-shrink: 0;
             cursor: pointer; display: block; margin: 0;
         }
-        #sellCartModal .scm-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
-        #sellCartModal .scm-toggle-track {
+        .scm-wrap .scm-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .scm-wrap .scm-toggle-track {
             position: absolute; inset: 0; border-radius: 11px;
             background: var(--th-surf3); border: 1px solid var(--th-border);
             transition: background .2s, border-color .2s;
         }
-        #sellCartModal .scm-toggle input:checked ~ .scm-toggle-track { background: var(--th-accent); border-color: var(--th-accent); }
-        #sellCartModal .scm-toggle-thumb {
+        .scm-wrap .scm-toggle input:checked ~ .scm-toggle-track { background: var(--th-accent); border-color: var(--th-accent); }
+        .scm-wrap .scm-toggle-thumb {
             position: absolute; top: 3px; left: 3px;
             width: 14px; height: 14px; border-radius: 7px; background: #fff;
             transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,.25); pointer-events: none;
         }
-        #sellCartModal .scm-toggle input:checked ~ .scm-toggle-thumb { transform: translateX(16px); }
+        .scm-wrap .scm-toggle input:checked ~ .scm-toggle-thumb { transform: translateX(16px); }
         /* Customer search */
-        #sellCartModal .scm-customer-wrap { position: relative; }
-        #sellCartModal .scm-customer-inp {
+        .scm-wrap .scm-customer-wrap { position: relative; }
+        .scm-wrap .scm-customer-inp {
             background: rgba(255,255,255,.04); border: 1px solid var(--th-border);
             border-radius: 9px; padding: 8px 12px 8px 34px;
             font-size: 12.5px; color: var(--th-text);
             outline: none; transition: border-color .15s, box-shadow .15s; width: 100%;
         }
-        #sellCartModal .scm-customer-inp:focus { border-color: var(--th-accent); box-shadow: 0 0 0 3px var(--th-abg); }
-        #sellCartModal .scm-customer-icon {
+        .scm-wrap .scm-customer-inp:focus { border-color: var(--th-accent); box-shadow: 0 0 0 3px var(--th-abg); }
+        .scm-wrap .scm-customer-icon {
             position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
             color: var(--th-text3); pointer-events: none; display: flex;
         }
         /* Summary */
-        #sellCartModal .scm-resumen {
+        .scm-wrap .scm-resumen {
             background: var(--th-surf2); border: 1px solid var(--th-border); border-radius: 12px; overflow: hidden;
         }
-        #sellCartModal .scm-resumen-head {
+        .scm-wrap .scm-resumen-head {
             background: var(--th-abg); border-bottom: 1.5px dashed var(--th-border2);
             padding: 9px 14px; display: flex; align-items: center; gap: 7px;
             font-size: 12px; font-weight: 800; color: var(--th-text);
         }
-        #sellCartModal .scm-resumen-body { padding: 10px 14px; }
-        #sellCartModal .scm-res-row {
+        .scm-wrap .scm-resumen-body { padding: 10px 14px; }
+        .scm-wrap .scm-res-row {
             display: flex; justify-content: space-between; align-items: center;
             font-size: 12px; color: var(--th-text2); padding: 3px 0;
         }
-        #sellCartModal .scm-res-divider { border: none; border-top: 1.5px dashed var(--th-border2); margin: 6px 0; }
-        #sellCartModal .scm-res-total {
+        .scm-wrap .scm-res-divider { border: none; border-top: 1.5px dashed var(--th-border2); margin: 6px 0; }
+        .scm-wrap .scm-res-total {
             display: flex; justify-content: space-between; align-items: center; padding: 4px 0 2px;
         }
-        #sellCartModal .scm-res-total-lbl { font-size: 13px; font-weight: 800; color: var(--th-text); }
-        #sellCartModal .scm-res-total-val {
+        .scm-wrap .scm-res-total-lbl { font-size: 13px; font-weight: 800; color: var(--th-text); }
+        .scm-wrap .scm-res-total-val {
             font-size: 22px; font-weight: 900; color: var(--th-accent2); line-height: 1;
         }
         /* Footer */
-        #sellCartModal .scm-foot {
+        .scm-wrap .scm-foot {
             padding: 14px 20px; border-top: 1.5px dashed var(--th-border2);
             display: flex; align-items: center; gap: 10px; flex-shrink: 0;
         }
-        #sellCartModal .scm-btn-vaciar {
+        .scm-wrap .scm-btn-vaciar {
             display: flex; align-items: center; gap: 6px;
             padding: 9px 16px; border-radius: 10px;
             background: var(--th-rbg); border: 1px solid rgba(244,63,94,.25);
             font-size: 12px; font-weight: 700; color: var(--th-red);
             cursor: pointer; transition: all .14s; white-space: nowrap; flex-shrink: 0;
         }
-        #sellCartModal .scm-btn-vaciar:hover { background: var(--th-red); color: #fff; border-color: var(--th-red); }
-        #sellCartModal .scm-btn-cerrar {
+        .scm-wrap .scm-btn-vaciar:hover { background: var(--th-red); color: #fff; border-color: var(--th-red); }
+        .scm-wrap .scm-btn-cerrar {
             flex: 1; padding: 9px 16px; border-radius: 10px;
             background: var(--th-surf2); border: 1px solid var(--th-border);
             font-size: 12.5px; font-weight: 700; color: var(--th-text2);
             cursor: pointer; transition: all .14s; text-align: center;
         }
-        #sellCartModal .scm-btn-cerrar:hover { border-color: var(--th-border2); color: var(--th-text); }
-        #sellCartModal .scm-btn-procesar {
+        .scm-wrap .scm-btn-cerrar:hover { border-color: var(--th-border2); color: var(--th-text); }
+        .scm-wrap .scm-btn-procesar {
             flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
             padding: 9px 20px; border-radius: 10px;
             background: linear-gradient(135deg, var(--th-accent), var(--th-accent2));
@@ -645,13 +645,13 @@
             cursor: pointer; box-shadow: 0 4px 14px var(--th-abg);
             transition: opacity .15s, transform .12s; white-space: nowrap;
         }
-        #sellCartModal .scm-btn-procesar:hover { opacity: .92; transform: translateY(-1px); }
-        #sellCartModal .scm-btn-procesar:active { transform: scale(.98); }
-        #sellCartModal .scm-btn-procesar:disabled { opacity: .4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
-        #sellCartModal .scm-fields-credit { display: flex; flex-direction: column; gap: 10px; }
+        .scm-wrap .scm-btn-procesar:hover { opacity: .92; transform: translateY(-1px); }
+        .scm-wrap .scm-btn-procesar:active { transform: scale(.98); }
+        .scm-wrap .scm-btn-procesar:disabled { opacity: .4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+        .scm-wrap .scm-fields-credit { display: flex; flex-direction: column; gap: 10px; }
         @media (max-width: 576px) {
-            #sellCartModal .scm-item-img { width: 42px; height: 42px; }
-            #sellCartModal .scm-fields-row { grid-template-columns: 1fr; }
+            .scm-wrap .scm-item-img { width: 42px; height: 42px; }
+            .scm-wrap .scm-fields-row { grid-template-columns: 1fr; }
         }
 
         /* Burbuja flotante del carrito */
@@ -1238,6 +1238,9 @@
                 <span class="sb-group-label">VENTAS</span>
                 <a class="nav-link" href="/dashboard/sell" data-section="sell" title="Vender">
                     <svg class="sb-icon" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span>Vender</span>
+                </a>
+                <a class="nav-link" href="/dashboard/pos" data-section="pos" title="POS">
+                    <svg class="sb-icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><line x1="7" y1="8" x2="7" y2="8.01"/><line x1="12" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="7" y2="12.01"/><line x1="12" y1="12" x2="17" y2="12"/></svg><span>POS</span>
                 </a>
                 <a class="nav-link" href="/dashboard/sales" data-section="sales" title="Ventas">
                     <svg class="sb-icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span>Ventas</span>
@@ -7373,6 +7376,7 @@
             // Sincronizar estado de venta grupal
             $('#sellCartModalGroupSaleToggle').prop('checked', isGroupSale);
             if (isGroupSale) {
+                $('#sellCartModalPaymentMethodCol').hide();
                 $('#sellCartModalNormalSaleFields').hide();
                 $('#sellCartModalGroupSaleFields').show();
                 if (allCustomersList.length === 0) {
@@ -7381,6 +7385,7 @@
                     filterGroupSaleCustomersModal('');
                 }
             } else {
+                $('#sellCartModalPaymentMethodCol').show();
                 $('#sellCartModalNormalSaleFields').show();
                 $('#sellCartModalGroupSaleFields').hide();
             }
@@ -7606,6 +7611,7 @@
         function toggleGroupSaleModal() {
             isGroupSale = $('#sellCartModalGroupSaleToggle').is(':checked');
             if (isGroupSale) {
+                $('#sellCartModalPaymentMethodCol').hide();
                 $('#sellCartModalNormalSaleFields').hide();
                 $('#sellCartModalGroupSaleFields').show();
                 gsParticipantes = [];
@@ -7613,6 +7619,7 @@
                 gsRender();
                 gsValidar();
             } else {
+                $('#sellCartModalPaymentMethodCol').show();
                 $('#sellCartModalNormalSaleFields').show();
                 $('#sellCartModalGroupSaleFields').hide();
                 gsParticipantes = [];
@@ -7940,8 +7947,9 @@
                 return;
             }
 
-            // Normal sale - usar campos del modal si está visible, sino los del lateral (para compatibilidad)
-            const isModalVisible = $('#sellCartModal').hasClass('show') || $('#sellCartModal').is(':visible');
+            // Normal sale - usar campos del modal si está visible o si estamos en vista POS
+            const isPosView = document.getElementById('posCartPanel') !== null;
+            const isModalVisible = isPosView || $('#sellCartModal').hasClass('show') || $('#sellCartModal').is(':visible');
             const paymentMethod = isModalVisible ? $('#sellCartModalPaymentMethod').val() : $('#sellPaymentMethod').val();
             const customerName = isModalVisible ? $('#sellCartModalCustomer').val() : $('#sellCustomer').val();
             const transferRef = isModalVisible ? $('#sellCartModalTransferReference').val().trim() : $('#sellTransferReference').val().trim();
@@ -10532,7 +10540,7 @@
     <!-- Sell Cart Modal -->
     <div class="modal fade" id="sellCartModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
+            <div class="modal-content scm-wrap">
                 <!-- HEAD -->
                 <div class="scm-head">
                     <div class="scm-title">
