@@ -9495,7 +9495,7 @@
             }
         }
 
-        $('#smtpSettingsForm').on('submit', function(e) {
+        $(document).on('submit', '#smtpSettingsForm', function(e) {
             e.preventDefault();
             if (!$('#smtpHost').val().trim()) {
                 showAlert('El Servidor SMTP (Host) es requerido', 'warning');
@@ -9555,7 +9555,7 @@
             }
         });
 
-        $('#payphoneSettingsForm').on('submit', function(e) {
+        $(document).on('submit', '#payphoneSettingsForm', function(e) {
             e.preventDefault();
             var settings = [
                 { key: 'payphone_store_id', value: $('#payphoneStoreId').val().trim(), type: 'string' }
