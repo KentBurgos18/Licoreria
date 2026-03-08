@@ -3013,6 +3013,9 @@
             // Cargar widget de gastos del mes
             loadExpenseSummary();
 
+            // Cargar rentabilidad
+            loadProfitability();
+
             // Load dashboard statistics
             $.ajax({
                 url: '/api/products',
@@ -3357,6 +3360,110 @@
                 $sel.append('<option value="' + c.id + '"' + sel + '>' + c.name + '</option>');
             });
         }
+
+        // ── Rentabilidad ─────────────────────────────────────────────
+        var _profitData = null;
+        var _profitPeriod = 'today';
+
+        function loadProfitability() {
+            $.ajax({
+                url: '/api/sales/stats/profitability',
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
+                data: { tenantId: 1 },
+                success: function(data) {
+                    _profitData = data;
+                    // Update KPI cards (month)
+                    var m = data.month;
+                    var fmtMoney = function(n) {
+                        return (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    };
+                    $('#monthlyProfit').text(fmtMoney(m.netProfit));
+                    $('#monthlyMargin').text(m.marginPct.toFixed(1) + '%');
+                    if (m.marginPct >= 20) {
+                        $('#monthlyMarginBadge').text('buen margen').removeClass('db-fl').addClass('db-up');
+                        $('#monthlyProfit').css('color', '#10b981');
+                    } else if (m.marginPct >= 0) {
+                        $('#monthlyMarginBadge').text('mes actual').removeClass('db-up').addClass('db-fl');
+                        $('#monthlyProfit').css('color', '#f59e0b');
+                    } else {
+                        $('#monthlyMarginBadge').text('pérdida').removeClass('db-up').addClass('db-fl');
+                        $('#monthlyProfit').css('color', '#ef4444');
+                    }
+                    // Render panel with active period
+                    renderProfitPanel(_profitPeriod);
+                },
+                error: function() {
+                    $('#profitPanelBody').html('<div class="text-center text-muted small py-3">No se pudo cargar la rentabilidad</div>');
+                }
+            });
+        }
+
+        function switchProfitTab(period, btn) {
+            _profitPeriod = period;
+            $('.prof-tab').removeClass('active');
+            $(btn).addClass('active');
+            if (_profitData) renderProfitPanel(period);
+        }
+
+        function renderProfitPanel(period) {
+            if (!_profitData) return;
+            var d = _profitData[period];
+            var prev = _profitData.prevMonth;
+
+            var fmtM = function(n) {
+                return (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            };
+
+            function bar(pct, color) {
+                var w = Math.min(Math.max(pct, 0), 100);
+                return '<div class="prof-bar-track"><div class="prof-bar-fill" style="width:' + w + '%;background:' + color + ';"></div></div>';
+            }
+
+            var netColor = d.netProfit >= 0 ? '#10b981' : '#ef4444';
+            var marginBg = d.netProfit >= 0 ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)';
+            var marginText = d.netProfit >= 0 ? '#10b981' : '#ef4444';
+
+            // Comparación con mes anterior (solo en tab "mes")
+            var compareHtml = '';
+            if (period === 'month' && prev) {
+                var diff = d.netProfit - prev.netProfit;
+                var diffPct = prev.netProfit !== 0 ? ((diff / Math.abs(prev.netProfit)) * 100).toFixed(1) : '—';
+                var arrow = diff >= 0 ? '▲' : '▼';
+                var diffColor = diff >= 0 ? '#10b981' : '#ef4444';
+                compareHtml = '<div class="prof-compare">' +
+                    '<span>Mes anterior: <b>' + fmtM(prev.netProfit) + '</b></span>' +
+                    '<span>Ingresos ant.: <b>' + fmtM(prev.revenue) + '</b></span>' +
+                    '<span style="color:' + diffColor + ';font-weight:600;">' + arrow + ' ' + (diff >= 0 ? '+' : '') + fmtM(diff) + (diffPct !== '—' ? ' (' + (diff >= 0 ? '+' : '') + diffPct + '%)' : '') + '</span>' +
+                    '</div>';
+            }
+
+            var html =
+                '<div class="prof-row">' +
+                  '<div class="prof-row-label"><span class="prof-row-name">Ingresos brutos</span><span class="prof-row-val">' + fmtM(d.revenue) + '<span class="prof-row-pct">100%</span></span></div>' +
+                  bar(100, 'var(--th-accent)') +
+                '</div>' +
+                '<div class="prof-row">' +
+                  '<div class="prof-row-label"><span class="prof-row-name">Costo mercancía (COGS)</span><span class="prof-row-val" style="color:#f59e0b;">-' + fmtM(d.cogs) + '<span class="prof-row-pct">' + d.cogsRatio + '%</span></span></div>' +
+                  bar(d.cogsRatio, '#f59e0b') +
+                '</div>' +
+                '<div class="prof-row">' +
+                  '<div class="prof-row-label"><span class="prof-row-name">Gastos operativos</span><span class="prof-row-val" style="color:#ef4444;">-' + fmtM(d.expenses) + '<span class="prof-row-pct">' + d.expRatio + '%</span></span></div>' +
+                  bar(d.expRatio, '#ef4444') +
+                '</div>' +
+                '<hr class="prof-divider">' +
+                '<div class="prof-net-row">' +
+                  '<span class="prof-net-label">Ganancia neta</span>' +
+                  '<span>' +
+                    '<span class="prof-net-val" style="color:' + netColor + ';">' + fmtM(d.netProfit) + '</span>' +
+                    '<span class="prof-net-badge" style="background:' + marginBg + ';color:' + marginText + ';">' + d.marginPct.toFixed(1) + '%</span>' +
+                  '</span>' +
+                '</div>' +
+                compareHtml;
+
+            $('#profitPanelBody').html(html);
+        }
+        // ─────────────────────────────────────────────────────────────
 
         function loadExpenseSummary() {
             $.ajax({

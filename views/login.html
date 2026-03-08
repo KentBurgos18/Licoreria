@@ -5,7 +5,7 @@
     <script>(function(){var h=new Date().getHours();document.documentElement.setAttribute('data-mode',(h>=7&&h<19)?'light':'dark');})();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
-    <link rel="apple-touch-icon" href="/public/img/icono-LB.png">
+    <link rel="apple-touch-icon" href="/public/img/icon-192.png">
     <link rel="manifest" href="/public/manifest.webmanifest">
     <title>Iniciar Sesión - LOCOBAR</title>
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
@@ -620,6 +620,13 @@
 
             // Verificar token de admin
             const adminToken = localStorage.getItem('adminToken');
+            const customerToken = localStorage.getItem('customerToken');
+
+            // Ocultar tarjeta inmediatamente si hay token (evitar flash del formulario)
+            if (adminToken || customerToken) {
+                $('.lb-card').hide();
+            }
+
             if (adminToken) {
                 $.ajax({
                     url: '/api/admin/auth/me',
@@ -631,12 +638,12 @@
                     error: function() {
                         localStorage.removeItem('adminToken');
                         localStorage.removeItem('adminUser');
+                        if (!customerToken) $('.lb-card').show();
                     }
                 });
             }
 
             // Verificar token de cliente
-            const customerToken = localStorage.getItem('customerToken');
             if (customerToken) {
                 $.ajax({
                     url: '/api/auth/me',
@@ -648,6 +655,7 @@
                     error: function() {
                         localStorage.removeItem('customerToken');
                         localStorage.removeItem('customer');
+                        if (!adminToken) $('.lb-card').show();
                     }
                 });
             }

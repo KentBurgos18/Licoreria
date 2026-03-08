@@ -456,6 +456,71 @@ router.get('/stats/monthly-total', async (req, res) => {
   }
 });
 
+// GET /sales/stats/profitability - Rentabilidad (ingresos, COGS, gastos, ganancia neta)
+router.get('/stats/profitability', async (req, res) => {
+  try {
+    const { tenantId } = req.query;
+    if (!tenantId) return res.status(400).json({ error: 'tenantId is required' });
+    const tid = parseInt(tenantId);
+
+    const rows = await sequelize.query(`
+      WITH
+      sales_agg AS (
+        SELECT
+          COALESCE(SUM(CASE WHEN DATE(created_at AT TIME ZONE 'UTC') = CURRENT_DATE THEN total_amount ELSE 0 END), 0)::float AS today_rev,
+          COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('week', NOW()) THEN total_amount ELSE 0 END), 0)::float AS week_rev,
+          COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('month', NOW()) THEN total_amount ELSE 0 END), 0)::float AS month_rev,
+          COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('month', NOW() - INTERVAL '1 month')
+            AND created_at < DATE_TRUNC('month', NOW()) THEN total_amount ELSE 0 END), 0)::float AS prev_rev
+        FROM sales
+        WHERE tenant_id = :tid AND status = 'COMPLETED'
+      ),
+      cogs_agg AS (
+        SELECT
+          COALESCE(SUM(CASE WHEN DATE(created_at AT TIME ZONE 'UTC') = CURRENT_DATE THEN unit_cost * qty ELSE 0 END), 0)::float AS today_cogs,
+          COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('week', NOW()) THEN unit_cost * qty ELSE 0 END), 0)::float AS week_cogs,
+          COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('month', NOW()) THEN unit_cost * qty ELSE 0 END), 0)::float AS month_cogs,
+          COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('month', NOW() - INTERVAL '1 month')
+            AND created_at < DATE_TRUNC('month', NOW()) THEN unit_cost * qty ELSE 0 END), 0)::float AS prev_cogs
+        FROM inventory_movements
+        WHERE tenant_id = :tid AND movement_type = 'OUT' AND reason = 'SALE'
+      ),
+      exp_agg AS (
+        SELECT
+          COALESCE(SUM(CASE WHEN expense_date = CURRENT_DATE THEN amount ELSE 0 END), 0)::float AS today_exp,
+          COALESCE(SUM(CASE WHEN expense_date >= DATE_TRUNC('week', CURRENT_DATE) THEN amount ELSE 0 END), 0)::float AS week_exp,
+          COALESCE(SUM(CASE WHEN expense_date >= DATE_TRUNC('month', CURRENT_DATE) THEN amount ELSE 0 END), 0)::float AS month_exp,
+          COALESCE(SUM(CASE WHEN expense_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+            AND expense_date < DATE_TRUNC('month', CURRENT_DATE) THEN amount ELSE 0 END), 0)::float AS prev_exp
+        FROM expenses
+        WHERE tenant_id = :tid
+      )
+      SELECT s.*, c.*, e.* FROM sales_agg s, cogs_agg c, exp_agg e
+    `, { replacements: { tid }, type: sequelize.QueryTypes.SELECT });
+
+    const r = rows[0] || {};
+
+    function calc(rev, cogs, exp) {
+      const gross = rev - cogs;
+      const net = gross - exp;
+      const margin = rev > 0 ? Math.round((net / rev) * 1000) / 10 : 0;
+      const cogsRatio = rev > 0 ? Math.round((cogs / rev) * 1000) / 10 : 0;
+      const expRatio = rev > 0 ? Math.round((exp / rev) * 1000) / 10 : 0;
+      return { revenue: rev, cogs, expenses: exp, grossProfit: gross, netProfit: net, marginPct: margin, cogsRatio, expRatio };
+    }
+
+    res.json({
+      today: calc(r.today_rev || 0, r.today_cogs || 0, r.today_exp || 0),
+      week:  calc(r.week_rev  || 0, r.week_cogs  || 0, r.week_exp  || 0),
+      month: calc(r.month_rev || 0, r.month_cogs || 0, r.month_exp || 0),
+      prevMonth: calc(r.prev_rev || 0, r.prev_cogs || 0, r.prev_exp || 0)
+    });
+  } catch (error) {
+    console.error('Error getting profitability:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /sales/:id - Get sale by ID
 router.get('/:id', async (req, res) => {
   try {

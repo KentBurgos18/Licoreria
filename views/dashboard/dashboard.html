@@ -1,3 +1,78 @@
+<style>
+  .prof-tab {
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid var(--th-border);
+    background: var(--th-surf2);
+    color: var(--th-text2);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .prof-tab.active {
+    background: var(--th-accent);
+    color: #fff;
+    border-color: var(--th-accent);
+  }
+  .prof-row {
+    margin-bottom: 10px;
+  }
+  .prof-row-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    font-size: 12.5px;
+  }
+  .prof-row-name { color: var(--th-text2); }
+  .prof-row-val  { font-weight: 600; color: var(--th-text1); }
+  .prof-row-pct  { font-size: 11px; color: var(--th-text3); margin-left: 6px; }
+  .prof-bar-track {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--th-surf3, rgba(0,0,0,0.07));
+    overflow: hidden;
+  }
+  .prof-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width .4s ease;
+  }
+  .prof-divider {
+    border: none;
+    border-top: 1px solid var(--th-border);
+    margin: 12px 0;
+  }
+  .prof-net-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .prof-net-label { font-size: 13px; font-weight: 700; color: var(--th-text1); }
+  .prof-net-val   { font-size: 18px; font-weight: 700; }
+  .prof-net-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-left: 8px;
+  }
+  .prof-compare {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--th-border);
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 11.5px;
+    color: var(--th-text3);
+  }
+  .prof-compare span b { color: var(--th-text2); }
+  .db-sc.kpi-profit .db-sv { color: #10b981; }
+  .db-sc.kpi-margin .db-sv { color: var(--th-accent); }
+</style>
+
 <div id="spa-view-content">
   <div id="dashboard" class="content-section active">
 
@@ -59,6 +134,22 @@
                     <div class="db-sv" id="dashExpensesMonth">$0</div>
                     <div class="db-sl">Gastos del Mes</div>
                 </div>
+                <div class="db-sc db-t3 kpi-profit" data-widget-id="kpi_profit">
+                    <div class="db-sth">
+                        <div class="db-si db-si-g"><i class="bi bi-graph-up"></i></div>
+                        <span class="db-sch db-up">mes actual</span>
+                    </div>
+                    <div class="db-sv" id="monthlyProfit">$0</div>
+                    <div class="db-sl">Ganancia Neta</div>
+                </div>
+                <div class="db-sc db-t2 kpi-margin" data-widget-id="kpi_margin">
+                    <div class="db-sth">
+                        <div class="db-si db-si-t"><i class="bi bi-percent"></i></div>
+                        <span class="db-sch db-fl" id="monthlyMarginBadge">mes actual</span>
+                    </div>
+                    <div class="db-sv" id="monthlyMargin">0%</div>
+                    <div class="db-sl">Margen Neto</div>
+                </div>
             </div>
 
             <!-- Monthly sales chart -->
@@ -74,6 +165,27 @@
                 </div>
                 <div style="padding:16px 20px 14px;">
                     <canvas id="monthlySalesChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Profitability panel -->
+            <div class="db-card" data-widget-id="panel_profitability" style="margin-bottom:14px;">
+                <div class="db-ch">
+                    <div class="db-chl">
+                        <div class="db-cic"><i class="bi bi-graph-up-arrow"></i></div>
+                        <div>
+                            <div class="db-ct">Rentabilidad</div>
+                            <div class="db-cd">ingresos · costos · gastos · margen</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:4px;">
+                        <button class="prof-tab active" onclick="switchProfitTab('today',this)">Hoy</button>
+                        <button class="prof-tab" onclick="switchProfitTab('week',this)">Semana</button>
+                        <button class="prof-tab" onclick="switchProfitTab('month',this)">Mes</button>
+                    </div>
+                </div>
+                <div style="padding:16px 20px 18px;" id="profitPanelBody">
+                    <div class="text-center text-muted small py-3">Cargando...</div>
                 </div>
             </div>
 

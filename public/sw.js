@@ -1,5 +1,49 @@
-/* Service Worker para Web Push - notificaciones en tiempo real */
+/* Service Worker para Web Push + cache de íconos PWA */
 'use strict';
+
+const SW_CACHE = 'locobar-icons-v1';
+const PRECACHE_URLS = [
+  '/public/img/icon-192.png',
+  '/public/img/icon-512.png',
+  '/public/manifest.webmanifest'
+];
+
+self.addEventListener('install', function(event) {
+  event.waitUntil(
+    caches.open(SW_CACHE).then(function(cache) {
+      return cache.addAll(PRECACHE_URLS);
+    })
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', function(event) {
+  event.waitUntil(
+    caches.keys().then(function(keys) {
+      return Promise.all(
+        keys.filter(function(k) { return k !== SW_CACHE; })
+            .map(function(k) { return caches.delete(k); })
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', function(event) {
+  var url = event.request.url;
+  if (url.includes('/public/img/icon-') || url.includes('/public/manifest')) {
+    event.respondWith(
+      caches.match(event.request).then(function(cached) {
+        if (cached) return cached;
+        return fetch(event.request).then(function(res) {
+          var clone = res.clone();
+          caches.open(SW_CACHE).then(function(cache) { cache.put(event.request, clone); });
+          return res;
+        });
+      })
+    );
+  }
+});
 
 self.addEventListener('push', function (event) {
   let payload = { title: 'Notificación', body: '' };
