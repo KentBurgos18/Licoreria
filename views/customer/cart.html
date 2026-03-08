@@ -487,13 +487,13 @@
                     taxEnabled = response.enabled !== false;
                     currentTaxRate = response.configured && response.value != null ? parseFloat(response.value) : null;
                     updateTaxLabel();
-                    displayCart();
+                    updateTotals();
                 },
                 error: function() {
                     taxEnabled = true;
                     currentTaxRate = null;
                     updateTaxLabel();
-                    displayCart();
+                    updateTotals();
                 }
             });
         }

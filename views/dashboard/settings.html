@@ -243,25 +243,35 @@
                                     </div>
                                 </div>
                                 <hr>
-                                <h6 class="fw-bold mb-3"><i class="bi bi-tag"></i> Descuento por Efectivo / Transferencia</h6>
+                                <h6 class="fw-bold mb-3"><i class="bi bi-credit-card"></i> Comisión por Pago con Tarjeta</h6>
                                 <p class="text-muted small mb-3">
-                                    Los precios del sistema incluyen el recargo de tarjeta. Al pagar en efectivo o transferencia
-                                    se aplica este descuento automáticamente sobre el total (subtotal + IVA).
+                                    Al pagar con tarjeta (PayPhone), se cobra esta comisión adicional al cliente
+                                    sobre el total (subtotal + IVA). Pon 0 para que el negocio absorba el costo.
                                 </p>
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label">Porcentaje de descuento (%)</label>
-                                            <input type="number" class="form-control" id="discountRate"
+                                            <label class="form-label">Comisión PayPhone (%)</label>
+                                            <input type="number" class="form-control" id="payphoneCommission"
                                                    step="0.01" min="0" max="100" placeholder="Ej: 5.75">
                                             <small class="form-text text-muted">
-                                                Pon 0 para deshabilitar el descuento.
+                                                Comisión del procesador de pagos con tarjeta. Se muestra al cliente. Pon 0 para no cobrar comisión.
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Tiempo de reserva del carrito (minutos)</label>
+                                            <input type="number" class="form-control" id="cartReservationMinutes"
+                                                   step="1" min="1" max="120" placeholder="Ej: 15">
+                                            <small class="form-text text-muted">
+                                                Minutos que se reservan los productos en el carrito antes de liberarlos. Por defecto: 15.
                                             </small>
                                         </div>
                                     </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-save"></i> Guardar Configuración de IVA y Descuento
+                                    <i class="bi bi-save"></i> Guardar Configuración de IVA y Comisión
                                 </button>
                             </form>
                         </div>

@@ -9261,14 +9261,25 @@
                 }
             });
 
-            // Load discount rate
+            // Load PayPhone commission rate
             $.ajax({
-                url: '/api/settings/cash_transfer_discount_rate',
+                url: '/api/settings/payphone_commission_rate',
                 method: 'GET',
                 data: { tenantId: 1 },
                 success: function(resp) {
                     const val = parseFloat(resp.value);
-                    $('#discountRate').val(!isNaN(val) ? val : '');
+                    $('#payphoneCommission').val(!isNaN(val) ? val : 5.75);
+                }
+            });
+
+            // Load cart reservation minutes
+            $.ajax({
+                url: '/api/settings/cart_reservation_minutes',
+                method: 'GET',
+                data: { tenantId: 1 },
+                success: function(resp) {
+                    const val = parseInt(resp.value, 10);
+                    $('#cartReservationMinutes').val(!isNaN(val) && val > 0 ? val : 15);
                 }
             });
 
@@ -9410,23 +9421,36 @@
             e.preventDefault();
             const isEnabled = $('#taxEnabled').is(':checked');
             const taxRate = parseFloat($('#taxRate').val());
-            const discountRateVal = parseFloat($('#discountRate').val()) || 0;
+            const commissionVal = parseFloat($('#payphoneCommission').val()) || 0;
+            const cartMinutes = parseInt($('#cartReservationMinutes').val(), 10) || 15;
 
             if (isEnabled && (isNaN(taxRate) || taxRate < 0 || taxRate > 100)) {
                 showAlert('El porcentaje de IVA debe ser un número entre 0 y 100', 'warning');
                 return;
             }
-            if (isNaN(discountRateVal) || discountRateVal < 0 || discountRateVal > 100) {
-                showAlert('El porcentaje de descuento debe ser un número entre 0 y 100', 'warning');
+            if (isNaN(commissionVal) || commissionVal < 0 || commissionVal > 100) {
+                showAlert('La comisión PayPhone debe ser un número entre 0 y 100', 'warning');
+                return;
+            }
+            if (cartMinutes < 1 || cartMinutes > 120) {
+                showAlert('El tiempo de reserva debe ser entre 1 y 120 minutos', 'warning');
                 return;
             }
 
-            // Save discount rate
+            // Save PayPhone commission rate
             $.ajax({
-                url: '/api/settings/cash_transfer_discount_rate',
+                url: '/api/settings/payphone_commission_rate',
                 method: 'PUT',
                 contentType: 'application/json',
-                data: JSON.stringify({ tenantId: 1, value: discountRateVal, type: 'number', description: 'Descuento (%) al pagar en efectivo o transferencia' })
+                data: JSON.stringify({ tenantId: 1, value: commissionVal, type: 'number', description: 'Comisión (%) del procesador de pagos con tarjeta' })
+            });
+
+            // Save cart reservation minutes
+            $.ajax({
+                url: '/api/settings/cart_reservation_minutes',
+                method: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({ tenantId: 1, value: cartMinutes, type: 'number', description: 'Minutos de reserva del carrito' })
             });
 
             // Save tax_enabled first, then tax_rate

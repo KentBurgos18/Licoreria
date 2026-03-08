@@ -141,17 +141,31 @@ app.get('/api/public/brand-slogan', async (req, res) => {
   }
 });
 
-// API pública: descuento por efectivo/transferencia
-app.get('/api/public/discount-rate', async (req, res) => {
+// API pública: comisión PayPhone (%) para pago con tarjeta
+app.get('/api/public/payphone-commission', async (req, res) => {
   try {
     const tenantId = parseInt(req.query.tenantId, 10) || 1;
-    const value = await Setting.getSetting(tenantId, 'cash_transfer_discount_rate');
+    const value = await Setting.getSetting(tenantId, 'payphone_commission_rate');
     const num = value != null ? parseFloat(value) : NaN;
-    const configured = !isNaN(num) && num >= 0 && num <= 100;
-    res.json({ value: configured ? num : 0, configured });
+    const rate = (!isNaN(num) && num >= 0 && num <= 100) ? num : 5.75;
+    res.json({ rate });
   } catch (err) {
-    console.error('Error getting discount-rate:', err);
-    res.json({ value: 0, configured: false });
+    console.error('Error getting payphone-commission:', err);
+    res.json({ rate: 5.75 });
+  }
+});
+
+// API pública: tiempo de reserva del carrito en minutos
+app.get('/api/public/cart-reservation-minutes', async (req, res) => {
+  try {
+    const tenantId = parseInt(req.query.tenantId, 10) || 1;
+    const value = await Setting.getSetting(tenantId, 'cart_reservation_minutes');
+    const num = value != null ? parseInt(value, 10) : NaN;
+    const minutes = (!isNaN(num) && num >= 1 && num <= 120) ? num : 15;
+    res.json({ minutes });
+  } catch (err) {
+    console.error('Error getting cart-reservation-minutes:', err);
+    res.json({ minutes: 15 });
   }
 });
 
@@ -807,14 +821,14 @@ async function initializeApp() {
         console.log('🌱 Primer despliegue detectado — ejecutando seed inicial...');
 
         // Usuario administrador por defecto
-        const passwordHash = await bcrypt.hash('admin123', 10);
+        const passwordHash = await bcrypt.hash('Pigmen_1820', 10);
         await sequelize.query(
           `INSERT INTO users (tenant_id, name, email, password, role, is_active, created_at)
            VALUES (1, 'Administrador', 'admin@locobar.com', :hash, 'ADMIN', true, NOW())
            ON CONFLICT DO NOTHING`,
           { replacements: { hash: passwordHash } }
         );
-        console.log('  ✅ Usuario admin: admin@locobar.com / admin123');
+        console.log('  ✅ Usuario admin: admin@locobar.com / Pigmen_1820');
 
         // Categorías de producto (si la tabla está vacía)
         const [catRows] = await sequelize.query(
@@ -844,7 +858,7 @@ async function initializeApp() {
           console.log('  ✅ Presentaciones de producto creadas');
         }
 
-        console.log('🌱 Seed completado — accede con admin@locobar.com / admin123');
+        console.log('🌱 Seed completado — accede con admin@locobar.com / Pigmen_1820');
       }
     } catch (e) {
       console.warn('⚠️ Seed primer despliegue:', e.message);

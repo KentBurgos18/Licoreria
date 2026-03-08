@@ -442,7 +442,13 @@ router.post('/checkout/prepare-payphone', authenticateCustomer, async (req, res)
       taxAmount = subtotal * (taxRate / 100);
     }
 
-    const totalAmount = subtotal + taxAmount;
+    const totalBase = subtotal + taxAmount;
+
+    // Comisión PayPhone: se cobra al cliente, PayPhone se la queda
+    const commRateRaw = await Setting.getSetting(tenantId, 'payphone_commission_rate');
+    const commRate = (commRateRaw != null && !isNaN(parseFloat(commRateRaw))) ? parseFloat(commRateRaw) : 5.75;
+    const commission = commRate > 0 ? Math.round((totalBase / (1 - commRate / 100) - totalBase) * 100) / 100 : 0;
+    const totalWithCommission = Math.round((totalBase + commission) * 100) / 100;
 
     const clientTransactionId = `sale-${Date.now()}-${customerId}`;
     const itemsWithProductInfo = validItems.map(item => {
@@ -455,6 +461,7 @@ router.post('/checkout/prepare-payphone', authenticateCustomer, async (req, res)
       };
     });
 
+    // totalAmount = precio base (sin comisión) — es lo que se registra como venta
     await PayphonePendingPayment.create({
       clientTransactionId,
       tenantId,
@@ -462,20 +469,18 @@ router.post('/checkout/prepare-payphone', authenticateCustomer, async (req, res)
       itemsJson: itemsWithProductInfo,
       subtotal,
       taxAmount,
-      totalAmount,
+      totalAmount: totalBase,
       taxRate,
       notes: notes || null
     });
 
-    const amountCents = Math.round(totalAmount * 100);
+    // A PayPhone se le envía el monto CON comisión (el cliente paga esto)
+    const amountCents = Math.round(totalWithCommission * 100);
     const subtotalCents = Math.round(subtotal * 100);
     const taxCents = Math.round(taxAmount * 100);
+    const commissionCents = amountCents - subtotalCents - taxCents;
 
     // Payphone requiere: amount = amountWithTax + amountWithoutTax + tax
-    // Si hay impuesto (taxRate > 0):
-    //   amountWithTax = subtotal (base gravable), tax = impuesto, amountWithoutTax = 0
-    // Si NO hay impuesto (taxRate == 0):
-    //   amountWithoutTax = subtotal, amountWithTax = 0, tax = 0
     const hasRealTax = taxRate > 0 && taxCents > 0;
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     res.json({
@@ -483,7 +488,7 @@ router.post('/checkout/prepare-payphone', authenticateCustomer, async (req, res)
       token,
       storeId,
       amount: amountCents,
-      amountWithoutTax: hasRealTax ? 0 : subtotalCents,
+      amountWithoutTax: hasRealTax ? commissionCents : (subtotalCents + commissionCents),
       amountWithTax: hasRealTax ? subtotalCents : 0,
       tax: taxCents,
       currency: 'USD',
@@ -1280,8 +1285,15 @@ router.post('/credits/:id/prepare-payphone', authenticateCustomer, async (req, r
       return res.status(503).json({ error: 'Pago con tarjeta no configurado. Contacte al administrador.', code: 'PAYPHONE_NOT_CONFIGURED' });
     }
 
+    // Comisión PayPhone
+    const commRateRaw = await Setting.getSetting(tenantId, 'payphone_commission_rate');
+    const commRate = (commRateRaw != null && !isNaN(parseFloat(commRateRaw))) ? parseFloat(commRateRaw) : 5.75;
+    const commission = commRate > 0 ? Math.round((balance / (1 - commRate / 100) - balance) * 100) / 100 : 0;
+    const totalWithCommission = Math.round((balance + commission) * 100) / 100;
+
     const clientTransactionId = `credit-${id}-${Date.now()}-${customerId}`;
 
+    // totalAmount = monto base del crédito (sin comisión)
     await PayphonePendingPayment.create({
       clientTransactionId,
       tenantId,
@@ -1294,7 +1306,10 @@ router.post('/credits/:id/prepare-payphone', authenticateCustomer, async (req, r
       notes: null
     });
 
-    const amountCents = Math.round(balance * 100);
+    // A PayPhone se le envía el monto CON comisión
+    const amountCents = Math.round(totalWithCommission * 100);
+    const balanceCents = Math.round(balance * 100);
+    const commissionCents = amountCents - balanceCents;
     const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     res.json({
@@ -1307,7 +1322,7 @@ router.post('/credits/:id/prepare-payphone', authenticateCustomer, async (req, r
       tax: 0,
       currency: 'USD',
       reference: `Crédito CR-${String(id).padStart(4, '0')}`,
-      returnUrl: `${baseUrl}/customer/credit-resultado.html`
+      returnUrl: `${baseUrl}/customer/checkout/resultado`
     });
   } catch (error) {
     console.error('Error preparing PayPhone credit payment:', error);

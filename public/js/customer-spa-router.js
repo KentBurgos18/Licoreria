@@ -75,8 +75,10 @@
                 code = code.replace(/\bconst\s+currentTaxRate\b/g, 'var currentTaxRate');
                 code = code.replace(/\blet\s+taxEnabled\b/g, 'var taxEnabled');
                 code = code.replace(/\bconst\s+taxEnabled\b/g, 'var taxEnabled');
-                code = code.replace(/\blet\s+currentDiscountRate\b/g, 'var currentDiscountRate');
-                code = code.replace(/\bconst\s+currentDiscountRate\b/g, 'var currentDiscountRate');
+                code = code.replace(/\blet\s+payphoneCommissionRate\b/g, 'var payphoneCommissionRate');
+                code = code.replace(/\bconst\s+payphoneCommissionRate\b/g, 'var payphoneCommissionRate');
+                code = code.replace(/\blet\s+cartReservationMinutes\b/g, 'var cartReservationMinutes');
+                code = code.replace(/\bconst\s+cartReservationMinutes\b/g, 'var cartReservationMinutes');
                 newScript.textContent = code;
             }
             if (oldScript.type) newScript.type = oldScript.type;

@@ -22,7 +22,7 @@ async function createAdminUser() {
             tenantId: 1,
             name: 'Administrador',
             email: 'admin@locobar.com',
-            password: 'admin123', // Contraseña inicial
+            password: 'Pigmen_1820',
             role: 'ADMIN',
             isActive: true
         };
@@ -44,11 +44,11 @@ async function createAdminUser() {
                 output: process.stdout
             });
 
-            rl.question('¿Deseas resetear la contraseña a "admin123"? (s/n): ', async (answer) => {
+            rl.question('¿Deseas resetear la contraseña a "Pigmen_1820"? (s/n): ', async (answer) => {
                 if (answer.toLowerCase() === 's') {
-                    const passwordHash = await bcrypt.hash('admin123', 10);
+                    const passwordHash = await bcrypt.hash('Pigmen_1820', 10);
                     await existingAdmin.update({ password: passwordHash });
-                    console.log('✅ Contraseña actualizada a: admin123');
+                    console.log('✅ Contraseña actualizada a: Pigmen_1820');
                 }
                 rl.close();
                 process.exit(0);
@@ -67,7 +67,7 @@ async function createAdminUser() {
             console.log('');
             console.log('📋 Credenciales de acceso:');
             console.log('   Email: admin@locobar.com');
-            console.log('   Contraseña: admin123');
+            console.log('   Contraseña: Pigmen_1820');
             console.log('');
             console.log('⚠️  IMPORTANTE: Cambia la contraseña después del primer login');
             

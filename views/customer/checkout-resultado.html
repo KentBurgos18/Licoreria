@@ -48,8 +48,15 @@
             document.getElementById('errorState').classList.remove('d-none');
             document.getElementById('errorMsg').textContent = 'Faltan parámetros de la transacción.';
         } else {
+            // Detectar si es un pago de crédito (clientTransactionId empieza con "credit-")
+            var isCredit = clientTransactionId && String(clientTransactionId).startsWith('credit-');
+            var confirmUrl = isCredit
+                ? '/api/customer/credits/confirm-payphone'
+                : '/api/customer/checkout/confirm-payphone';
+            var redirectUrl = isCredit ? '/customer/credits' : '/customer/orders';
+
             $.ajax({
-                url: '/api/customer/checkout/confirm-payphone',
+                url: confirmUrl,
                 method: 'POST',
                 headers: { 'Authorization': 'Bearer ' + token },
                 contentType: 'application/json',
@@ -57,9 +64,11 @@
                 success: function(response) {
                     document.getElementById('loadingState').classList.add('d-none');
                     document.getElementById('successState').classList.remove('d-none');
-                    localStorage.removeItem('customerCart');
+                    if (!isCredit) {
+                        localStorage.removeItem('customerCart');
+                    }
                     setTimeout(function() {
-                        window.location.href = '/customer/orders';
+                        window.location.href = redirectUrl;
                     }, 2500);
                 },
                 error: function(xhr) {
@@ -74,7 +83,7 @@
                             msg = parsed.error || msg;
                         }
                     } catch(e) {
-                        msg = 'Error de comunicación con el servidor (status: ' + xhr.status + '). El pago pudo haberse procesado. Verifique en Mis Pedidos.';
+                        msg = 'Error de comunicación con el servidor (status: ' + xhr.status + '). El pago pudo haberse procesado. Verifique en ' + (isCredit ? 'Mis Créditos' : 'Mis Pedidos') + '.';
                     }
                     document.getElementById('errorMsg').textContent = msg;
                 }

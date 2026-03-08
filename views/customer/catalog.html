@@ -316,6 +316,10 @@
         var customer = JSON.parse(localStorage.getItem('customer')) || null;
         var lastProducts = [];
         var searchTimeout;
+        var cartReservationMinutes = 15;
+        $.get('/api/public/cart-reservation-minutes', { tenantId: 1 }, function(r) {
+            cartReservationMinutes = r.minutes || 15;
+        });
 
         function bindCatalogEvents() {
             $('#searchInput').off('input keyup keypress').on('input keyup', function() {
@@ -498,7 +502,7 @@
             }
 
             if (wasEmpty && !localStorage.getItem('cartExpiresAt')) {
-                localStorage.setItem('cartExpiresAt', String(Date.now() + 15 * 60 * 1000));
+                localStorage.setItem('cartExpiresAt', String(Date.now() + cartReservationMinutes * 60 * 1000));
             }
             localStorage.setItem('customerCart', JSON.stringify(cart));
             updateCartBar();

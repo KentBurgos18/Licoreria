@@ -489,6 +489,13 @@
         .bank-row-icon.has-logo { background: #fff; }
         .bank-row-icon.has-logo .bank-logo-img { display: block; }
         .bank-row-icon.has-logo .bank-icon-fb { display: none; }
+        /* SVG personalizado (ej: espiral Banco de Guayaquil) */
+        .bank-row-icon.has-custom-icon { background: var(--bank-p, var(--accent)); }
+        .bank-row-icon.has-custom-icon .bank-icon-fb { display: none; }
+        /* Logo blanco sobre fondo del color del banco (logoUrl con icono blanco) */
+        .bank-row-icon.has-logo-colored { background: var(--bank-p, var(--accent)); }
+        .bank-row-icon.has-logo-colored .bank-logo-img { display: block; }
+        .bank-row-icon.has-logo-colored .bank-icon-fb { display: none; }
         /* Seleccionado sin logo: fondo del color del banco */
         .bank-row.selected .bank-row-icon:not(.has-logo) { background: var(--bank-p, var(--accent)); color: var(--bank-icon-fg, #fff); }
         /* Seleccionado con logo: sin borde adicional, solo el borde del .bank-row */
@@ -739,7 +746,7 @@
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 </div>
                 <div>
-                    <div class="timer-msg">Los ítems del carrito se reservan por <strong>15 min</strong></div>
+                    <div class="timer-msg" id="cartReservationMsg">Los ítems del carrito se reservan por 15 min</div>
                     <div style="font-size:11px;color:var(--text3);margin-top:1px;">Completa tu compra antes de que expire</div>
                 </div>
             </div>
@@ -905,9 +912,9 @@
                             <span class="lk" id="taxLabel">IVA:</span>
                             <span class="lv" id="tax">$0.00</span>
                         </div>
-                        <div class="total-line discount-row d-none" id="discountRow">
-                            <span class="lk" style="color:var(--green);">Descuento</span>
-                            <span class="lv" id="discount" style="color:var(--green);">-$0.00</span>
+                        <div class="total-line d-none" id="commissionRow">
+                            <span class="lk" id="commissionLabel" style="color:var(--text2);">Comisión tarjeta</span>
+                            <span class="lv" id="commission" style="color:var(--text2);">$0.00</span>
                         </div>
                         <div class="total-divider"></div>
                         <div class="total-final">
@@ -1022,7 +1029,8 @@
         var customer = JSON.parse(localStorage.getItem('customer')) || null;
         var currentTaxRate = null;
         var taxEnabled = true;
-        var currentDiscountRate = 0;
+        var payphoneCommissionRate = 0;
+        var cartReservationMinutes = 15;
         var isCreditMode = false;
         var creditPaymentCtx = null;
 
@@ -1150,39 +1158,40 @@
         // iconFg = color del ícono dentro del badge (para fondos claros: usar oscuro)
         var BANK_THEMES = {
             // ── Bancos privados ───────────────────────────────────────────────────────────
-            pichincha:     { p:'#ffdd00', pd:'#7a6500', bg:'rgba(255,221,0,.13)',   iconFg:'#3d3200', domain:'pichincha.com'               },
-            pacifico:      { p:'#009fd4', pd:'#006e94', bg:'rgba(0,159,212,.12)',                     domain:'bancodelpacifico.com'         },
-            guayaquil:     { p:'#d2006e', pd:'#d2006e', bg:'rgba(210,0,110,.12)',                     domain:'bancoguayaquil.com'           },
-            internacional: { p:'#f98f16', pd:'#c06800', bg:'rgba(249,143,22,.12)',                    domain:'bancointernacional.com.ec'    },
-            produbanco:    { p:'#69bd27', pd:'#3d7000', bg:'rgba(105,189,39,.12)',                    domain:'produbanco.com.ec'            },
-            bolivariano:   { p:'#006576', pd:'#006576', bg:'rgba(0,101,118,.12)',                     domain:'bolivariano.com'              },
-            austro:        { p:'#c8102e', pd:'#c8102e', bg:'rgba(200,16,46,.12)',                     domain:'bancoaustro.com'              },
-            bgr:           { p:'#003f87', pd:'#003f87', bg:'rgba(0,63,135,.12)',                      domain:'bgr.com.ec'                   },
-            solidario:     { p:'#e87722', pd:'#a84f00', bg:'rgba(232,119,34,.12)',                    domain:'banco-solidario.com'          },
-            dmiro:         { p:'#00897b', pd:'#00897b', bg:'rgba(0,137,123,.12)',                     domain:'bancodmiro.com'               },
-            bancodesarrollo:{ p:'#1565c0', pd:'#1565c0', bg:'rgba(21,101,192,.12)',                   domain:'bancodesarrollo.fin.ec'       },
-            procredit:     { p:'#e30613', pd:'#e30613', bg:'rgba(227,6,19,.12)',                      domain:'bancoprocredit.com.ec'        },
-            finca:         { p:'#f77f00', pd:'#a85500', bg:'rgba(247,127,0,.12)',                     domain:'bancofinca.com.ec'            },
-            capital:       { p:'#0d47a1', pd:'#0d47a1', bg:'rgba(13,71,161,.12)',                     domain:'bancocapital.com.ec'          },
+            // logoId = nombre de archivo en /public/img/banks/ (sin extensión). Ej: pichincha.png
+            pichincha:     { p:'#ffdd00', pd:'#7a6500', bg:'rgba(255,221,0,.13)',   iconFg:'#3d3200', logoUrl:'https://www.pichincha.com/themes/custom/pichincha_theme/favicon.ico' },
+            pacifico:      { p:'#0066b2', pd:'#004a82', bg:'rgba(0,102,178,.12)',                     logoUrlColored:'https://www.bancodelpacifico.com/BancoPacifico/media/layout-images/bp-icon-white.svg?ext=.svg&width=42&height=42' },
+            guayaquil:     { p:'#d2006e', pd:'#d2006e', bg:'rgba(210,0,110,.12)',                     logoId:'bancoguayaquil', domain:'bancoguayaquil.com'           },
+            internacional: { p:'#f98f16', pd:'#c06800', bg:'rgba(249,143,22,.12)',                    logoId:'internacional', domain:'bancointernacional.com.ec'     },
+            produbanco:    { p:'#69bd27', pd:'#3d7000', bg:'rgba(105,189,39,.12)',                    logoId:'produbanco',    domain:'produbanco.com.ec'            },
+            bolivariano:   { p:'#006576', pd:'#006576', bg:'rgba(0,101,118,.12)',                     logoId:'bolivariano',   domain:'bolivariano.com'              },
+            austro:        { p:'#1a2b5c', pd:'#1a2b5c', bg:'rgba(26,43,92,.12)',                      logoId:'austro',       domain:'bancoaustro.com'              },
+            bgr:           { p:'#003f87', pd:'#003f87', bg:'rgba(0,63,135,.12)',                      logoId:'bgr',          domain:'bgr.com.ec'                   },
+            solidario:     { p:'#00b4d8', pd:'#007a99', bg:'rgba(0,180,216,.12)',                     logoId:'solidario',    domain:'banco-solidario.com'          },
+            dmiro:         { p:'#00897b', pd:'#00897b', bg:'rgba(0,137,123,.12)',                     logoId:'dmiro',        domain:'bancodmiro.com'               },
+            bancodesarrollo:{ p:'#1565c0', pd:'#1565c0', bg:'rgba(21,101,192,.12)',                   logoId:'bancodesarrollo', domain:'bancodesarrollo.fin.ec'       },
+            procredit:     { p:'#e30613', pd:'#e30613', bg:'rgba(227,6,19,.12)',                      logoId:'procredit',    domain:'bancoprocredit.com.ec'        },
+            finca:         { p:'#f77f00', pd:'#a85500', bg:'rgba(247,127,0,.12)',                     logoId:'finca',        domain:'bancofinca.com.ec'            },
+            capital:       { p:'#0d47a1', pd:'#0d47a1', bg:'rgba(13,71,161,.12)',                     logoId:'capital',      domain:'bancocapital.com.ec'          },
             // ── Bancos públicos ───────────────────────────────────────────────────────────
-            bde:           { p:'#004f9f', pd:'#004f9f', bg:'rgba(0,79,159,.12)',                      domain:'bde.fin.ec'                   },
-            banecuador:    { p:'#007a3d', pd:'#007a3d', bg:'rgba(0,122,61,.12)',                      domain:'banecuador.fin.ec'            },
-            cfn:           { p:'#1a237e', pd:'#1a237e', bg:'rgba(26,35,126,.12)',                     domain:'cfn.fin.ec'                   },
+            bde:           { p:'#004f9f', pd:'#004f9f', bg:'rgba(0,79,159,.12)',                      logoId:'bde',          domain:'bde.fin.ec'                   },
+            banecuador:    { p:'#007a3d', pd:'#007a3d', bg:'rgba(0,122,61,.12)',                     logoId:'banecuador',   domain:'banecuador.fin.ec'            },
+            cfn:           { p:'#1a237e', pd:'#1a237e', bg:'rgba(26,35,126,.12)',                     logoId:'cfn',          domain:'cfn.fin.ec'                   },
             // ── Cooperativas ─────────────────────────────────────────────────────────────
-            jep:           { p:'#5c2d91', pd:'#5c2d91', bg:'rgba(92,45,145,.12)',                     domain:'jep.fin.ec'                   },
-            jardinazuayo:  { p:'#1a6faf', pd:'#1a6faf', bg:'rgba(26,111,175,.12)',                    domain:'jardineazuayo.fin.ec'         },
-            cacpeco:       { p:'#009639', pd:'#006626', bg:'rgba(0,150,57,.12)',                       domain:'cacpeco.fin.ec'               },
-            octubre29:     { p:'#c62828', pd:'#c62828', bg:'rgba(198,40,40,.12)',                      domain:'29deoctubre.fin.ec'           },
-            cooprogreso:   { p:'#2e7d32', pd:'#2e7d32', bg:'rgba(46,125,50,.12)',                     domain:'cooprogreso.fin.ec'           },
-            munozvega:     { p:'#1565c0', pd:'#1565c0', bg:'rgba(21,101,192,.12)',                    domain:'pablomunozvega.fin.ec'        },
-            mego:          { p:'#ad1457', pd:'#ad1457', bg:'rgba(173,20,87,.12)',                     domain:'mego.fin.ec'                  },
-            erco:          { p:'#00796b', pd:'#00796b', bg:'rgba(0,121,107,.12)',                     domain:'erco.fin.ec'                  },
-            policia:       { p:'#1a237e', pd:'#1a237e', bg:'rgba(26,35,126,.12)',                     domain:'coopnacional.fin.ec'          },
-            riobamba:      { p:'#b71c1c', pd:'#b71c1c', bg:'rgba(183,28,28,.12)',                     domain:'riobamba.fin.ec'              },
-            oscus:         { p:'#004d40', pd:'#004d40', bg:'rgba(0,77,64,.12)',                       domain:'oscus.fin.ec'                 },
-            mushucruna:    { p:'#e65100', pd:'#e65100', bg:'rgba(230,81,0,.12)',                       domain:'mushucrunapastaza.fin.ec'     },
-            sanfrancisco:  { p:'#1976d2', pd:'#1976d2', bg:'rgba(25,118,210,.12)',                    domain:'coopsanfrancisco.fin.ec'      },
-            andina:        { p:'#880e4f', pd:'#880e4f', bg:'rgba(136,14,79,.12)',                     domain:'andina.fin.ec'                }
+            jep:           { p:'#006b3f', pd:'#006b3f', bg:'rgba(0,107,63,.12)',                      logoId:'jep',          domain:'jep.fin.ec'                   },
+            jardinazuayo:  { p:'#1a6faf', pd:'#1a6faf', bg:'rgba(26,111,175,.12)',                    logoId:'jardinazuayo',  domain:'jardinazuayo.fin.ec'         },
+            cacpeco:       { p:'#009639', pd:'#006626', bg:'rgba(0,150,57,.12)',                       logoId:'cacpeco',      domain:'cacpeco.fin.ec'               },
+            octubre29:     { p:'#c62828', pd:'#c62828', bg:'rgba(198,40,40,.12)',                      logoId:'octubre29',    domain:'29deoctubre.fin.ec'           },
+            cooprogreso:   { p:'#2e7d32', pd:'#2e7d32', bg:'rgba(46,125,50,.12)',                     logoId:'cooprogreso',  domain:'cooprogreso.fin.ec'           },
+            munozvega:     { p:'#1565c0', pd:'#1565c0', bg:'rgba(21,101,192,.12)',                    logoId:'munozvega',    domain:'pablomunozvega.fin.ec'        },
+            mego:          { p:'#ad1457', pd:'#ad1457', bg:'rgba(173,20,87,.12)',                     logoId:'mego',         domain:'mego.fin.ec'                  },
+            erco:          { p:'#00796b', pd:'#00796b', bg:'rgba(0,121,107,.12)',                     logoId:'erco',         domain:'erco.fin.ec'                  },
+            policia:       { p:'#1a237e', pd:'#1a237e', bg:'rgba(26,35,126,.12)',                     logoId:'policia',      domain:'coopnacional.fin.ec'          },
+            riobamba:      { p:'#b71c1c', pd:'#b71c1c', bg:'rgba(183,28,28,.12)',                     logoId:'riobamba',     domain:'riobamba.fin.ec'              },
+            oscus:         { p:'#004d40', pd:'#004d40', bg:'rgba(0,77,64,.12)',                       logoId:'oscus',        domain:'oscus.fin.ec'                 },
+            mushucruna:    { p:'#e65100', pd:'#e65100', bg:'rgba(230,81,0,.12)',                     logoId:'mushucruna',   domain:'mushucrunapastaza.fin.ec'     },
+            sanfrancisco:  { p:'#1976d2', pd:'#1976d2', bg:'rgba(25,118,210,.12)',                    logoId:'sanfrancisco', domain:'coopsanfrancisco.fin.ec'      },
+            andina:        { p:'#880e4f', pd:'#880e4f', bg:'rgba(136,14,79,.12)',                     logoId:'andina',       domain:'andina.fin.ec'                }
         };
 
         function getBankTheme(name) {
@@ -1241,24 +1250,46 @@
                         ';--bank-pd:' + (theme.pd || theme.p) +
                         (theme.iconFg ? ';--bank-icon-fg:' + theme.iconFg : '') + ';"';
                 }
-                var fbSvg = '<svg class="bank-icon-fb" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="7"/><rect x="10" y="8" width="4" height="11"/><rect x="17" y="4" width="4" height="15"/><line x1="1" y1="21" x2="23" y2="21"/></svg>';
+                // SVG banco/transferencia — icono profesional cuando falla el favicon
+                var fbSvg = '<svg class="bank-icon-fb" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6l7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/><path d="M8 14v3"/><path d="M12 14v3"/><path d="M16 14v3"/></svg>';
                 var iconHtml = '';
-                if (theme && theme.domain) {
-                    // Brandfetch CDN — logos vectoriales de alta calidad, sin API key
-                    // Fallback: si falla, intenta con Google Favicon; si falla, quita el img
-                    var d = theme.domain;
-                    var primary  = 'https://cdn.brandfetch.io/' + d + '/w/256/h/256';
-                    var fallback = 'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://' + d + '&size=256';
-                    iconHtml = '<img class="bank-logo-img" src="' + primary + '" ' +
+                var iconContainerClass = 'bank-row-icon';
+                if (theme && theme.logoUrlColored) {
+                    iconContainerClass += ' has-logo-colored';
+                    iconHtml = '<img class="bank-logo-img" src="' + escCheckout(theme.logoUrlColored) + '" ' +
+                        'onerror="this.remove();" ' +
+                        'alt="' + escCheckout(acc.bankName) + '">' + fbSvg;
+                } else if (theme && theme.logoUrl) {
+                    iconContainerClass += ' has-logo';
+                    iconHtml = '<img class="bank-logo-img" src="' + escCheckout(theme.logoUrl) + '" ' +
+                        'onerror="this.remove();" ' +
+                        'alt="' + escCheckout(acc.bankName) + '">' + fbSvg;
+                } else if (theme && theme.logoId) {
+                    // Logo local: /public/img/banks/{logoId}.png . Si falla, intenta .svg; si falla, favicon o icono genérico
+                    var logoPath = '/public/img/banks/' + theme.logoId + '.png';
+                    var logoSvg = '/public/img/banks/' + theme.logoId + '.svg';
+                    var faviconUrl = (theme.domain ? 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(theme.domain) + '&sz=128' : '');
+                    var faviconUrl2 = (theme.domain ? 'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&url=https://' + encodeURIComponent(theme.domain) + '&size=128' : '');
+                    iconHtml = '<img class="bank-logo-img" src="' + logoPath + '" data-svg="' + logoSvg + '" data-favicon="' + escCheckout(faviconUrl) + '" data-favicon2="' + escCheckout(faviconUrl2) + '" ' +
                         'onload="var ic=this.parentElement;if(ic)ic.classList.add(\'has-logo\')" ' +
-                        'onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src=\'' + fallback + '\';}else{this.remove();}" ' +
+                        'onerror="var t=this;if(!t.dataset.tried){t.dataset.tried=1;t.src=t.dataset.svg;}else if(t.dataset.tried==1){t.dataset.tried=2;t.src=t.dataset.favicon||\'\';if(!t.src)t.remove();}else if(t.dataset.tried==2){t.dataset.tried=3;t.src=t.dataset.favicon2||\'\';if(!t.src)t.remove();}else{t.remove();}" ' +
+                        'alt="' + escCheckout(acc.bankName) + '">' + fbSvg;
+                } else if (theme && theme.customSvg) {
+                    iconHtml = theme.customSvg;
+                    iconContainerClass += ' has-custom-icon';
+                } else if (theme && theme.domain) {
+                    var d = theme.domain;
+                    var faviconUrl = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(d) + '&sz=128';
+                    iconHtml = '<img class="bank-logo-img" src="' + faviconUrl + '" data-domain="' + escCheckout(d) + '" ' +
+                        'onload="var ic=this.parentElement;if(ic)ic.classList.add(\'has-logo\')" ' +
+                        'onerror="var t=this;if(!t.dataset.tried){t.dataset.tried=1;t.src=\'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&url=https://\'+t.dataset.domain+\'&size=128\';}else{this.remove();}" ' +
                         'alt="' + escCheckout(acc.bankName) + '">' + fbSvg;
                 } else {
                     iconHtml = fbSvg.replace('class="bank-icon-fb" ', '');
                 }
                 return '<div class="bank-row" id="bankRow'+i+'"' + styleAttr + ' onclick="toggleBankRow('+i+')">' +
                     '<div class="bank-row-head">' +
-                        '<div class="bank-row-icon">' + iconHtml + '</div>' +
+                        '<div class="' + iconContainerClass + '">' + iconHtml + '</div>' +
                         '<div class="bank-row-info"><div class="bank-row-name">' + escCheckout(acc.bankName) + '</div>' +
                         '<div class="bank-row-type">' + escCheckout(acc.accountType || '') + '</div></div>' +
                         '<svg class="bank-row-chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>' +
@@ -1312,17 +1343,29 @@
             var container = document.getElementById('pp-button-inline');
             if (!container) return;
             container.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary"></div><p class="mt-2 small text-muted">Cargando formulario de pago...</p></div>';
-            var items = cart.map(function(item) { return { productId: item.productId, quantity: item.quantity }; });
-            if (items.length === 0) {
-                container.innerHTML = '<p class="text-warning">Añada productos al carrito.</p>';
-                return;
+
+            var url, payload;
+            if (isCreditMode && creditPaymentCtx) {
+                // En modo crédito, preparar pago de crédito
+                url = '/api/customer/credits/' + creditPaymentCtx.creditId + '/prepare-payphone';
+                payload = {};
+            } else {
+                // En modo checkout regular, preparar pago de carrito
+                var items = cart.map(function(item) { return { productId: item.productId, quantity: item.quantity }; });
+                if (items.length === 0) {
+                    container.innerHTML = '<p class="text-warning">Añada productos al carrito.</p>';
+                    return;
+                }
+                url = '/api/customer/checkout/prepare-payphone';
+                payload = { items: items, notes: $('#notes').val() || null };
             }
+
             $.ajax({
-                url: '/api/customer/checkout/prepare-payphone',
+                url: url,
                 method: 'POST',
                 headers: { 'Authorization': 'Bearer ' + localStorage.getItem('customerToken') },
                 contentType: 'application/json',
-                data: JSON.stringify({ items: items, notes: $('#notes').val() || null }),
+                data: JSON.stringify(payload),
                 success: function(config) {
                     container.innerHTML = '';
                     resetCardPreview();
@@ -1535,11 +1578,21 @@
                 }
             });
             $.ajax({
-                url: '/api/public/discount-rate',
+                url: '/api/public/cart-reservation-minutes',
                 method: 'GET',
                 data: { tenantId: 1 },
                 success: function(r) {
-                    currentDiscountRate = r.value || 0;
+                    cartReservationMinutes = r.minutes || 15;
+                    var bannerMsg = document.getElementById('cartReservationMsg');
+                    if (bannerMsg) bannerMsg.textContent = 'Los ítems del carrito se reservan por ' + cartReservationMinutes + ' min';
+                }
+            });
+            $.ajax({
+                url: '/api/public/payphone-commission',
+                method: 'GET',
+                data: { tenantId: 1 },
+                success: function(r) {
+                    payphoneCommissionRate = r.rate || 0;
                     updateTotals();
                 }
             });
@@ -1587,17 +1640,21 @@
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             const tax = (taxEnabled && currentTaxRate != null) ? subtotal * (currentTaxRate / 100) : 0;
             const payMethod = $('#paymentMethod').val();
-            const applyDiscount = (payMethod === 'CASH' || payMethod === 'TRANSFER') && currentDiscountRate > 0;
-            const discountAmt = applyDiscount ? Math.round((subtotal + tax) * (currentDiscountRate / 100) * 100) / 100 : 0;
-            const total = subtotal + tax - discountAmt;
+            const baseTotal = subtotal + tax;
+
+            // Comisión PayPhone solo para pago con tarjeta
+            const applyCommission = payMethod === 'CARD' && payphoneCommissionRate > 0;
+            const commissionAmt = applyCommission ? Math.round((baseTotal / (1 - payphoneCommissionRate / 100) - baseTotal) * 100) / 100 : 0;
+            const total = baseTotal + commissionAmt;
 
             $('#subtotal').text(`$${subtotal.toFixed(2)}`);
             $('#tax').text(`$${tax.toFixed(2)}`);
-            if (applyDiscount) {
-                $('#discountRow').removeClass('d-none');
-                $('#discount').text(`-$${discountAmt.toFixed(2)}`);
+            if (applyCommission) {
+                $('#commissionRow').removeClass('d-none');
+                $('#commissionLabel').text(`Comisión tarjeta (${payphoneCommissionRate}%)`);
+                $('#commission').text(`$${commissionAmt.toFixed(2)}`);
             } else {
-                $('#discountRow').addClass('d-none');
+                $('#commissionRow').addClass('d-none');
             }
             $('#total').text(`$${total.toFixed(2)}`);
         }
@@ -1654,7 +1711,7 @@
             var amount = parseFloat(creditPaymentCtx.amount).toFixed(2);
             $('#subtotal').text('$' + amount);
             $('.tax-row').addClass('d-none');
-            $('#discountRow').addClass('d-none');
+            $('#commissionRow').addClass('d-none');
             $('#total').text('$' + amount);
         }
 
@@ -1700,6 +1757,19 @@
             if (!paymentMethod) {
                 showAlert('Por favor seleccione un método de pago', 'warning');
                 return;
+            }
+
+            // En mode crédito, procesar directamente sin carrito
+            if (isCreditMode && creditPaymentCtx) {
+                if (!creditPaymentCtx.creditId || !creditPaymentCtx.amount) {
+                    showAlert('Información del crédito incompleta', 'warning');
+                    return;
+                }
+                if (paymentMethod === 'CASH' || paymentMethod === 'TRANSFER') {
+                    processCreditPayment(paymentMethod);
+                    return;
+                }
+                // Si es CARD, continúa para mostrar PayPhone
             }
 
             if (cart.length === 0) {
@@ -2094,7 +2164,7 @@
                 clearInterval(window._cartTimerInterval);
                 window._cartTimerInterval = null;
             }
-            var totalDuration = 15 * 60 * 1000; // 15 min
+            var totalDuration = cartReservationMinutes * 60 * 1000;
             function tick() {
                 var currentCart = JSON.parse(localStorage.getItem('customerCart')) || [];
                 var banner = document.getElementById('cartExpiryBanner');
@@ -2178,9 +2248,8 @@
             document.getElementById('processBtn').classList.remove('d-none');
             _bankAccountsCache = null; // forzar recarga de cuentas en siguiente visita
             // Mostrar productos y totales inmediatamente, sin esperar AJAX
-            currentDiscountRate = 0;
             displayOrderSummary();
-            // Cargar IVA y descuento de forma asíncrona y actualizar totales al llegar
+            // Cargar IVA y comisión de forma asíncrona y actualizar totales al llegar
             loadTaxRate();
             startCartExpiryTimer(function() {
                 showAlert('Tu carrito expiró. Redirigiendo al catálogo...', 'warning');
