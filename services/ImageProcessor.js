@@ -111,4 +111,29 @@ async function processBrandImage(srcPath, destPath, type) {
   }
 }
 
-module.exports = { processProductImage, processBrandImage };
+/**
+ * Regenera los íconos PWA (192×192 y 512×512) desde icono-LB.png
+ * Se llama automáticamente después de subir un nuevo logo.
+ *
+ * @param {string} logoPath  Ruta de icono-LB.png ya guardado
+ */
+async function regeneratePwaIcons(logoPath) {
+  const sizes = [192, 512];
+  const dir = path.dirname(logoPath);
+  for (const size of sizes) {
+    try {
+      const destPath = path.join(dir, `icon-${size}.png`);
+      const tmpPath  = path.join(os.tmpdir(), `lb-pwa-${size}-${Date.now()}.png`);
+      await sharp(logoPath)
+        .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        .png({ compressionLevel: 9 })
+        .toFile(tmpPath);
+      fs.renameSync(tmpPath, destPath);
+      console.log(`[ImageProcessor] ícono PWA regenerado: icon-${size}.png`);
+    } catch (err) {
+      console.warn(`[ImageProcessor] error regenerando icon-${size}.png:`, err.message);
+    }
+  }
+}
+
+module.exports = { processProductImage, processBrandImage, regeneratePwaIcons };

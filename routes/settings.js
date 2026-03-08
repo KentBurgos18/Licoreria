@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { requireRole } = require('./adminAuth');
-const { processBrandImage } = require('../services/ImageProcessor');
+const { processBrandImage, regeneratePwaIcons } = require('../services/ImageProcessor');
 
 // Mapeo tipo → nombre de archivo en /public/img/
 const BRAND_IMG_MAP = {
@@ -232,6 +232,10 @@ router.post('/upload-brand-image', requireRole('ADMIN'), uploadBrandImg.single('
   const destPath = path.join(PUBLIC_IMG_DIR, filename);
   try {
     await processBrandImage(req.file.path, destPath, type);
+    // Al subir el logo principal, regenerar íconos PWA (192 y 512)
+    if (type === 'logo') {
+      await regeneratePwaIcons(destPath);
+    }
     const url = '/public/img/' + filename + '?v=' + Date.now();
     res.json({ ok: true, url });
   } catch (err) {
