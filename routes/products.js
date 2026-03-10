@@ -192,6 +192,7 @@ router.post('/', requireRole('ADMIN'), upload.single('image'), async (req, res) 
       unitsPerSale,
       taxApplies,
       stockMin: productType === 'SIMPLE' ? stockMin : null,
+      unitCost: unitCost !== undefined && unitCost !== null ? unitCost : null,
       createdAt: new Date()
     }, { transaction });
 
@@ -206,10 +207,17 @@ router.post('/', requireRole('ADMIN'), upload.single('image'), async (req, res) 
         }))
       , { transaction });
     } else {
+      // Propagar unitCost al producto base si es una presentación
+      if (unitCost != null && baseProductId) {
+        const effectiveUnitsPerSale = parseFloat(unitsPerSale) || 1;
+        const perUnitCost = unitCost / effectiveUnitsPerSale;
+        await Product.update({ unitCost: perUnitCost }, { where: { id: baseProductId, tenantId }, transaction });
+      }
+
       // Create initial inventory movement (IN) if provided
       const qty = initialStock !== undefined && initialStock !== null ? Number(initialStock) : 0;
       if (qty > 0) {
-        const parsedUnitCost = unitCost !== undefined && unitCost !== null && unitCost !== '' ? Number(unitCost) : null;
+        const parsedUnitCost = unitCost !== undefined && unitCost !== null ? Number(unitCost) : null;
         await InventoryMovement.create({
           tenantId,
           productId: product.id,
