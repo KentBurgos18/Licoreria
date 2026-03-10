@@ -132,18 +132,28 @@ router.post('/', async (req, res) => {
     for (const item of items) {
       const product = productMap[item.productId];
       const { productId: mvProductId, qty: mvQty } = resolveMovement(product, item.quantity);
+      const unitsPerSale = parseFloat(product.unitsPerSale) || 1;
+      const mvUnitCost = item.unitCost
+        ? (product.baseProductId ? parseFloat(item.unitCost) / unitsPerSale : parseFloat(item.unitCost))
+        : null;
       await InventoryMovement.create({
         tenantId,
         productId: mvProductId,
         movementType: 'IN',
         reason: 'PURCHASE',
         qty: mvQty,
-        unitCost: item.unitCost || null,
+        unitCost: mvUnitCost,
         refType: 'PURCHASE',
         refId: purchaseOrder.id,
         purchaseOrderId: purchaseOrder.id,
         createdAt: purchaseDate ? new Date(purchaseDate) : new Date()
       }, { transaction });
+
+      // Actualizar unit_cost del producto base para que todas las presentaciones
+      // hereden el costo automáticamente (Six Pack, 12-pack, etc.)
+      if (mvUnitCost !== null) {
+        await Product.update({ unitCost: mvUnitCost }, { where: { id: mvProductId, tenantId }, transaction });
+      }
 
       // Guardar ítem con la cantidad original ingresada por el usuario
       await PurchaseOrderItem.create({

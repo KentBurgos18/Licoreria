@@ -432,8 +432,10 @@
         /* Body */
         .scm-wrap .scm-body {
             flex: 1; min-height: 0; overflow-y: auto;
-            padding: 16px 20px;
+            padding: 16px 20px 20px;
             display: flex; flex-direction: column; gap: 14px;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
         }
         .scm-wrap .scm-body::-webkit-scrollbar { width: 4px; }
         .scm-wrap .scm-body::-webkit-scrollbar-track { background: transparent; }
@@ -1262,6 +1264,9 @@
                 <a class="nav-link admin-only" href="/dashboard/audit" data-section="audit" title="Auditoría">
                     <svg class="sb-icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg><span>Auditoría</span>
                 </a>
+                <a class="nav-link admin-only" href="/dashboard/profitability" data-section="profitability" title="Rentabilidad">
+                    <svg class="sb-icon" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg><span>Rentabilidad</span>
+                </a>
                 <a class="nav-link" href="/dashboard/settings" data-section="settings" title="Configuración">
                     <svg class="sb-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Configuración</span>
                 </a>
@@ -1512,8 +1517,9 @@
                                 <label class="form-label">Costo Unitario (opcional)</label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input type="number" class="form-control" id="productPurchasePrice" step="0.01" min="0">
+                                    <input type="number" class="form-control" id="productPurchasePrice" step="0.0001" min="0">
                                 </div>
+                                <div id="productPurchasePriceHint" class="form-text text-muted small" style="display:none"></div>
                             </div>
                             <div class="col-md-4" id="initialStockSection">
                                 <label class="form-label">Stock Inicial</label>
@@ -6107,7 +6113,15 @@
                     }
                     
                     if (product.productType === 'SIMPLE') {
-                        $('#productPurchasePrice').val(product.purchasePrice || '');
+                        var manualCost = product.unitCost != null && product.unitCost > 0 ? product.unitCost : null;
+                        $('#productPurchasePrice').val(manualCost != null ? manualCost : '');
+                        // Si no hay costo manual, mostrar el calculado como referencia
+                        var hint = $('#productPurchasePriceHint');
+                        if (manualCost == null && product.purchasePrice > 0) {
+                            hint.text('Calculado automáticamente: $' + parseFloat(product.purchasePrice).toFixed(4)).show();
+                        } else {
+                            hint.hide();
+                        }
                         $('#productStockMin').val(product.stockMin || '');
                         $('#comboComponentsSection').hide();
                         $('#productPurchasePrice').closest('.col-md-4').show();
@@ -6204,7 +6218,7 @@
                     $('#productStatus').val('true');
                     
                     if (product.productType === 'SIMPLE') {
-                        $('#productPurchasePrice').val(product.purchasePrice || '');
+                        $('#productPurchasePrice').val(product.unitCost != null && product.unitCost > 0 ? product.unitCost : '');
                         $('#productStockMin').val(product.stockMin || '');
                         $('#productInitialStock').val('0');
                     }
@@ -7045,72 +7059,39 @@
         }
 
         // Real-time search and type filter (Vender - estilo catálogo)
+        // Usar delegación en document para que funcione tras re-inyección del SPA
         $(document).ready(function() {
-            $('#sellProductSearch').on('input', function() {
+            $(document).on('input', '#sellProductSearch', function() {
                 if (sellSearchTimeout) clearTimeout(sellSearchTimeout);
                 sellSearchTimeout = setTimeout(applySellFilters, 300);
             });
-            $('#sellProductSearch').on('keypress', function(e) {
+            $(document).on('keypress', '#sellProductSearch', function(e) {
                 if (e.which === 13) {
                     e.preventDefault();
                     if (sellSearchTimeout) clearTimeout(sellSearchTimeout);
                     applySellFilters();
                 }
             });
-            $('#sellTypeFilter').on('change', applySellFilters);
-            $('#sellCategoryFilter').on('change', applySellFilters);
-            $('#sellPresentationFilter').on('change', applySellFilters);
+            $(document).on('change', '#sellTypeFilter, #sellCategoryFilter, #sellPresentationFilter', applySellFilters);
 
             // Filtros en tiempo real para Ventas (delegación para contenido SPA dinámico)
             $(document).on('change', '#salesStatusFilter, #salesPaymentMethodFilter, #salesTransferAccountFilter, #salesStartDateFilter, #salesEndDateFilter', loadSales);
 
-            // Real-time search for Products section (Gestion de Productos)
-            $('#productSearch').on('input', function() {
+            // Real-time search/filter para Productos — delegación en document para SPA
+            $(document).on('input', '#productSearch', function() {
                 const searchTerm = $(this).val().trim();
-                
-                // Clear previous timeout
-                if (productSearchTimeout) {
-                    clearTimeout(productSearchTimeout);
-                }
-                
-                // Debounce search
-                productSearchTimeout = setTimeout(function() {
-                    filterProductsRealtime(searchTerm);
-                }, 300); // 300ms delay
+                if (productSearchTimeout) clearTimeout(productSearchTimeout);
+                productSearchTimeout = setTimeout(function() { filterProductsRealtime(searchTerm); }, 300);
             });
-            
-            // Allow Enter key to trigger immediate search in Products section
-            $('#productSearch').on('keypress', function(e) {
-                if (e.which === 13) { // Enter key
+            $(document).on('keypress', '#productSearch', function(e) {
+                if (e.which === 13) {
                     e.preventDefault();
-                    if (productSearchTimeout) {
-                        clearTimeout(productSearchTimeout);
-                    }
-                    const searchTerm = $(this).val().trim();
-                    filterProductsRealtime(searchTerm);
+                    if (productSearchTimeout) clearTimeout(productSearchTimeout);
+                    filterProductsRealtime($(this).val().trim());
                 }
             });
-            
-            // Real-time filter by product type
-            $('#productTypeFilter').on('change', function() {
-                const searchTerm = $('#productSearch').val().trim();
-                filterProductsRealtime(searchTerm);
-            });
-            
-            // Real-time filter by product status
-            $('#productStatusFilter').on('change', function() {
-                const searchTerm = $('#productSearch').val().trim();
-                filterProductsRealtime(searchTerm);
-            });
-
-            // Real-time filter by product category
-            $('#productCategoryFilter').on('change', function() {
-                const searchTerm = $('#productSearch').val().trim();
-                filterProductsRealtime(searchTerm);
-            });
-            $('#productPresentationFilter').on('change', function() {
-                const searchTerm = $('#productSearch').val().trim();
-                filterProductsRealtime(searchTerm);
+            $(document).on('change', '#productTypeFilter, #productStatusFilter, #productCategoryFilter, #productPresentationFilter', function() {
+                filterProductsRealtime($('#productSearch').val().trim());
             });
 
             // Load category and presentation dropdowns on startup
@@ -7328,7 +7309,7 @@
                     $('#sellCartModalPay').prop('disabled', sellCart.length === 0 || gsParticipantes.length === 0);
                 } else {
                     $('#sellCartModalPayButtonText').text('Procesar Venta');
-                    $('#sellCartModalPay').prop('disabled', sellCart.length === 0);
+                    validateNormalSaleModal();
                 }
                 
                 // Update group sale participants if active
@@ -7341,12 +7322,71 @@
             if (typeof posUpdateLayout === 'function') posUpdateLayout();
         }
         
+        // ── Cuentas bancarias para transferencia ───────────────────
+        var _modalBankAccounts = null;
+        function loadBankAccountsIntoModal() {
+            var sel = document.getElementById('sellCartModalBankAccount');
+            if (!sel) return;
+            if (_modalBankAccounts !== null) { renderBankAccountOptions(sel); return; }
+            $.ajax({ url: '/api/public/bank-accounts', method: 'GET',
+                success: function(r) {
+                    _modalBankAccounts = r.accounts || [];
+                    renderBankAccountOptions(sel);
+                }
+            });
+        }
+        function renderBankAccountOptions(sel) {
+            var current = sel.value;
+            sel.innerHTML = '<option value="">— Seleccionar cuenta —</option>';
+            (_modalBankAccounts || []).forEach(function(acc) {
+                var label = acc.bankName + ' · ' + acc.accountType + ' · ' + acc.accountNumber;
+                var opt = document.createElement('option');
+                opt.value = label;
+                opt.textContent = label;
+                if (current === label) opt.selected = true;
+                sel.appendChild(opt);
+            });
+        }
+
+        // ── Autocomplete cliente (campo texto libre) ───────────────
+        function scmCustomerAutocomplete(val) {
+            var drop = document.getElementById('scmCustomerDropdown');
+            if (!drop) return;
+            // Cargar clientes si aún no están cargados
+            if (!allCustomersList || allCustomersList.length === 0) {
+                $.ajax({ url: '/api/customers', method: 'GET', data: { tenantId: 1, isActive: true, limit: 500 },
+                    success: function(r) {
+                        allCustomersList = r.customers || [];
+                        scmCustomerAutocomplete(val);
+                    }
+                });
+                return;
+            }
+            var search = (val || '').trim().toLowerCase();
+            if (!search) { $(drop).hide(); return; }
+            var matches = allCustomersList.filter(function(c) {
+                return (c.name || '').toLowerCase().includes(search) || (c.phone || '').includes(search);
+            }).slice(0, 8);
+            if (matches.length === 0) { $(drop).hide(); return; }
+            var html = matches.map(function(c) {
+                var name = (c.name || '').replace(new RegExp('(' + search.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi'), '<strong>$1</strong>');
+                return '<div class="scm-cust-ac-item" onmousedown="scmCustomerSelect(' + JSON.stringify(c.name) + ')" style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--th-border);">' + name + (c.phone ? '<span style="color:var(--th-text3);font-size:11px;margin-left:6px;">' + c.phone + '</span>' : '') + '</div>';
+            }).join('');
+            drop.innerHTML = html;
+            $(drop).show();
+        }
+        function scmCustomerSelect(name) {
+            $('#sellCartModalCustomer').val(name);
+            $('#scmCustomerDropdown').hide();
+        }
+
         // ── Custom payment select helpers ──────────────────────────
         function toggleScmPagoSel(e) {
             e && e.stopPropagation();
             document.getElementById('scmPagoSel').classList.toggle('open');
         }
-        function scmSelectPago(el, val, icon, label) {
+        function scmSelectPago(el, val, icon, label, e) {
+            e && e.stopPropagation();
             document.getElementById('scmPagoVal').innerHTML = '<span>' + icon + '</span> ' + label;
             document.querySelectorAll('#scmPagoSel .scm-sel-opt').forEach(function(o) { o.classList.remove('selected'); });
             el.classList.add('selected');
@@ -7449,6 +7489,7 @@
             if (paymentMethod === 'TRANSFER') {
                 $('#sellCartModalTransferReferenceField').show();
                 $('#sellCartModalTransferReference').prop('required', true);
+                loadBankAccountsIntoModal();
                 $('#sellCartModalCreditFields').hide();
                 $('#sellCartModalCreditDueDate').prop('required', false);
                 // Cliente opcional
@@ -7484,6 +7525,7 @@
                 $('#sellCartModalTransferReferenceField').hide();
                 $('#sellCartModalTransferReference').prop('required', false);
                 $('#sellCartModalTransferReference').val('');
+                $('#sellCartModalBankAccount').val('');
                 $('#sellCartModalCreditFields').hide();
                 $('#sellCartModalCreditDueDate').prop('required', false);
                 // Cliente opcional
@@ -7493,8 +7535,23 @@
                 $('#sellCartModalCustomer').prop('required', false);
                 $('#sellCartModalCustomerId').val('');
             }
+            validateNormalSaleModal();
         }
-        
+
+        function validateNormalSaleModal() {
+            if (isGroupSale) return;
+            var hasCart = sellCart.length > 0;
+            var pm = document.getElementById('sellCartModalPaymentMethod');
+            var pmVal = pm ? pm.value : 'CASH';
+            var isTransfer = pmVal === 'TRANSFER';
+            var isCredit   = pmVal === 'CREDIT';
+            var bankOk     = !isTransfer || (document.getElementById('sellCartModalBankAccount') && document.getElementById('sellCartModalBankAccount').value !== '');
+            var refOk      = !isTransfer || (document.getElementById('sellCartModalTransferReference') && document.getElementById('sellCartModalTransferReference').value.trim() !== '');
+            var customerOk = !isCredit   || (document.getElementById('sellCartModalCustomerId') && document.getElementById('sellCartModalCustomerId').value !== '');
+            var canPay = hasCart && bankOk && refOk && customerOk;
+            document.getElementById('sellCartModalPay').disabled = !canPay;
+        }
+
         function loadCustomersForCredit(showDropdown = false) {
             $.ajax({
                 url: '/api/customers',
@@ -7589,6 +7646,7 @@
             $('#sellCartModalCustomerId').val(customerId);
             $('#sellCartModalCustomerSearch').val(customerName);
             $('#clearCustomerBtn').show();
+            validateNormalSaleModal();
             
             // Actualizar estilos visuales
             $('#sellCartModalCustomersList .form-check').removeClass('selected');
@@ -7615,6 +7673,12 @@
                 $('#sellCartModalGroupSaleFields').show();
                 gsParticipantes = [];
                 groupSaleParticipants = [];
+                // Precargar cuentas bancarias para que estén listas al elegir Transferencia
+                if (!_modalBankAccounts) {
+                    $.ajax({ url: '/api/public/bank-accounts', method: 'GET',
+                        success: function(r) { _modalBankAccounts = r.accounts || []; gsRender(); }
+                    });
+                }
                 gsRender();
                 gsValidar();
             } else {
@@ -7640,19 +7704,20 @@
             gsSearchTimer = setTimeout(function() {
                 $.get('/api/customers', { search: query, tenantId: 1 }, function(res) {
                     var $d = $('#gsDropdown').empty();
-                    (res.customers || []).slice(0, 8).forEach(function(c) {
-                        var inList = gsParticipantes.some(function(p) { return p.customerId === c.id; });
+                    var available = (res.customers || []).filter(function(c) {
+                        return !gsParticipantes.some(function(p) { return p.customerId === c.id; });
+                    }).slice(0, 8);
+                    available.forEach(function(c) {
                         var $btn = $('<button type="button" class="list-group-item list-group-item-action py-1 small border-0"></button>')
                             .text(c.name + (c.cedula ? ' · ' + c.cedula : ''))
-                            .prop('disabled', inList);
-                        if (!inList) $btn.click(function() {
-                            gsAgregar(c.id, c.name);
-                            $('#gsSearch').val('');
-                            $d.hide().empty();
-                        });
+                            .click(function() {
+                                gsAgregar(c.id, c.name);
+                                $('#gsSearch').val('');
+                                $d.hide().empty();
+                            });
                         $d.append($btn);
                     });
-                    if (!res.customers || !res.customers.length) $d.append('<div class="px-3 py-1 text-muted small">Sin resultados</div>');
+                    if (!available.length) $d.append('<div class="px-3 py-1 text-muted small">Sin resultados</div>');
                     $d.show();
                 });
             }, 280);
@@ -7676,7 +7741,14 @@
         }
 
         function gsSetMetodo(idx, method) {
-            if (gsParticipantes[idx]) { gsParticipantes[idx].paymentMethod = method; gsRender(); }
+            if (gsParticipantes[idx]) {
+                gsParticipantes[idx].paymentMethod = method;
+                if (method !== 'TRANSFER') gsParticipantes[idx].bankAccount = null;
+                gsRender();
+            }
+        }
+        function gsSetBankAccount(idx, val) {
+            if (gsParticipantes[idx]) { gsParticipantes[idx].bankAccount = val || null; }
         }
 
         function gsSetMonto(idx, val) {
@@ -7717,30 +7789,39 @@
                 return;
             }
             gsParticipantes.forEach(function(p, i) {
-                var btns = [
-                    { v: 'CASH', l: 'Efectivo', c: 'success' },
-                    { v: 'TRANSFER', l: 'Transf.', c: 'primary' },
-                    { v: 'CREDIT', l: 'Crédito', c: 'warning' }
-                ].map(function(m) {
-                    var act = p.paymentMethod === m.v ? ' active' : '';
-                    return '<button type="button" class="btn btn-sm btn-outline-' + m.c + act + '" onclick="gsSetMetodo(' + i + ',\'' + m.v + '\')">' + m.l + '</button>';
-                }).join('');
                 var n = String(p.customerName || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-                var creditFields = p.paymentMethod === 'CREDIT'
-                    ? '<input type="date" class="form-control form-control-sm flex-shrink-0" style="width:130px" title="Fecha límite de pago" value="' + (p.dueDate || '') + '" onchange="gsSetDueDate(' + i + ',this.value)">' +
-                      '<div class="input-group input-group-sm flex-shrink-0" style="width:90px" title="Tasa de interés diaria (%)">' +
-                        '<input type="number" class="form-control p-1" step="0.01" min="0" max="100" placeholder="0" value="' + ((p.interestRate || 0) * 100).toFixed(2) + '" onchange="gsSetInterestRate(' + i + ',this.value)">' +
-                        '<span class="input-group-text p-1">%</span>' +
-                      '</div>'
-                    : '';
+                var opts = [
+                    { v: '', l: '— Pago —' },
+                    { v: 'CASH', l: '💵 Efectivo' },
+                    { v: 'TRANSFER', l: '📲 Transferencia' },
+                    { v: 'CREDIT', l: '🏦 Crédito' }
+                ].map(function(m) {
+                    return '<option value="' + m.v + '"' + (p.paymentMethod === m.v ? ' selected' : '') + '>' + m.l + '</option>';
+                }).join('');
+                var extraFields = '';
+                if (p.paymentMethod === 'TRANSFER') {
+                    var bankOpts = '<option value="">— Cuenta bancaria —</option>';
+                    (_modalBankAccounts || []).forEach(function(acc) {
+                        var lbl = acc.bankName + ' · ' + acc.accountType + ' · ' + acc.accountNumber;
+                        bankOpts += '<option value="' + lbl + '"' + (p.bankAccount === lbl ? ' selected' : '') + '>' + lbl + '</option>';
+                    });
+                    extraFields = '<select class="form-select form-select-sm flex-shrink-0" style="width:195px;font-size:11px" onchange="gsSetBankAccount(' + i + ',this.value)">' + bankOpts + '</select>';
+                } else if (p.paymentMethod === 'CREDIT') {
+                    extraFields =
+                        '<input type="date" class="form-control form-control-sm flex-shrink-0" style="width:130px" title="Fecha límite de pago" value="' + (p.dueDate || '') + '" onchange="gsSetDueDate(' + i + ',this.value)">' +
+                        '<div class="input-group input-group-sm flex-shrink-0" style="width:90px" title="Tasa de interés diaria (%)">' +
+                          '<input type="number" class="form-control p-1" step="0.01" min="0" max="100" placeholder="0" value="' + ((p.interestRate || 0) * 100).toFixed(2) + '" onchange="gsSetInterestRate(' + i + ',this.value)">' +
+                          '<span class="input-group-text p-1">%</span>' +
+                        '</div>';
+                }
                 var row = '<div class="d-flex align-items-center gap-2 border rounded px-2 py-1 mb-1 flex-wrap">' +
-                    '<span class="small fw-semibold flex-fill text-truncate" title="' + n + '" style="min-width:80px;max-width:150px">' + n + '</span>' +
-                    '<div class="btn-group btn-group-sm flex-shrink-0" role="group">' + btns + '</div>' +
+                    '<span class="small fw-semibold flex-fill text-truncate" title="' + n + '" style="min-width:80px;max-width:130px">' + n + '</span>' +
+                    '<select class="form-select form-select-sm flex-shrink-0" style="width:145px" onchange="gsSetMetodo(' + i + ',this.value)">' + opts + '</select>' +
                     '<div class="input-group input-group-sm flex-shrink-0" style="width:100px">' +
                         '<span class="input-group-text p-1">$</span>' +
                         '<input type="number" class="form-control p-1" step="0.01" min="0" value="' + p.amountDue.toFixed(2) + '" onchange="gsSetMonto(' + i + ',this.value)" oninput="gsValidar()">' +
                     '</div>' +
-                    creditFields +
+                    extraFields +
                     '<button class="btn btn-sm btn-link text-danger p-0 flex-shrink-0" type="button" onclick="gsRemove(' + i + ')"><i class="bi bi-x-circle"></i></button>' +
                     '</div>';
                 $c.append(row);
@@ -7763,7 +7844,7 @@
                 $btn.prop('disabled', true);
                 return false;
             }
-            if (Math.abs(suma - total) > 0.02) {
+            if (Math.round(suma * 100) !== Math.round(total * 100)) {
                 $v.html('<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Suma $' + suma.toFixed(2) + ' ≠ $' + total.toFixed(2) + '</span>');
                 $btn.prop('disabled', true);
                 return false;
@@ -7960,8 +8041,18 @@
             const tax = (taxEnabled && currentTaxRate != null) ? subtotal * (currentTaxRate / 100) : 0;
             const total = subtotal + tax;
             
-            // Validate transfer reference if payment method is TRANSFER
-            if (paymentMethod === 'TRANSFER') {
+            // Validate transfer fields if payment method is TRANSFER
+            // Usar también estado visual del campo como respaldo
+            const transferFieldEl = document.getElementById('sellCartModalTransferReferenceField');
+            const isTransferActive = paymentMethod === 'TRANSFER' ||
+                (transferFieldEl && transferFieldEl.style.display !== 'none');
+            if (isTransferActive) {
+                const bankAccount = document.getElementById('sellCartModalBankAccount')
+                    ? document.getElementById('sellCartModalBankAccount').value : '';
+                if (!bankAccount) {
+                    showAlert('Debes seleccionar la cuenta bancaria destino', 'danger');
+                    return;
+                }
                 if (!transferRef) {
                     showAlert('La referencia de transferencia es requerida', 'danger');
                     return;
@@ -8014,6 +8105,7 @@
                 })),
                 paymentMethod: paymentMethod,
                 transferReference: paymentMethod === 'TRANSFER' ? transferRef : null,
+                transferAccountInfo: paymentMethod === 'TRANSFER' ? ($('#sellCartModalBankAccount').val() || null) : null,
                 totalAmount: total,
                 notes: customerName ? `Cliente: ${customerName}` : null,
                 // Campos adicionales para crédito
@@ -8403,6 +8495,7 @@
                     customerId: p.customerId,
                     amountDue: parseFloat(p.amountDue) || 0,
                     paymentMethod: p.paymentMethod,
+                    transferAccountInfo: p.paymentMethod === 'TRANSFER' ? (p.bankAccount || null) : null,
                     dueDate: p.dueDate || null,
                     interestRate: parseFloat(p.interestRate) || 0
                 })),
@@ -8419,6 +8512,7 @@
                 contentType: 'application/json',
                 data: JSON.stringify(payload),
                 success: function() {
+                    $btn.prop('disabled', false).html('<i class="bi bi-credit-card"></i> <span id="sellCartModalPayButtonText">Procesar Venta Grupal</span>');
                     showAlert('Venta grupal procesada exitosamente', 'success');
                     sellCart = [];
                     gsParticipantes = [];
@@ -10012,11 +10106,104 @@
                 '</tr>';
                 if (hasDetail) {
                     html += '<tr id="auditDetail_' + idx + '" style="display:none;background:var(--th-bg2,var(--th-bg))">' +
-                        '<td colspan="6" class="p-3"><pre style="font-size:0.78rem;color:var(--th-text2);margin:0;white-space:pre-wrap;word-break:break-all">' +
-                        escHtml(JSON.stringify(log.metadata, null, 2)) + '</pre></td></tr>';
+                        '<td colspan="6" class="p-3">' + renderAuditMetadata(log.metadata, log.action) + '</td></tr>';
                 }
             });
             $('#auditTableBody').html(html);
+        }
+
+        function renderAuditMetadata(meta, action) {
+            if (!meta) return '';
+            var FIELD_LABELS = {
+                // Generales
+                name: 'Nombre', description: 'Descripción', note: 'Nota', notes: 'Notas',
+                status: 'Estado', type: 'Tipo', date: 'Fecha', reason: 'Motivo',
+                isActive: 'Activo', is_active: 'Activo', active: 'Activo',
+                createdAt: 'Fecha de creación', created_at: 'Fecha de creación',
+                updatedAt: 'Última actualización', updated_at: 'Última actualización',
+                // Productos
+                price: 'Precio de venta', cost: 'Costo', stock: 'Stock disponible',
+                minStock: 'Stock mínimo', min_stock: 'Stock mínimo',
+                sku: 'Código SKU', barcode: 'Código de barras', unit: 'Unidad de medida',
+                taxRate: 'IVA (%)', tax_rate: 'IVA (%)', category: 'Categoría',
+                category_id: 'Categoría', product_id: 'Producto', productId: 'Producto',
+                unitsPerSale: 'Unidades por venta', sortOrder: 'Orden de visualización',
+                imageUrl: 'Imagen', image_url: 'Imagen',
+                // Usuarios y clientes
+                email: 'Correo electrónico', phone: 'Teléfono', address: 'Dirección',
+                role: 'Rol', user_id: 'Usuario', userId: 'Usuario',
+                firstName: 'Nombre', first_name: 'Nombre',
+                lastName: 'Apellido', last_name: 'Apellido',
+                // Ventas y pagos
+                total: 'Total', subtotal: 'Subtotal', tax: 'IVA', taxAmount: 'Monto IVA',
+                paymentMethod: 'Método de pago', payment_method: 'Método de pago',
+                quantity: 'Cantidad', amount: 'Monto', discount: 'Descuento',
+                commission: 'Comisión', cashReceived: 'Efectivo recibido', change: 'Vuelto',
+                items: 'Productos', saleId: 'N° de venta', sale_id: 'N° de venta',
+                // Créditos
+                creditLimit: 'Límite de crédito', credit_limit: 'Límite de crédito',
+                balance: 'Saldo pendiente', dueDate: 'Fecha de vencimiento', due_date: 'Fecha de vencimiento',
+                interestRate: 'Tasa de interés', interest_rate: 'Tasa de interés',
+                // Proveedores y compras
+                supplier: 'Proveedor', supplier_id: 'Proveedor', supplierId: 'Proveedor',
+                contactName: 'Contacto', contact_name: 'Contacto', ruc: 'RUC',
+                invoiceNumber: 'N° de factura', invoice_number: 'N° de factura',
+                // Gastos
+                category_name: 'Categoría', expenseDate: 'Fecha del gasto',
+                // Roles y permisos
+                permissions: 'Permisos', tenant_id: 'Empresa',
+                // Login / sesión
+                ip: 'Dirección IP', ipAddress: 'Dirección IP', ip_address: 'Dirección IP',
+                userAgent: 'Navegador', user_agent: 'Navegador',
+                // Campos en español (metadata de ventas y otros)
+                metodoDePago: 'Método de pago', cantidadDeItems: 'Cantidad de ítems',
+                cliente: 'Cliente', total: 'Total'
+            };
+            function fmtVal(v) {
+                if (v === null || v === undefined) return '<em class="text-muted">—</em>';
+                if (typeof v === 'boolean') return v ? '<span class="text-success">Sí</span>' : '<span class="text-danger">No</span>';
+                if (Array.isArray(v)) return v.length ? escHtml(v.join(', ')) : '<em class="text-muted">vacío</em>';
+                if (typeof v === 'object') return '<code style="font-size:0.75rem">' + escHtml(JSON.stringify(v)) + '</code>';
+                // Números con decimales → formato moneda si parece precio
+                if (typeof v === 'number' && v % 1 !== 0) return '$' + v.toFixed(2);
+                return escHtml(String(v));
+            }
+            function fmtKey(k) {
+                if (FIELD_LABELS[k]) return FIELD_LABELS[k];
+                // camelCase → palabras separadas, luego snake_case → espacios
+                return k.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()
+                    .replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+            }
+
+            // Caso UPDATE: tiene before y after
+            if (meta.before && meta.after) {
+                var keys = Object.keys(meta.after);
+                var rows = keys.map(function(k) {
+                    return '<tr>' +
+                        '<td style="width:160px;font-weight:500;padding:5px 8px;color:var(--th-text2);font-size:0.8rem">' + escHtml(fmtKey(k)) + '</td>' +
+                        '<td style="padding:5px 8px;font-size:0.8rem;color:#dc3545;text-decoration:line-through">' + fmtVal(meta.before[k]) + '</td>' +
+                        '<td style="padding:5px 8px;font-size:0.8rem;color:#198754">' + fmtVal(meta.after[k]) + '</td>' +
+                    '</tr>';
+                }).join('');
+                return '<div style="font-size:0.78rem;font-weight:600;color:var(--th-text2);margin-bottom:6px">Cambios realizados:</div>' +
+                    '<table style="width:100%;border-collapse:collapse">' +
+                    '<thead><tr style="border-bottom:1px solid var(--th-border)">' +
+                    '<th style="padding:4px 8px;font-size:0.75rem;color:var(--th-text2)">Campo</th>' +
+                    '<th style="padding:4px 8px;font-size:0.75rem;color:#dc3545">Antes</th>' +
+                    '<th style="padding:4px 8px;font-size:0.75rem;color:#198754">Después</th>' +
+                    '</tr></thead><tbody>' + rows + '</tbody></table>';
+            }
+
+            // Caso general: mostrar clave/valor
+            var entries = Object.entries(meta);
+            if (!entries.length) return '';
+            var rows2 = entries.map(function(e) {
+                return '<tr style="border-bottom:1px solid var(--th-border)">' +
+                    '<td style="width:160px;font-weight:500;padding:5px 8px;color:var(--th-text2);font-size:0.8rem">' + escHtml(fmtKey(e[0])) + '</td>' +
+                    '<td style="padding:5px 8px;font-size:0.8rem">' + fmtVal(e[1]) + '</td>' +
+                '</tr>';
+            }).join('');
+            return '<table style="width:100%;border-collapse:collapse"><tbody>' + rows2 + '</tbody></table>';
         }
 
         function toggleAuditDetail(idx) {
@@ -10081,6 +10268,158 @@
 
         function escHtml(str) {
             return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        // ── Rentabilidad por Producto ─────────────────────────────────────────
+        var _profitPage = 1;
+        var _profitData = [];
+        var _profitSearchTimer = null;
+
+        function initProfitabilityView() {
+            clearTimeout(_profitSearchTimer);
+            // Resetear período al mes actual al entrar a la vista
+            $('#profitPeriod').val('month');
+            applyProfitPeriod();
+        }
+
+        function applyProfitPeriod() {
+            var period = $('#profitPeriod').val();
+            var today = new Date();
+            var fmt = function(d) { return d.toISOString().split('T')[0]; };
+            if (period === 'today') {
+                $('#profitDateFrom').val(fmt(today)); $('#profitDateTo').val(fmt(today));
+            } else if (period === 'week') {
+                var mon = new Date(today); mon.setDate(today.getDate() - today.getDay() + 1);
+                $('#profitDateFrom').val(fmt(mon)); $('#profitDateTo').val(fmt(today));
+            } else if (period === 'month') {
+                $('#profitDateFrom').val(fmt(new Date(today.getFullYear(), today.getMonth(), 1)));
+                $('#profitDateTo').val(fmt(today));
+            } else if (period === 'prev_month') {
+                var pm = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                var pme = new Date(today.getFullYear(), today.getMonth(), 0);
+                $('#profitDateFrom').val(fmt(pm)); $('#profitDateTo').val(fmt(pme));
+            } else if (period === 'year') {
+                $('#profitDateFrom').val(fmt(new Date(today.getFullYear(), 0, 1)));
+                $('#profitDateTo').val(fmt(today));
+            } else if (period === 'all') {
+                $('#profitDateFrom').val(''); $('#profitDateTo').val('');
+            }
+            loadProfitabilityData(1);
+        }
+
+        function profitSearchDebounce() {
+            clearTimeout(_profitSearchTimer);
+            _profitSearchTimer = setTimeout(function() { loadProfitabilityData(1); }, 400);
+        }
+
+        function clearProfitFilters() {
+            $('#profitSearch').val(''); $('#profitDateFrom').val(''); $('#profitDateTo').val('');
+            $('#profitPeriod').val('');
+            loadProfitabilityData(1);
+        }
+
+        function loadProfitabilityData(page) {
+            _profitPage = page || 1;
+            var token = localStorage.getItem('adminToken');
+            var params = { tenantId: 1, page: _profitPage, limit: 50 };
+            var from = $('#profitDateFrom').val(); var to = $('#profitDateTo').val();
+            var search = $('#profitSearch').val().trim();
+            if (from) params.dateFrom = from;
+            if (to) params.dateTo = to;
+            if (search) params.search = search;
+
+            $('#profitTableBody').html('<tr><td colspan="8" class="text-center py-4 text-muted">Cargando...</td></tr>');
+            $('#profitTotalRevenue,#profitTotalCogs,#profitTotalGross,#profitAvgMargin').text('—');
+
+            $.ajax({
+                url: '/api/sales/stats/profitability/products',
+                data: params,
+                headers: { Authorization: 'Bearer ' + token },
+                success: function(data) {
+                    _profitData = data.products || [];
+                    renderProfitTable(_profitData);
+                    renderProfitPagination(data.total, data.page, data.totalPages);
+                    renderProfitSummary(_profitData);
+                },
+                error: function() {
+                    $('#profitTableBody').html('<tr><td colspan="8" class="text-center py-4 text-danger">Error al cargar datos</td></tr>');
+                }
+            });
+        }
+
+        function renderProfitTable(rows) {
+            if (!rows.length) {
+                $('#profitTableBody').html('<tr><td colspan="8" class="text-center py-4 text-muted">Sin resultados</td></tr>');
+                return;
+            }
+            var html = rows.map(function(r) {
+                var ingresos = parseFloat(r.ingresos) || 0;
+                var cogs     = parseFloat(r.cogs) || 0;
+                var ganancia = parseFloat(r.ganancia_bruta) || 0;
+                var margen   = parseFloat(r.margen_pct) || 0;
+                var margenColor = margen >= 30 ? '#198754' : margen >= 15 ? '#fd7e14' : '#dc3545';
+                var barW = Math.min(Math.max(margen, 0), 100);
+                var hasCogs = cogs > 0;
+                return '<tr style="border-bottom:1px solid var(--th-border)">' +
+                    '<td style="font-weight:500">' + escHtml(r.name) + '</td>' +
+                    '<td class="text-end small">$' + parseFloat(r.sale_price || 0).toFixed(2) + '</td>' +
+                    '<td class="text-end small">' + parseFloat(r.qty_vendida).toFixed(0) + '</td>' +
+                    '<td class="text-end small">$' + ingresos.toFixed(2) + '</td>' +
+                    '<td class="text-end small">' + (hasCogs ? '$' + cogs.toFixed(2) : '<span class="text-muted">—</span>') + '</td>' +
+                    '<td class="text-end small" style="color:' + (ganancia >= 0 ? '#198754' : '#dc3545') + ';font-weight:500">$' + ganancia.toFixed(2) + '</td>' +
+                    '<td class="text-end small" style="color:' + margenColor + ';font-weight:600">' + (hasCogs ? margen.toFixed(1) + '%' : '<span class="text-muted">—</span>') + '</td>' +
+                    '<td><div style="background:var(--th-border);border-radius:4px;height:8px;overflow:hidden"><div style="width:' + barW + '%;height:100%;background:' + margenColor + ';border-radius:4px"></div></div></td>' +
+                '</tr>';
+            }).join('');
+            $('#profitTableBody').html(html);
+        }
+
+        function renderProfitSummary(rows) {
+            var totRev = 0, totCogs = 0, totGross = 0;
+            rows.forEach(function(r) {
+                totRev   += parseFloat(r.ingresos) || 0;
+                totCogs  += parseFloat(r.cogs) || 0;
+                totGross += parseFloat(r.ganancia_bruta) || 0;
+            });
+            var avgMargen = totRev > 0 ? (totGross / totRev * 100) : 0;
+            $('#profitTotalRevenue').text('$' + totRev.toFixed(2));
+            $('#profitTotalCogs').text('$' + totCogs.toFixed(2));
+            $('#profitTotalGross').text('$' + totGross.toFixed(2));
+            $('#profitAvgMargin').text(avgMargen.toFixed(1) + '%');
+            var c = parseFloat($('#profitAvgMargin').text()) ;
+            $('#profitAvgMargin').css('color', avgMargen >= 30 ? '#198754' : avgMargen >= 15 ? '#fd7e14' : '#dc3545');
+        }
+
+        function renderProfitPagination(total, page, totalPages) {
+            var from = (page - 1) * 50 + 1, to = Math.min(page * 50, total);
+            $('#profitPaginationInfo').text(total > 0 ? from + '–' + to + ' de ' + total + ' productos' : '0 productos');
+            var btns = '';
+            if (totalPages > 1) {
+                btns += '<button class="btn btn-sm btn-outline-secondary" ' + (page <= 1 ? 'disabled' : '') + ' onclick="loadProfitabilityData(' + (page - 1) + ')">‹</button>';
+                var start = Math.max(1, page - 2), end = Math.min(totalPages, page + 2);
+                for (var i = start; i <= end; i++) {
+                    btns += '<button class="btn btn-sm ' + (i === page ? 'btn-primary' : 'btn-outline-secondary') + '" onclick="loadProfitabilityData(' + i + ')">' + i + '</button>';
+                }
+                btns += '<button class="btn btn-sm btn-outline-secondary" ' + (page >= totalPages ? 'disabled' : '') + ' onclick="loadProfitabilityData(' + (page + 1) + ')">›</button>';
+            }
+            $('#profitPaginationBtns').html(btns);
+        }
+
+        function exportProfitabilityCSV() {
+            if (!_profitData.length) { showDashToast('warning', 'Sin datos para exportar'); return; }
+            var header = ['Producto', 'Precio Venta', 'Uds. Vendidas', 'Ingresos', 'COGS', 'Ganancia Bruta', 'Margen %'];
+            var rows = _profitData.map(function(r) {
+                return [r.name, r.sale_price, r.qty_vendida, r.ingresos, r.cogs, r.ganancia_bruta, r.margen_pct]
+                    .map(function(v) { return '"' + String(v || 0).replace(/"/g, '""') + '"'; });
+            });
+            var csv = [header.map(function(h) { return '"' + h + '"'; }).join(',')]
+                .concat(rows.map(function(r) { return r.join(','); })).join('\r\n');
+            var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url; a.download = 'rentabilidad_' + new Date().toISOString().slice(0, 10) + '.csv';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         // ── Backup / Restore ──────────────────────────────────────────────────
@@ -10187,14 +10526,30 @@
             }
         });
         
-        $(document).on('click', '#sellCartModalPay', function() {
+        window.handleSellModalPay = function() {
             if (isGroupSale) {
                 processGroupSale();
-            } else {
-                $('#sellCartModal').modal('hide');
-                processSale();
+                return;
             }
-        });
+            // Detectar transferencia por el estado visual del campo (más confiable que el hidden select)
+            var transferField = document.getElementById('sellCartModalTransferReferenceField');
+            var pmHidden = document.getElementById('sellCartModalPaymentMethod');
+            var pmVal = pmHidden ? pmHidden.value : 'CASH';
+            var isTransfer = pmVal === 'TRANSFER' || (transferField && transferField.style.display !== 'none');
+            if (isTransfer) {
+                var bankSel = document.getElementById('sellCartModalBankAccount');
+                if (!bankSel || !bankSel.value) {
+                    showAlert('Debes seleccionar la cuenta bancaria destino', 'danger');
+                    return;
+                }
+                var refInput = document.getElementById('sellCartModalTransferReference');
+                if (!refInput || !refInput.value.trim()) {
+                    showAlert('La referencia de transferencia es requerida', 'danger');
+                    return;
+                }
+            }
+            processSale();
+        };
         
         // Sincronizar toggle de venta grupal entre modal y función original
         $('#sellCartModalGroupSaleToggle').on('change', function() {
@@ -10572,15 +10927,13 @@
                                 <span class="scm-sel-val" id="scmPagoVal"><span>💵</span> Efectivo</span>
                                 <svg class="scm-sel-arrow" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
                                 <div class="scm-sel-opts">
-                                    <div class="scm-sel-opt selected" data-val="CASH"     onclick="scmSelectPago(this,'CASH','💵','Efectivo')"><span>💵</span> Efectivo</div>
-                                    <div class="scm-sel-opt"          data-val="CARD"     onclick="scmSelectPago(this,'CARD','💳','Tarjeta')"><span>💳</span> Tarjeta</div>
-                                    <div class="scm-sel-opt"          data-val="TRANSFER" onclick="scmSelectPago(this,'TRANSFER','📲','Transferencia')"><span>📲</span> Transferencia</div>
-                                    <div class="scm-sel-opt"          data-val="CREDIT"   onclick="scmSelectPago(this,'CREDIT','🏦','Crédito')"><span>🏦</span> Crédito</div>
+                                    <div class="scm-sel-opt selected" data-val="CASH"     onclick="scmSelectPago(this,'CASH','💵','Efectivo',event)"><span>💵</span> Efectivo</div>
+                                    <div class="scm-sel-opt"          data-val="TRANSFER" onclick="scmSelectPago(this,'TRANSFER','📲','Transferencia',event)"><span>📲</span> Transferencia</div>
+                                    <div class="scm-sel-opt"          data-val="CREDIT"   onclick="scmSelectPago(this,'CREDIT','🏦','Crédito',event)"><span>🏦</span> Crédito</div>
                                 </div>
                             </div>
                             <select id="sellCartModalPaymentMethod" style="display:none" onchange="togglePaymentMethodFieldsModal()">
                                 <option value="CASH">Efectivo</option>
-                                <option value="CARD">Tarjeta</option>
                                 <option value="TRANSFER">Transferencia</option>
                                 <option value="CREDIT">Crédito</option>
                             </select>
@@ -10589,8 +10942,12 @@
                         <div id="sellCartModalNormalSaleFields">
                             <div class="scm-field-group">
                                 <label class="scm-field-lbl" id="sellCartModalCustomerLabel">Cliente (Opcional)</label>
-                                <div id="sellCartModalCustomerTextContainer">
-                                    <input type="text" class="scm-inp" id="sellCartModalCustomer" placeholder="Nombre del cliente" autocomplete="off">
+                                <div id="sellCartModalCustomerTextContainer" style="position:relative;">
+                                    <input type="text" class="scm-inp" id="sellCartModalCustomer" placeholder="Nombre del cliente" autocomplete="off"
+                                           oninput="scmCustomerAutocomplete(this.value)"
+                                           onfocus="scmCustomerAutocomplete(this.value)"
+                                           onblur="setTimeout(function(){$('#scmCustomerDropdown').hide();},180)">
+                                    <div id="scmCustomerDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:1200;background:var(--th-surf);border:1px solid var(--th-border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.3);max-height:180px;overflow-y:auto;margin-top:4px;"></div>
                                 </div>
                                 <div id="sellCartModalCustomerSelectContainer" style="display:none; position:relative;">
                                     <div style="display:flex;gap:6px;align-items:center;">
@@ -10615,10 +10972,14 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- Referencia transferencia -->
-                            <div id="sellCartModalTransferReferenceField" style="display:none" class="scm-field-group" style="margin-top:6px;">
-                                <label class="scm-field-lbl req">Referencia de Transferencia *</label>
-                                <input type="text" class="scm-inp" id="sellCartModalTransferReference" placeholder="Número de referencia bancaria">
+                            <!-- Cuenta bancaria + Referencia transferencia -->
+                            <div id="sellCartModalTransferReferenceField" style="display:none" class="scm-field-group">
+                                <label class="scm-field-lbl">Cuenta Destino</label>
+                                <select class="scm-inp" id="sellCartModalBankAccount" style="background:var(--th-surf2);" onchange="validateNormalSaleModal()">
+                                    <option value="">— Seleccionar cuenta —</option>
+                                </select>
+                                <label class="scm-field-lbl req" style="margin-top:8px;">Referencia de Transferencia *</label>
+                                <input type="text" class="scm-inp" id="sellCartModalTransferReference" placeholder="Número de referencia bancaria" oninput="validateNormalSaleModal()">
                             </div>
                             <!-- Campos crédito -->
                             <div id="sellCartModalCreditFields" style="display:none" class="scm-fields-credit" style="margin-top:6px;">
@@ -10665,20 +11026,20 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Resumen -->
-                    <div class="scm-resumen">
-                        <div class="scm-resumen-head">
-                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                            Resumen del Pedido
-                        </div>
-                        <div class="scm-resumen-body">
-                            <div class="scm-res-row"><span>Subtotal</span><span id="sellCartModalSubtotal">$0.00</span></div>
-                            <div class="scm-res-row tax-row-pos d-none"><span id="sellCartModalTaxLabel">IVA</span><span id="sellCartModalTax">$0.00</span></div>
-                            <hr class="scm-res-divider">
-                            <div class="scm-res-total">
-                                <span class="scm-res-total-lbl">Total</span>
-                                <span class="scm-res-total-val" id="sellCartModalTotal">$0.00</span>
-                            </div>
+                </div>
+                <!-- Resumen (fijo, siempre visible encima del footer) -->
+                <div class="scm-resumen" style="margin:0 20px;flex-shrink:0;">
+                    <div class="scm-resumen-head">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        Resumen del Pedido
+                    </div>
+                    <div class="scm-resumen-body">
+                        <div class="scm-res-row"><span>Subtotal</span><span id="sellCartModalSubtotal">$0.00</span></div>
+                        <div class="scm-res-row tax-row-pos d-none"><span id="sellCartModalTaxLabel">IVA</span><span id="sellCartModalTax">$0.00</span></div>
+                        <hr class="scm-res-divider">
+                        <div class="scm-res-total">
+                            <span class="scm-res-total-lbl">Total</span>
+                            <span class="scm-res-total-val" id="sellCartModalTotal">$0.00</span>
                         </div>
                     </div>
                 </div>
@@ -10688,8 +11049,7 @@
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
                         Vaciar
                     </button>
-                    <button class="scm-btn-cerrar" data-bs-dismiss="modal">Cerrar</button>
-                    <button class="scm-btn-procesar" id="sellCartModalPay" disabled>
+                    <button class="scm-btn-procesar" id="sellCartModalPay" onclick="handleSellModalPay()" disabled>
                         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                         <span id="sellCartModalPayButtonText">Procesar Venta</span>
                     </button>

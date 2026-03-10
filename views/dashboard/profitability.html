@@ -1,0 +1,116 @@
+<div id="spa-view-content">
+  <div id="profitability" class="content-section active">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+      <h2 class="mb-0">
+        <svg style="width:1.2em;height:1.2em;vertical-align:-0.2em;margin-right:8px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        Rentabilidad por Producto
+      </h2>
+      <button class="btn btn-sm btn-outline-secondary" onclick="exportProfitabilityCSV()">
+        <svg style="width:1em;height:1em;vertical-align:-0.1em;margin-right:4px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar CSV
+      </button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-3" style="background:var(--th-card);border:1px solid var(--th-border)">
+      <div class="card-body py-3">
+        <div class="row g-2 align-items-end">
+          <div class="col-sm-6 col-md-3">
+            <label class="form-label small mb-1">Buscar producto</label>
+            <input type="text" id="profitSearch" class="form-control form-control-sm" placeholder="Nombre..." oninput="profitSearchDebounce()">
+          </div>
+          <div class="col-sm-6 col-md-2">
+            <label class="form-label small mb-1">Desde</label>
+            <input type="date" id="profitDateFrom" class="form-control form-control-sm" onchange="loadProfitabilityData(1)">
+          </div>
+          <div class="col-sm-6 col-md-2">
+            <label class="form-label small mb-1">Hasta</label>
+            <input type="date" id="profitDateTo" class="form-control form-control-sm" onchange="loadProfitabilityData(1)">
+          </div>
+          <div class="col-sm-6 col-md-2">
+            <label class="form-label small mb-1">Período rápido</label>
+            <select id="profitPeriod" class="form-select form-select-sm" onchange="applyProfitPeriod()">
+              <option value="">Personalizado</option>
+              <option value="today">Hoy</option>
+              <option value="week">Esta semana</option>
+              <option value="month" selected>Este mes</option>
+              <option value="prev_month">Mes anterior</option>
+              <option value="year">Este año</option>
+              <option value="all">Todo el tiempo</option>
+            </select>
+          </div>
+          <div class="col-sm-6 col-md-1">
+            <button class="btn btn-sm btn-outline-secondary w-100" onclick="clearProfitFilters()">Limpiar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen totales -->
+    <div class="row g-3 mb-3" id="profitSummaryRow">
+      <div class="col-6 col-md-3">
+        <div class="card text-center py-3" style="background:var(--th-card);border:1px solid var(--th-border)">
+          <div class="small text-muted mb-1">Ingresos</div>
+          <div class="fw-bold fs-5" id="profitTotalRevenue">—</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card text-center py-3" style="background:var(--th-card);border:1px solid var(--th-border)">
+          <div class="small text-muted mb-1">Costo (COGS)</div>
+          <div class="fw-bold fs-5" id="profitTotalCogs">—</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card text-center py-3" style="background:var(--th-card);border:1px solid var(--th-border)">
+          <div class="small text-muted mb-1">Ganancia Bruta</div>
+          <div class="fw-bold fs-5 text-success" id="profitTotalGross">—</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card text-center py-3" style="background:var(--th-card);border:1px solid var(--th-border)">
+          <div class="small text-muted mb-1">Margen Promedio</div>
+          <div class="fw-bold fs-5" id="profitAvgMargin">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card" style="background:var(--th-card);border:1px solid var(--th-border)">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr style="border-bottom:1px solid var(--th-border)">
+                <th>Producto</th>
+                <th class="text-end" style="width:90px">Precio Venta</th>
+                <th class="text-end" style="width:80px">Uds. Vend.</th>
+                <th class="text-end" style="width:110px">Ingresos</th>
+                <th class="text-end" style="width:110px">Costo (COGS)</th>
+                <th class="text-end" style="width:120px">Ganancia Bruta</th>
+                <th class="text-end" style="width:80px">Margen</th>
+                <th style="width:120px">Rentabilidad</th>
+              </tr>
+            </thead>
+            <tbody id="profitTableBody">
+              <tr><td colspan="8" class="text-center py-4 text-muted">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paginación -->
+    <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+      <span id="profitPaginationInfo" class="text-muted small"></span>
+      <div id="profitPaginationBtns" class="d-flex gap-1 flex-wrap"></div>
+    </div>
+  </div>
+
+  <script>
+    window.initProfitabilityView = function() {
+      if (typeof _profitSearchTimer !== 'undefined') clearTimeout(_profitSearchTimer);
+      if (typeof applyProfitPeriod === 'function') applyProfitPeriod();
+    };
+    window.initProfitabilityView();
+  </script>
+</div>

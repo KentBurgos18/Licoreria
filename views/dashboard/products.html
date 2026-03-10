@@ -102,7 +102,11 @@
             </div>
         </div>
   <script>
-    if (typeof loadProducts === 'function') loadProducts();
-    window.initProductsView = function() { if (typeof loadProducts === 'function') loadProducts(); };
+    window.initProductsView = function() {
+      if (typeof loadProducts === 'function') loadProducts();
+      if (typeof loadCategoriesForDropdowns === 'function') loadCategoriesForDropdowns();
+      if (typeof loadPresentationsForDropdowns === 'function') loadPresentationsForDropdowns();
+    };
+    window.initProductsView();
   </script>
 </div>

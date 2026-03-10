@@ -20,6 +20,7 @@ router.post('/', async (req, res) => {
       paymentMethod,
       totalAmount,
       transferReference,
+      transferAccountInfo,
       notes,
       creditDueDate,
       creditInterestRate,
@@ -186,6 +187,7 @@ router.post('/', async (req, res) => {
       taxAmount: taxAmount,
       paymentMethod,
       transferReference: paymentMethod === 'TRANSFER' ? transferReference : null,
+      transferAccountInfo: paymentMethod === 'TRANSFER' ? (transferAccountInfo || null) : null,
       notes,
       createdAt: new Date()
     }, { transaction });
@@ -292,18 +294,23 @@ router.post('/', async (req, res) => {
       include: [
         {
           association: 'items',
-          include: [{
-            association: 'product'
-          }]
-        }
+          include: [{ association: 'product' }]
+        },
+        { association: 'customer', attributes: ['id', 'name'] }
       ]
     });
 
+    const PAYMENT_LABELS = { CASH: 'Efectivo', TRANSFER: 'Transferencia', CARD: 'Tarjeta', CREDIT: 'Crédito' };
     AuditService.log({
       ...AuditService.fromReq(req),
       action: 'CREATE', entity: 'sale', entityId: sale.id,
       description: `Registró venta #${sale.id} — $${finalTotal.toFixed(2)} (${paymentMethod})`,
-      metadata: { total: finalTotal, paymentMethod, itemsCount: items.length, customerId: finalCustomerId || null }
+      metadata: {
+        total: finalTotal,
+        metodoDePago: PAYMENT_LABELS[paymentMethod] || paymentMethod,
+        cantidadDeItems: items.length,
+        cliente: completeSale.customer ? completeSale.customer.name : (finalCustomerId ? `ID ${finalCustomerId}` : null)
+      }
     });
 
     res.status(201).json(completeSale);
@@ -517,6 +524,98 @@ router.get('/stats/profitability', async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting profitability:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /sales/stats/profitability/products - Rentabilidad por producto
+router.get('/stats/profitability/products', async (req, res) => {
+  try {
+    const { tenantId, dateFrom, dateTo, search, limit = 50, page = 1 } = req.query;
+    if (!tenantId) return res.status(400).json({ error: 'tenantId is required' });
+    const tid = parseInt(tenantId);
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    const salesDateFilter = dateFrom || dateTo
+      ? `AND s.created_at::date BETWEEN COALESCE(:dateFrom::date, '1900-01-01') AND COALESCE(:dateTo::date, CURRENT_DATE)`
+      : '';
+
+    const searchFilter = search ? `AND LOWER(p.name) LIKE LOWER(:search)` : '';
+
+    // COGS priority: 1) p.unit_cost (own), 2) base_product.unit_cost × unitsPerSale,
+    // 3) weighted avg from movements × unitsPerSale
+    const rows = await sequelize.query(`
+      WITH avg_costs AS (
+        SELECT
+          COALESCE(p.base_product_id, p.id) AS pool_id,
+          CASE WHEN SUM(im.qty) > 0
+            THEN SUM(im.qty * im.unit_cost) / SUM(im.qty)
+            ELSE 0
+          END AS avg_unit_cost
+        FROM products p
+        LEFT JOIN inventory_movements im
+          ON im.product_id = COALESCE(p.base_product_id, p.id)
+          AND im.movement_type = 'IN'
+          AND im.unit_cost IS NOT NULL
+          AND im.tenant_id = :tid
+        WHERE p.tenant_id = :tid
+        GROUP BY COALESCE(p.base_product_id, p.id)
+      )
+      SELECT
+        p.id,
+        p.name,
+        p.sale_price,
+        COALESCE(SUM(si.quantity), 0)::float AS qty_vendida,
+        COALESCE(SUM(si.unit_price * si.quantity), 0)::float AS ingresos,
+        -- COGS: own unit_cost → base product unit_cost × unitsPerSale → avg movements
+        COALESCE(SUM(
+          si.quantity * COALESCE(
+            p.unit_cost,
+            bp.unit_cost * p.units_per_sale,
+            ac.avg_unit_cost * p.units_per_sale
+          )
+        ), 0)::float AS cogs,
+        COALESCE(SUM(si.unit_price * si.quantity), 0)
+          - COALESCE(SUM(si.quantity * COALESCE(p.unit_cost, bp.unit_cost * p.units_per_sale, ac.avg_unit_cost * p.units_per_sale)), 0) AS ganancia_bruta,
+        CASE WHEN COALESCE(SUM(si.unit_price * si.quantity), 0) > 0
+          THEN ROUND((
+            (COALESCE(SUM(si.unit_price * si.quantity), 0)
+              - COALESCE(SUM(si.quantity * COALESCE(p.unit_cost, bp.unit_cost * p.units_per_sale, ac.avg_unit_cost * p.units_per_sale)), 0))
+            / SUM(si.unit_price * si.quantity) * 100
+          )::numeric, 1)
+          ELSE 0
+        END AS margen_pct
+      FROM products p
+      LEFT JOIN products bp ON bp.id = p.base_product_id
+      JOIN sale_items si ON si.product_id = p.id
+      JOIN sales s ON s.id = si.sale_id AND s.tenant_id = :tid AND s.status = 'COMPLETED'
+      LEFT JOIN avg_costs ac ON ac.pool_id = COALESCE(p.base_product_id, p.id)
+      WHERE p.tenant_id = :tid ${searchFilter} ${salesDateFilter}
+      GROUP BY p.id, p.name, p.sale_price, p.unit_cost, p.units_per_sale, bp.unit_cost
+      HAVING COALESCE(SUM(si.quantity), 0) > 0
+      ORDER BY ganancia_bruta DESC
+      LIMIT :limit OFFSET :offset
+    `, {
+      replacements: { tid, dateFrom: dateFrom || null, dateTo: dateTo || null, search: search ? `%${search}%` : null, limit: parseInt(limit), offset },
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    const [countRow] = await sequelize.query(`
+      SELECT COUNT(DISTINCT p.id) AS total
+      FROM products p
+      JOIN sale_items si ON si.product_id = p.id
+      JOIN sales s ON s.id = si.sale_id AND s.tenant_id = :tid AND s.status = 'COMPLETED'
+      WHERE p.tenant_id = :tid ${searchFilter}
+    `, { replacements: { tid, search: search ? `%${search}%` : null }, type: sequelize.QueryTypes.SELECT });
+
+    res.json({
+      products: rows,
+      total: parseInt(countRow?.total || 0),
+      page: parseInt(page),
+      totalPages: Math.ceil(parseInt(countRow?.total || 0) / parseInt(limit))
+    });
+  } catch (error) {
+    console.error('Error getting product profitability:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

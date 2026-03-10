@@ -74,6 +74,12 @@ module.exports = (sequelize) => {
       defaultValue: 1,
       field: 'units_per_sale'
     },
+    unitCost: {
+      type: DataTypes.DECIMAL(14, 4),
+      allowNull: true,
+      defaultValue: null,
+      field: 'unit_cost'
+    },
     taxApplies: {
       type: DataTypes.BOOLEAN,
       allowNull: false,

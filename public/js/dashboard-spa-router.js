@@ -23,7 +23,8 @@
         '/dashboard/audit': 'audit',
         '/dashboard/settings': 'settings',
         '/dashboard/expenses': 'expenses',
-        '/dashboard/sell/pos': 'sell-pos'
+        '/dashboard/sell/pos': 'sell-pos',
+        '/dashboard/profitability': 'profitability'
     };
 
     var SECTION_INIT = {
@@ -40,7 +41,8 @@
         audit: 'initAuditView',
         settings: 'initSettingsView',
         expenses: 'initExpensesView',
-        'sell-pos': 'initPosView'
+        'sell-pos': 'initPosView',
+        profitability: 'initProfitabilityView'
     };
 
     var SECTION_META = {
@@ -57,7 +59,8 @@
         audit: { label: 'Auditoría', icon: 'bi-shield-check' },
         settings: { label: 'Configuración', icon: 'bi-sliders' },
         expenses: { label: 'Gastos', icon: 'bi-cash-stack' },
-        'sell-pos': { label: 'Carrito', icon: 'bi-cart3' }
+        'sell-pos': { label: 'Carrito', icon: 'bi-cart3' },
+        profitability: { label: 'Rentabilidad', icon: 'bi-graph-up-arrow' }
     };
 
     function getViewFromPath(pathname) {

@@ -14,7 +14,7 @@ module.exports = (sequelize) =>
     description: { type: DataTypes.TEXT,         allowNull: false                      },
     metadata:    { type: DataTypes.JSONB,        allowNull: true                       },
     ipAddress:   { type: DataTypes.STRING(50),   allowNull: true,  field: 'ip_address' },
-    createdAt:   { type: DataTypes.DATE,         allowNull: false, field: 'created_at' }
+    createdAt:   { type: DataTypes.DATE,         allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' }
   }, {
     tableName:  'audit_logs',
     timestamps: false

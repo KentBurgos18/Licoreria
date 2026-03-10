@@ -93,20 +93,25 @@ module.exports = (sequelize) => {
   };
 
   InventoryMovement.getAverageCost = async function(tenantId, productId) {
+    // Promedio Ponderado: SUM(qty * unit_cost) / SUM(qty)
+    // Más preciso que AVG simple cuando hay compras de distinto volumen y precio
     const result = await this.findOne({
-      where: { 
-        tenantId, 
-        productId, 
+      where: {
+        tenantId,
+        productId,
         movementType: 'IN',
         unitCost: { [Op.ne]: null }
       },
       attributes: [
-        [literal('AVG(unit_cost)'), 'avgCost']
+        [literal('SUM(qty * unit_cost)'), 'totalCost'],
+        [literal('SUM(qty)'), 'totalQty']
       ],
       raw: true
     });
 
-    return parseFloat(result?.avgCost || 0);
+    const totalCost = parseFloat(result?.totalCost || 0);
+    const totalQty  = parseFloat(result?.totalQty  || 0);
+    return totalQty > 0 ? totalCost / totalQty : 0;
   };
 
   InventoryMovement.getUnitCost = async function(tenantId, productId, qty, transaction = null) {

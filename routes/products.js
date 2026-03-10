@@ -7,6 +7,38 @@ const fs = require('fs');
 const { requireRole } = require('./adminAuth');
 const { processProductImage } = require('../services/ImageProcessor');
 const AuditService = require('../services/AuditService');
+const { resolveMovement } = require('../services/InventoryPoolHelper');
+
+// Calcula el costo de un producto teniendo en cuenta presentaciones (caja, six, etc.).
+// Calcula el precio de compra de un producto para mostrarlo en el panel de admin.
+// Jerarquía:
+//   1. unitCost propio del producto (guardado manualmente)
+//   2. Si es presentación (caja/six): unitCost del base × unitsPerSale
+//   3. Fallback: promedio de movimientos de inventario
+async function getPurchasePrice(productData) {
+  if (productData.productType !== 'SIMPLE') return 0;
+  const unitsPerSale = parseFloat(productData.unitsPerSale) || 1;
+
+  // 1. Costo manual en este producto
+  if (productData.unitCost != null && parseFloat(productData.unitCost) > 0) {
+    return parseFloat(productData.unitCost);
+  }
+
+  // 2. Si es presentación, leer el unitCost del producto base
+  if (productData.baseProductId) {
+    const base = await Product.findByPk(productData.baseProductId, { attributes: ['unitCost', 'tenantId'] });
+    if (base && base.unitCost != null && parseFloat(base.unitCost) > 0) {
+      return parseFloat(base.unitCost) * unitsPerSale;
+    }
+    // Fallback: promedio de movimientos del pool × unitsPerSale
+    const avg = await InventoryMovement.getAverageCost(productData.tenantId, productData.baseProductId);
+    return avg ? avg * unitsPerSale : 0;
+  }
+
+  // 3. Unidad base sin costo manual: promedio de movimientos
+  const avg = await InventoryMovement.getAverageCost(productData.tenantId, productData.id);
+  return avg || 0;
+}
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
@@ -273,15 +305,7 @@ router.get('/', async (req, res) => {
     const productsWithPurchasePrice = await Promise.all(
       rows.map(async (product) => {
         const productData = product.toJSON();
-        if (productData.productType === 'SIMPLE') {
-          productData.purchasePrice = await InventoryMovement.getAverageCost(
-            productData.tenantId,
-            productData.id
-          );
-        } else {
-          // For COMBO products, calculate from components
-          productData.purchasePrice = 0;
-        }
+        productData.purchasePrice = await getPurchasePrice(productData);
         return productData;
       })
     );
@@ -345,14 +369,7 @@ router.get('/:id', async (req, res) => {
 
     // Calculate average purchase price
     const productData = product.toJSON();
-    if (productData.productType === 'SIMPLE') {
-      productData.purchasePrice = await InventoryMovement.getAverageCost(
-        productData.tenantId,
-        productData.id
-      );
-    } else {
-      productData.purchasePrice = 0;
-    }
+    productData.purchasePrice = await getPurchasePrice(productData);
 
     res.json(productData);
   } catch (error) {
@@ -379,7 +396,8 @@ router.put('/:id', requireRole('ADMIN'), upload.single('image'), async (req, res
       baseProductId,
       presentationId,
       unitsPerSale,
-      taxApplies
+      taxApplies,
+      unitCost
     } = req.body;
 
     const product = await Product.findOne({
@@ -418,7 +436,8 @@ router.put('/:id', requireRole('ADMIN'), upload.single('image'), async (req, res
     if (presentationId !== undefined) updates.presentationId = presentationId === '' || presentationId === 'null' || presentationId === null ? null : parseInt(presentationId);
     if (unitsPerSale !== undefined) updates.unitsPerSale = parseFloat(unitsPerSale) || 1;
     if (taxApplies !== undefined) updates.taxApplies = taxApplies === 'true' || taxApplies === true;
-    
+    if (unitCost !== undefined) updates.unitCost = (unitCost !== null && unitCost !== '') ? parseFloat(unitCost) : null;
+
     // Only update stockMin for SIMPLE products
     if (stockMin !== undefined && product.productType === 'SIMPLE') {
       if (stockMin < 0) {
@@ -431,6 +450,14 @@ router.put('/:id', requireRole('ADMIN'), upload.single('image'), async (req, res
     }
 
     await product.update(updates);
+
+    // Si este producto es una presentación (caja, six, etc.) y se cambió el costo,
+    // propagar el costo por unidad al producto base automáticamente.
+    if (updates.unitCost != null && product.baseProductId) {
+      const effectiveUnitsPerSale = updates.unitsPerSale || parseFloat(product.unitsPerSale) || 1;
+      const perUnitCost = updates.unitCost / effectiveUnitsPerSale;
+      await Product.update({ unitCost: perUnitCost }, { where: { id: product.baseProductId } });
+    }
 
     // Fetch updated product
     const updateInclude = [
@@ -497,17 +524,29 @@ router.post('/:id/add-stock', requireRole('ADMIN'), async (req, res) => {
       });
     }
 
+    // Resolver pool: si el producto es una presentación, el movimiento va al producto base
+    const { productId: mvProductId, qty: mvQty } = resolveMovement(product, quantity);
+    const unitsPerSale = parseFloat(product.unitsPerSale) || 1;
+    const mvUnitCost = unitCost
+      ? (product.baseProductId ? parseFloat(unitCost) / unitsPerSale : parseFloat(unitCost))
+      : null;
+
     // Create inventory movement
     await InventoryMovement.create({
       tenantId,
-      productId: id,
+      productId: mvProductId,
       movementType: 'IN',
       reason: 'PURCHASE',
-      qty: quantity,
-      unitCost: unitCost || null,
+      qty: mvQty,
+      unitCost: mvUnitCost,
       refType: 'STOCK_ADD',
       refId: id
     }, { transaction });
+
+    // Actualizar unit_cost del producto base para propagar a todas las presentaciones
+    if (mvUnitCost !== null) {
+      await Product.update({ unitCost: mvUnitCost }, { where: { id: mvProductId, tenantId }, transaction });
+    }
 
     await transaction.commit();
 

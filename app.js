@@ -366,6 +366,7 @@ app.get('/dashboard/audit', (req, res) => sendDashboardView(req, res, 'audit.htm
 app.get('/dashboard/settings', (req, res) => sendDashboardView(req, res, 'settings.html'));
 app.get('/dashboard/expenses', (req, res) => sendDashboardView(req, res, 'expenses.html'));
 app.get('/dashboard/sell/pos', (req, res) => sendDashboardView(req, res, 'pos.html'));
+app.get('/dashboard/profitability', (req, res) => sendDashboardView(req, res, 'profitability.html'));
 
 app.get('/products', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'create-product.html'));
@@ -806,6 +807,21 @@ async function initializeApp() {
       }
     } catch (e) {
       console.warn('⚠️ Migración 026 (discount_rate):', e.message);
+    }
+
+    // Migración 027: unit_cost en products (costo manual por producto)
+    try {
+      const [ucCol] = await sequelize.query(`
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'unit_cost'
+      `);
+      if (!ucCol || ucCol.length === 0) {
+        console.log('🔄 Aplicando migración 027 (unit_cost en products)...');
+        await sequelize.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS unit_cost DECIMAL(14, 4) DEFAULT NULL`);
+        console.log('✅ Migración 027 aplicada');
+      }
+    } catch (e) {
+      console.warn('⚠️ Migración 027 (unit_cost en products):', e.message);
     }
 
     // ── Seed primer despliegue ────────────────────────────────────────────────

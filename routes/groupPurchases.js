@@ -347,8 +347,8 @@ router.get('/', async (req, res) => {
 
     if (startDate || endDate) {
       whereClause.createdAt = {};
-      if (startDate) whereClause.createdAt[Op.gte] = startDate;
-      if (endDate) whereClause.createdAt[Op.lte] = endDate;
+      if (startDate) whereClause.createdAt[Op.gte] = new Date(startDate + 'T00:00:00.000Z');
+      if (endDate)   whereClause.createdAt[Op.lte] = new Date(endDate   + 'T23:59:59.999Z');
     }
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
