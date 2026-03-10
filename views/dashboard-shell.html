@@ -1766,7 +1766,7 @@
     <div id="barcodeScannerOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.93); z-index:10000; flex-direction:column; align-items:center; justify-content:center; gap:18px;">
         <div style="color:#fff; font-size:15px; font-weight:600; letter-spacing:.3px;">📷 Apunta al código de barras</div>
         <div style="position:relative; width:min(340px,92vw);">
-            <video id="barcodeScannerVideo" style="width:100%; border-radius:12px; display:block; background:#111;" autoplay muted playsinline></video>
+            <div id="barcodeScannerVideoContainer" style="width:100%; min-height:200px; border-radius:12px; background:#111; overflow:hidden;"></div>
             <!-- Guía visual de enfoque -->
             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;">
                 <div style="width:85%; height:38%; border:2.5px solid #22c55e; border-radius:6px; box-shadow:0 0 0 2000px rgba(0,0,0,0.35);"></div>
@@ -7349,47 +7349,63 @@
         }
         
         // ── Escáner de código de barras (ZXing) ────────────────────
-        var _scannerFired = false; // evitar doble disparo
+        var _scannerActive = false;
 
-        function _stopScannerVideo() {
-            var videoEl = document.getElementById('barcodeScannerVideo');
-            if (videoEl && videoEl.srcObject) {
-                videoEl.srcObject.getTracks().forEach(function(t) { t.stop(); });
-                videoEl.srcObject = null;
-            }
+        function _destroyScannerVideo() {
+            var container = document.getElementById('barcodeScannerVideoContainer');
+            if (!container) return;
+            // Detener tracks de cualquier video dentro del contenedor
+            container.querySelectorAll('video').forEach(function(v) {
+                if (v.srcObject) {
+                    v.srcObject.getTracks().forEach(function(t) { t.stop(); });
+                    v.srcObject = null;
+                }
+            });
+            container.innerHTML = '';
+        }
+
+        function _createScannerVideo() {
+            var container = document.getElementById('barcodeScannerVideoContainer');
+            var v = document.createElement('video');
+            v.style.cssText = 'width:100%;display:block;';
+            v.setAttribute('autoplay', '');
+            v.setAttribute('muted', '');
+            v.setAttribute('playsinline', '');
+            container.appendChild(v);
+            return v;
         }
 
         window.openBarcodeScanner = function(callback) {
-            // Limpiar estado anterior por si quedó algo colgado
-            _stopScannerVideo();
-            _scannerFired = false;
+            if (_scannerActive) closeBarcodeScanner();
+            _scannerActive = true;
+            _destroyScannerVideo();
+            var videoEl = _createScannerVideo();
             document.getElementById('barcodeScannerOverlay').style.display = 'flex';
-            var videoEl = document.getElementById('barcodeScannerVideo');
             var codeReader = new ZXing.BrowserMultiFormatReader();
             codeReader.decodeFromConstraints(
                 { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } },
                 videoEl,
                 function(result, err, controls) {
-                    if (result && !_scannerFired) {
-                        _scannerFired = true;
-                        var code = result.getText();
-                        // Detener usando el controls que llega en el callback (siempre disponible)
+                    if (result && _scannerActive) {
+                        _scannerActive = false;
                         try { controls.stop(); } catch(e) {}
-                        _stopScannerVideo();
+                        _destroyScannerVideo();
                         document.getElementById('barcodeScannerOverlay').style.display = 'none';
-                        callback(code);
+                        callback(result.getText());
                     }
                 }
             ).catch(function(err) {
+                _scannerActive = false;
+                _destroyScannerVideo();
                 document.getElementById('barcodeScannerOverlay').style.display = 'none';
                 showAlert('No se pudo acceder a la cámara. Verifica los permisos.', 'danger');
             });
         };
 
         window.closeBarcodeScanner = function() {
-            _scannerFired = true; // evitar que el callback dispare tras cancelar
+            _scannerActive = false;
+            _destroyScannerVideo();
             document.getElementById('barcodeScannerOverlay').style.display = 'none';
-            _stopScannerVideo();
         };
 
         // Escanear para buscar producto en el carrito (sell panel)
