@@ -1434,7 +1434,12 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">SKU</label>
-                                <input type="text" class="form-control" id="productSku" required>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="productSku" required>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="scanForProductSku()" title="Escanear código de barras">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="10" y1="8" x2="10" y2="16"/><line x1="13" y1="8" x2="13" y2="12"/><line x1="16" y1="8" x2="16" y2="16"/><line x1="19" y1="12" x2="13" y2="12"/></svg>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         
@@ -1757,6 +1762,13 @@
         </div>
     </div>
 
+    <!-- Barcode Scanner Overlay -->
+    <div id="barcodeScannerOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.93); z-index:10000; flex-direction:column; align-items:center; justify-content:center; gap:18px;">
+        <div style="color:#fff; font-size:16px; font-weight:600; letter-spacing:.3px;">📷 Apunta al código de barras</div>
+        <div id="barcodeScannerReader" style="width:min(320px,90vw); border-radius:14px; overflow:hidden; background:#000;"></div>
+        <button onclick="closeBarcodeScanner()" style="color:#fff; background:rgba(255,255,255,0.15); border:1.5px solid rgba(255,255,255,0.3); padding:10px 28px; border-radius:10px; font-size:15px; cursor:pointer; backdrop-filter:blur(4px);">✕ Cancelar</button>
+    </div>
+
     <!-- Purchase Item Selection Modal -->
     <div class="modal fade" id="purchaseItemModal" tabindex="-1">
         <div class="modal-dialog">
@@ -1769,9 +1781,14 @@
                     <form id="purchaseItemForm">
                         <div class="mb-3">
                             <label class="form-label">Producto <span class="text-danger">*</span></label>
-                            <select class="form-select" id="purchaseItemProduct" required>
-                                <option value="">Seleccione un producto...</option>
-                            </select>
+                            <div class="input-group">
+                                <select class="form-select" id="purchaseItemProduct" required>
+                                    <option value="">Seleccione un producto...</option>
+                                </select>
+                                <button type="button" class="btn btn-outline-secondary" onclick="scanForPurchaseProduct()" title="Escanear código de barras">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="10" y1="8" x2="10" y2="16"/><line x1="13" y1="8" x2="13" y2="12"/><line x1="16" y1="8" x2="16" y2="16"/><line x1="19" y1="12" x2="13" y2="12"/></svg>
+                                </button>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Cantidad <span class="text-danger">*</span></label>
@@ -2475,6 +2492,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="/libs/js/html5-qrcode.min.js"></script>
     <script src="/libs/js/jquery.min.js"></script>
     <script src="/libs/js/bootstrap.bundle.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
@@ -7322,6 +7340,86 @@
             if (typeof posUpdateLayout === 'function') posUpdateLayout();
         }
         
+        // ── Escáner de código de barras ────────────────────────────
+        var _barcodeScanCallback = null;
+        var _html5QrCode = null;
+
+        window.openBarcodeScanner = function(callback) {
+            _barcodeScanCallback = callback;
+            var overlay = document.getElementById('barcodeScannerOverlay');
+            overlay.style.display = 'flex';
+            _html5QrCode = new Html5Qrcode('barcodeScannerReader');
+            _html5QrCode.start(
+                { facingMode: 'environment' },
+                { fps: 10, qrbox: { width: 260, height: 120 },
+                  formatsToSupport: [
+                    Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+                    Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+                    Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+                    Html5QrcodeSupportedFormats.QR_CODE
+                  ]
+                },
+                function(decodedText) {
+                    closeBarcodeScanner();
+                    if (_barcodeScanCallback) _barcodeScanCallback(decodedText);
+                },
+                function() {}
+            ).catch(function(err) {
+                closeBarcodeScanner();
+                showAlert('No se pudo acceder a la cámara: ' + err, 'danger');
+            });
+        };
+
+        window.closeBarcodeScanner = function() {
+            var overlay = document.getElementById('barcodeScannerOverlay');
+            overlay.style.display = 'none';
+            if (_html5QrCode) {
+                _html5QrCode.stop().then(function() { _html5QrCode.clear(); _html5QrCode = null; }).catch(function() { _html5QrCode = null; });
+            }
+            _barcodeScanCallback = null;
+        };
+
+        // Escanear para buscar producto en el carrito (sell panel)
+        window.scanForSellSearch = function() {
+            openBarcodeScanner(function(code) {
+                var inp = document.getElementById('sellProductSearch');
+                if (!inp) return;
+                inp.value = code;
+                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                // Si hay un solo resultado visible, agregarlo automáticamente
+                setTimeout(function() {
+                    var cards = document.querySelectorAll('.sell-product-card:not([style*="display: none"]):not([style*="display:none"])');
+                    if (cards.length === 1) cards[0].click();
+                }, 500);
+            });
+        };
+
+        // Escanear para autocompletar SKU en el formulario de producto
+        window.scanForProductSku = function() {
+            openBarcodeScanner(function(code) {
+                var inp = document.getElementById('productSku');
+                if (inp) { inp.value = code; inp.dispatchEvent(new Event('input')); }
+            });
+        };
+
+        // Escanear para buscar producto en compras (selecciona por SKU en el <select>)
+        window.scanForPurchaseProduct = function() {
+            openBarcodeScanner(function(code) {
+                var sel = document.getElementById('purchaseItemProduct');
+                if (!sel) return;
+                var found = false;
+                for (var i = 0; i < sel.options.length; i++) {
+                    if (sel.options[i].text.toLowerCase().includes(code.toLowerCase())) {
+                        sel.value = sel.options[i].value;
+                        $(sel).trigger('change');
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) showAlert('Producto con código "' + code + '" no encontrado', 'warning');
+            });
+        };
+
         // ── Cuentas bancarias para transferencia ───────────────────
         var _modalBankAccounts = null;
         function loadBankAccountsIntoModal() {
