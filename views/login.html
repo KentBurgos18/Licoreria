@@ -681,6 +681,8 @@
             }
 
             if (adminToken) {
+                // Si había un adminToken, solo redirigir al dashboard si es válido.
+                // Si expiró, mostrar siempre el login — nunca redirigir al catálogo de cliente.
                 $.ajax({
                     url: '/api/admin/auth/me',
                     method: 'GET',
@@ -691,13 +693,12 @@
                     error: function() {
                         localStorage.removeItem('adminToken');
                         localStorage.removeItem('adminUser');
-                        if (!customerToken) $('.lb-card').show();
+                        $('.lb-card').show();
+                        // No verificar customerToken: el usuario era admin, debe hacer login de admin
                     }
                 });
-            }
-
-            // Verificar token de cliente
-            if (customerToken) {
+            } else if (customerToken) {
+                // Solo verificar token de cliente si no había ningún adminToken
                 $.ajax({
                     url: '/api/auth/me',
                     method: 'GET',
@@ -708,7 +709,7 @@
                     error: function() {
                         localStorage.removeItem('customerToken');
                         localStorage.removeItem('customer');
-                        if (!adminToken) $('.lb-card').show();
+                        $('.lb-card').show();
                     }
                 });
             }
