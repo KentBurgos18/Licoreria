@@ -3100,6 +3100,10 @@
                 e.preventDefault();
                 const section = $(this).data('section');
                 if (section) {
+                    // En móvil, cerrar el menú lateral al seleccionar una opción
+                    if (window.innerWidth < 769) {
+                        closeMobileMenu();
+                    }
                     showSection(section);
                 }
             });
