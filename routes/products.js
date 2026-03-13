@@ -307,7 +307,7 @@ router.get('/', async (req, res) => {
         },
         {
           association: 'baseProduct',
-          attributes: ['id', 'name', 'sku'],
+          attributes: ['id', 'name', 'sku', 'unitCost'],
           required: false
         }
       ],
@@ -316,14 +316,49 @@ router.get('/', async (req, res) => {
       order: [['name', 'ASC']]
     });
 
-    // Calculate average purchase price for each product
-    const productsWithPurchasePrice = await Promise.all(
-      rows.map(async (product) => {
-        const productData = product.toJSON();
-        productData.purchasePrice = await getPurchasePrice(productData);
-        return productData;
-      })
-    );
+    // Calcular purchasePrice en batch (1 query total en vez de N queries)
+    const simpleProducts = rows.filter(p => p.productType === 'SIMPLE');
+
+    // IDs de pool que necesitan promedio de inventario (productos sin unitCost manual)
+    const poolIdsForAvg = new Set();
+    for (const p of simpleProducts) {
+      const data = p.toJSON ? p : p;
+      const uc = data.unitCost != null ? parseFloat(data.unitCost) : 0;
+      if (uc > 0) continue; // tiene costo manual, no necesita avg
+      const baseUc = data.baseProduct?.unitCost != null ? parseFloat(data.baseProduct.unitCost) : 0;
+      if (baseUc > 0) continue; // base tiene costo manual
+      // Necesita avg del pool
+      const poolId = data.baseProductId || data.id;
+      poolIdsForAvg.add(poolId);
+    }
+
+    // Una sola query para todos los costos promedio necesarios
+    let avgCostMap = {};
+    if (poolIdsForAvg.size > 0) {
+      const [avgRows] = await sequelize.query(
+        `SELECT product_id, SUM(qty * unit_cost) / NULLIF(SUM(qty), 0) AS avg_cost
+         FROM inventory_movements
+         WHERE tenant_id = :tenantId AND movement_type = 'IN' AND unit_cost IS NOT NULL
+           AND product_id IN (:poolIds)
+         GROUP BY product_id`,
+        { replacements: { tenantId: tenantId || 1, poolIds: Array.from(poolIdsForAvg) } }
+      );
+      for (const r of avgRows) avgCostMap[r.product_id] = parseFloat(r.avg_cost) || 0;
+    }
+
+    const productsWithPurchasePrice = rows.map(product => {
+      const productData = product.toJSON ? product.toJSON() : product;
+      if (productData.productType !== 'SIMPLE') { productData.purchasePrice = 0; return productData; }
+      const unitsPerSale = parseFloat(productData.unitsPerSale) || 1;
+      const uc = productData.unitCost != null ? parseFloat(productData.unitCost) : 0;
+      if (uc > 0) { productData.purchasePrice = uc; return productData; }
+      const baseUc = productData.baseProduct?.unitCost != null ? parseFloat(productData.baseProduct.unitCost) : 0;
+      if (baseUc > 0) { productData.purchasePrice = baseUc * unitsPerSale; return productData; }
+      const poolId = productData.baseProductId || productData.id;
+      const avg = avgCostMap[poolId] || 0;
+      productData.purchasePrice = productData.baseProductId ? avg * unitsPerSale : avg;
+      return productData;
+    });
 
     res.json({
       products: productsWithPurchasePrice,
