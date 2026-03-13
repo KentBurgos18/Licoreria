@@ -3160,13 +3160,14 @@
         }
 
         function initializeNavigation() {
-            // Delegación de eventos — más fiable en móvil que binding directo
-            $(document).on('click', '.sidebar .nav-link[data-section], .mobile-bottom-nav .nav-link[data-section]', function(e) {
+            // Solo aplicar a navegación principal, no a pestañas Bootstrap
+            $('.sidebar .nav-link, .mobile-bottom-nav .nav-link').click(function(e) {
                 e.preventDefault();
-                e.stopPropagation();
-                var section = $(this).data('section');
+                const section = $(this).data('section');
                 if (section) {
-                    closeMobileMenu(); // siempre cerrar (en desktop no tiene efecto)
+                    if (window.innerWidth < 769) {
+                        closeMobileMenu();
+                    }
                     showSection(section);
                 }
             });
@@ -3236,6 +3237,13 @@
             overlay.classList.remove('active');
         }
         
+        // Cerrar sidebar al tocar cualquier enlace de navegación dentro de él
+        document.querySelector('nav.sidebar').addEventListener('click', function(e) {
+            if (e.target.closest('a[data-section]')) {
+                closeMobileMenu();
+            }
+        });
+
         function handleMobileNav(element) {
             // Close mobile menu if open
             closeMobileMenu();
