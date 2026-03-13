@@ -8,6 +8,7 @@
     var APP_CONTENT_ID = 'dashboard-app-content';
     var LOADING_ID = 'dashboard-spa-loading';
     var VIEW_WRAPPER_ID = 'spa-view-content';
+    var _htmlCache = {}; // caché en memoria del HTML de cada vista
 
     var ROUTES = {
         '/dashboard': 'dashboard',
@@ -99,10 +100,70 @@
         });
     }
 
+    function injectView(viewName, htmlContent, pathname, pushState) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(htmlContent, 'text/html');
+        var wrapper = doc.getElementById(VIEW_WRAPPER_ID);
+        if (!wrapper) {
+            document.getElementById(APP_CONTENT_ID).innerHTML = '<div class="alert alert-warning">Vista no disponible.</div>';
+            return;
+        }
+
+        var oldStyles = document.querySelectorAll('[data-dash-spa-style]');
+        oldStyles.forEach(function (s) { if (s.parentNode) s.parentNode.removeChild(s); });
+
+        var styleTags = doc.head.querySelectorAll('style');
+        styleTags.forEach(function (styleEl) {
+            var newStyle = document.createElement('style');
+            newStyle.setAttribute('data-dash-spa-style', '1');
+            newStyle.textContent = styleEl.textContent;
+            document.head.appendChild(newStyle);
+        });
+
+        var appContent = document.getElementById(APP_CONTENT_ID);
+        appContent.innerHTML = wrapper.innerHTML;
+
+        runScriptsInContainer(appContent);
+
+        var initFn = SECTION_INIT[viewName];
+        if (initFn && typeof window[initFn] === 'function') {
+            setTimeout(function () { window[initFn](); }, 0);
+        }
+
+        document.body.classList.toggle('section-sell', viewName === 'sell');
+        if (typeof updateSellCart === 'function') updateSellCart();
+
+        var meta = SECTION_META[viewName] || { label: viewName, icon: 'bi-circle' };
+        var titleEl = document.getElementById('topbarTitle');
+        var iconEl = document.getElementById('topbarIcon');
+        if (titleEl) titleEl.textContent = meta.label;
+        if (iconEl) iconEl.className = 'bi ' + meta.icon;
+
+        var navLinks = document.querySelectorAll('.sidebar .nav-link, .mobile-bottom-nav .nav-link');
+        navLinks.forEach(function (link) {
+            link.classList.remove('active');
+            var ds = link.getAttribute('data-section');
+            if (ds === viewName) link.classList.add('active');
+        });
+
+        if (pushState && window.history && window.history.pushState) {
+            window.history.pushState({ dashView: viewName }, '', pathname || '/dashboard' + (viewName === 'dashboard' ? '' : '/' + viewName));
+        }
+
+        // Cerrar menú móvil si está abierto
+        if (typeof closeMobileMenu === 'function') closeMobileMenu();
+    }
+
     function loadView(pathname, pushState) {
         var viewName = getViewFromPath(pathname);
         if (!viewName) {
             window.location.href = pathname || '/dashboard';
+            return;
+        }
+
+        // Usar caché si existe — evita re-descargar el HTML en cada navegación
+        if (_htmlCache[viewName]) {
+            injectView(viewName, _htmlCache[viewName], pathname, pushState);
             return;
         }
 
@@ -118,55 +179,8 @@
                 return res.text();
             })
             .then(function (html) {
-                var parser = new DOMParser();
-                var doc = parser.parseFromString(html, 'text/html');
-                var wrapper = doc.getElementById(VIEW_WRAPPER_ID);
-                if (!wrapper) {
-                    document.getElementById(APP_CONTENT_ID).innerHTML = '<div class="alert alert-warning">Vista no disponible.</div>';
-                    return;
-                }
-
-                var oldStyles = document.querySelectorAll('[data-dash-spa-style]');
-                oldStyles.forEach(function (s) { if (s.parentNode) s.parentNode.removeChild(s); });
-
-                var styleTags = doc.head.querySelectorAll('style');
-                styleTags.forEach(function (styleEl) {
-                    var newStyle = document.createElement('style');
-                    newStyle.setAttribute('data-dash-spa-style', '1');
-                    newStyle.textContent = styleEl.textContent;
-                    document.head.appendChild(newStyle);
-                });
-
-                var appContent = document.getElementById(APP_CONTENT_ID);
-                appContent.innerHTML = wrapper.innerHTML;
-
-                runScriptsInContainer(appContent);
-
-                var initFn = SECTION_INIT[viewName];
-                if (initFn && typeof window[initFn] === 'function') {
-                    setTimeout(function () { window[initFn](); }, 0);
-                }
-
-                document.body.classList.toggle('section-sell', viewName === 'sell');
-                if (typeof updateSellCart === 'function') updateSellCart();
-
-                var meta = SECTION_META[viewName] || { label: viewName, icon: 'bi-circle' };
-                var titleEl = document.getElementById('topbarTitle');
-                var iconEl = document.getElementById('topbarIcon');
-                if (titleEl) titleEl.textContent = meta.label;
-                if (iconEl) iconEl.className = 'bi ' + meta.icon;
-
-                // Actualizar enlace activo en sidebar y mobile nav
-                var navLinks = document.querySelectorAll('.sidebar .nav-link, .mobile-bottom-nav .nav-link');
-                navLinks.forEach(function (link) {
-                    link.classList.remove('active');
-                    var ds = link.getAttribute('data-section');
-                    if (ds === viewName) link.classList.add('active');
-                });
-
-                if (pushState && window.history && window.history.pushState) {
-                    window.history.pushState({ dashView: viewName }, '', pathname || path);
-                }
+                _htmlCache[viewName] = html; // guardar en caché
+                injectView(viewName, html, pathname, pushState);
             })
             .catch(function () {
                 document.getElementById(APP_CONTENT_ID).innerHTML = '<div class="alert alert-danger">Error al cargar. <a href="' + (pathname || '/dashboard') + '">Recargar</a></div>';
@@ -235,5 +249,11 @@
         var path = '/dashboard' + (section === 'dashboard' ? '' : '/' + section);
         if (getViewFromPath(path)) navigate(path);
         else window.location.href = path;
+    };
+
+    // Invalidar caché HTML de una vista (llamar después de cambios estructurales)
+    window.invalidateSpaView = function (viewName) {
+        if (viewName) delete _htmlCache[viewName];
+        else _htmlCache = {};
     };
 })();
