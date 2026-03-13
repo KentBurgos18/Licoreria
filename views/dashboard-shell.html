@@ -3621,11 +3621,32 @@
         var _profitPeriod = 'today';
 
         var _profitCache = { ts: 0, data: null };
+
+        function applyProfitData(data) {
+            _profitData = data;
+            var m = data.month;
+            var fmtMoney = function(n) {
+                return (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            };
+            $('#monthlyProfit').text(fmtMoney(m.netProfit));
+            $('#monthlyMargin').text(m.marginPct.toFixed(1) + '%');
+            if (m.marginPct >= 20) {
+                $('#monthlyMarginBadge').text('buen margen').removeClass('db-fl').addClass('db-up');
+                $('#monthlyProfit').css('color', '#10b981');
+            } else if (m.marginPct >= 0) {
+                $('#monthlyMarginBadge').text('mes actual').removeClass('db-up').addClass('db-fl');
+                $('#monthlyProfit').css('color', '#f59e0b');
+            } else {
+                $('#monthlyMarginBadge').text('pérdida').removeClass('db-up').addClass('db-fl');
+                $('#monthlyProfit').css('color', '#ef4444');
+            }
+            renderProfitPanel(_profitPeriod);
+        }
+
         function loadProfitability() {
             // Caché de 5 minutos — es la query más pesada del dashboard
             if (_profitCache.data && (Date.now() - _profitCache.ts) < 300000) {
-                _profitData = _profitCache.data;
-                renderProfitPanel(_profitPeriod);
+                applyProfitData(_profitCache.data);
                 return;
             }
             $.ajax({
@@ -3634,27 +3655,8 @@
                 headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
                 data: { tenantId: 1 },
                 success: function(data) {
-                    _profitData = data;
                     _profitCache = { ts: Date.now(), data: data };
-                    // Update KPI cards (month)
-                    var m = data.month;
-                    var fmtMoney = function(n) {
-                        return (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                    };
-                    $('#monthlyProfit').text(fmtMoney(m.netProfit));
-                    $('#monthlyMargin').text(m.marginPct.toFixed(1) + '%');
-                    if (m.marginPct >= 20) {
-                        $('#monthlyMarginBadge').text('buen margen').removeClass('db-fl').addClass('db-up');
-                        $('#monthlyProfit').css('color', '#10b981');
-                    } else if (m.marginPct >= 0) {
-                        $('#monthlyMarginBadge').text('mes actual').removeClass('db-up').addClass('db-fl');
-                        $('#monthlyProfit').css('color', '#f59e0b');
-                    } else {
-                        $('#monthlyMarginBadge').text('pérdida').removeClass('db-up').addClass('db-fl');
-                        $('#monthlyProfit').css('color', '#ef4444');
-                    }
-                    // Render panel with active period
-                    renderProfitPanel(_profitPeriod);
+                    applyProfitData(data);
                 },
                 error: function() {
                     $('#profitPanelBody').html('<div class="text-center text-muted small py-3">No se pudo cargar la rentabilidad</div>');
