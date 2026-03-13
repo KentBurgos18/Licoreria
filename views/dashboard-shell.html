@@ -3237,13 +3237,6 @@
             overlay.classList.remove('active');
         }
         
-        // Cerrar sidebar al tocar cualquier enlace de navegación dentro de él
-        document.querySelector('nav.sidebar').addEventListener('click', function(e) {
-            if (e.target.closest('a[data-section]')) {
-                closeMobileMenu();
-            }
-        });
-
         function handleMobileNav(element) {
             // Close mobile menu if open
             closeMobileMenu();
