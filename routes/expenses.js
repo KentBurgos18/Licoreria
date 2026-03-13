@@ -59,8 +59,8 @@ router.get('/summary', async (req, res) => {
       ORDER BY category_total DESC
     `, { replacements: { tenantId } });
 
-    const thisMonth    = rows.length > 0 ? parseFloat(rows[0].this_month)  : 0;
-    const thisYear     = rows.length > 0 ? parseFloat(rows[0].this_year)   : 0;
+    const thisMonth    = rows.reduce((sum, r) => sum + parseFloat(r.this_month  || 0), 0);
+    const thisYear     = rows.reduce((sum, r) => sum + parseFloat(r.this_year   || 0), 0);
     const byCategory   = rows.map(r => ({ name: r.category || 'Sin categoría', total: parseFloat(r.category_total) }));
     const topCategory  = byCategory.length > 0 ? byCategory[0] : null;
 
