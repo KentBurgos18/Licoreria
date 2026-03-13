@@ -3347,8 +3347,9 @@
             // Load low stock products
             loadLowStockProducts();
 
-            // Monthly sales chart
+            // Sales charts
             loadMonthlySalesChart();
+            loadDailySalesChart();
         }
 
         function loadMonthlySalesChart() {
@@ -3432,6 +3433,100 @@
                                 x: {
                                     grid: { display: false },
                                     ticks: { color: textColor, font: { size: 11 } }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    grid: { color: gridColor },
+                                    ticks: {
+                                        color: textColor,
+                                        font: { size: 11 },
+                                        callback: function(v) {
+                                            return '$' + v.toLocaleString('es-ES');
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        function loadDailySalesChart() {
+            var isMobile = window.innerWidth < 576;
+            var days = isMobile ? 14 : 30;
+            $('#dailyChartSubtitle').text('últimos ' + days + ' días · completadas');
+
+            $.ajax({
+                url: '/api/sales/stats/daily-chart',
+                method: 'GET',
+                data: { tenantId: 1, days: days },
+                success: function(data) {
+                    var canvas = document.getElementById('dailySalesChart');
+                    if (!canvas || typeof Chart === 'undefined') return;
+
+                    var labels = data.map(function(d) { return d.label; });
+                    var values = data.map(function(d) { return d.total; });
+
+                    var accentColor = getComputedStyle(document.documentElement)
+                        .getPropertyValue('--th-accent').trim() || '#0d9488';
+                    var textColor = getComputedStyle(document.documentElement)
+                        .getPropertyValue('--th-text2').trim() || '#94a3b8';
+                    var gridColor = getComputedStyle(document.documentElement)
+                        .getPropertyValue('--th-border').trim() || 'rgba(0,0,0,0.08)';
+
+                    function toRgba(color, alpha) {
+                        var tmp = document.createElement('div');
+                        tmp.style.color = color;
+                        document.body.appendChild(tmp);
+                        var computed = getComputedStyle(tmp).color;
+                        document.body.removeChild(tmp);
+                        return computed.replace('rgb(', 'rgba(').replace(')', ', ' + alpha + ')');
+                    }
+
+                    if (window._dailySalesChart) {
+                        window._dailySalesChart.destroy();
+                    }
+
+                    window._dailySalesChart = new Chart(canvas.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: values,
+                                backgroundColor: toRgba(accentColor, 0.75),
+                                borderColor: accentColor,
+                                borderWidth: 1.5,
+                                borderRadius: 4,
+                                hoverBackgroundColor: accentColor
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            aspectRatio: isMobile ? 2 : 3.5,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(ctx) {
+                                            return ' $' + ctx.parsed.y.toLocaleString('es-ES', {
+                                                minimumFractionDigits: 2, maximumFractionDigits: 2
+                                            });
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { display: false },
+                                    ticks: {
+                                        color: textColor,
+                                        font: { size: 10 },
+                                        maxRotation: isMobile ? 45 : 0,
+                                        autoSkip: true,
+                                        maxTicksLimit: isMobile ? 7 : 15
+                                    }
                                 },
                                 y: {
                                     beginAtZero: true,

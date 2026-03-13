@@ -426,6 +426,42 @@ router.get('/stats/monthly-chart', async (req, res) => {
   }
 });
 
+// GET /sales/stats/daily-chart - Ventas por día (últimos N días) para gráfico
+router.get('/stats/daily-chart', async (req, res) => {
+  try {
+    const { tenantId, days = 30 } = req.query;
+    if (!tenantId) return res.status(400).json({ error: 'tenantId is required' });
+
+    const n = Math.min(Math.max(parseInt(days) || 30, 7), 90);
+    const rows = await sequelize.query(`
+      SELECT
+        TO_CHAR(DATE_TRUNC('day', created_at AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS day_key,
+        COALESCE(SUM(total_amount), 0)::float AS total
+      FROM sales
+      WHERE tenant_id = :tenantId
+        AND status = 'COMPLETED'
+        AND created_at >= CURRENT_DATE - INTERVAL '1 day' * (:n - 1)
+      GROUP BY day_key
+      ORDER BY day_key ASC
+    `, { replacements: { tenantId: parseInt(tenantId), n }, type: sequelize.QueryTypes.SELECT });
+
+    const result = [];
+    const now = new Date();
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const found = rows.find(r => r.day_key === key);
+      const label = d.toLocaleString('es', { day: '2-digit', month: 'short' });
+      result.push({ day_key: key, label, total: found ? found.total : 0 });
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error getting daily chart data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /sales/stats/monthly-total - Total ventas del mes actual (dashboard)
 router.get('/stats/monthly-total', async (req, res) => {
   try {
