@@ -9,6 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title id="dashboardPageTitle">Sistema de Licorería - Dashboard</title>
+    <script>window._pwaDeferred = null; window.addEventListener('beforeinstallprompt', function(e) { e.preventDefault(); window._pwaDeferred = e; });</script>
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="/public/css/dashboard-themes.css">
@@ -11403,8 +11404,6 @@
         var STORAGE_KEY = 'pwa_prompt_done_admin';
         if (localStorage.getItem(STORAGE_KEY)) return;
 
-        var deferredPrompt = null;
-
         function isIosSafari() {
             var ua = navigator.userAgent;
             return /iphone|ipad|ipod/i.test(ua) && !/crios|fxios|opios|chrome/i.test(ua) && /safari/i.test(ua);
@@ -11413,29 +11412,24 @@
             return navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
         }
 
-        window.addEventListener('beforeinstallprompt', function(e) {
-            e.preventDefault();
-            deferredPrompt = e;
-        });
-
         window.showPwaPrompt = function() {
             if (isStandalone()) return;
             if (localStorage.getItem(STORAGE_KEY)) return;
-            var prompt = document.getElementById('pwaPrompt');
-            if (!prompt) return;
+            var banner = document.getElementById('pwaPrompt');
+            if (!banner) return;
 
             if (isIosSafari()) {
                 document.getElementById('pwaIosSteps').style.display = 'block';
-                prompt.style.display = 'block';
-            } else if (deferredPrompt) {
+                banner.style.display = 'block';
+            } else if (window._pwaDeferred) {
                 document.getElementById('pwaChromeBtns').style.display = 'block';
-                prompt.style.display = 'block';
+                banner.style.display = 'block';
                 document.getElementById('pwaInstallBtn').onclick = function() {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then(function() {
+                    window._pwaDeferred.prompt();
+                    window._pwaDeferred.userChoice.then(function() {
                         localStorage.setItem(STORAGE_KEY, '1');
-                        prompt.style.display = 'none';
-                        deferredPrompt = null;
+                        banner.style.display = 'none';
+                        window._pwaDeferred = null;
                     });
                 };
             }
@@ -11443,8 +11437,8 @@
 
         window.pwaDismiss = function() {
             localStorage.setItem(STORAGE_KEY, '1');
-            var prompt = document.getElementById('pwaPrompt');
-            if (prompt) prompt.style.display = 'none';
+            var banner = document.getElementById('pwaPrompt');
+            if (banner) banner.style.display = 'none';
         };
     })();
     </script>
