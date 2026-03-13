@@ -2,13 +2,17 @@ const express = require('express');
 const { Op } = require('sequelize');
 const router = express.Router();
 
-const ExpenseCategoryModel = require('../models/ExpenseCategory');
-const ExpenseModel         = require('../models/Expense');
-const { sequelize }        = require('../models');
+const ExpenseCategoryModel    = require('../models/ExpenseCategory');
+const ExpenseModel            = require('../models/Expense');
+const ProductModel            = require('../models/Product');
+const InventoryMovementModel  = require('../models/InventoryMovement');
+const { sequelize }           = require('../models');
 
-const ExpenseCategory = ExpenseCategoryModel(sequelize);
-const Expense         = ExpenseModel(sequelize);
-const AuditService    = require('../services/AuditService');
+const ExpenseCategory   = ExpenseCategoryModel(sequelize);
+const Expense           = ExpenseModel(sequelize);
+const Product           = ProductModel(sequelize);
+const InventoryMovement = InventoryMovementModel(sequelize);
+const AuditService      = require('../services/AuditService');
 
 // Asociación para JOINs
 Expense.belongsTo(ExpenseCategory, { foreignKey: 'categoryId', as: 'category' });
@@ -106,7 +110,7 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const tenantId = req.tenantId || 1;
-    const { categoryId, description, amount, expenseDate, paidTo, notes } = req.body;
+    const { categoryId, description, amount, expenseDate, paidTo, notes, productId, productQty } = req.body;
 
     if (!description || !description.trim()) {
       return res.status(400).json({ error: 'La descripción es requerida' });
@@ -118,30 +122,61 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'La fecha es requerida' });
     }
 
-    const expense = await Expense.create({
-      tenantId,
-      categoryId: categoryId ? Number(categoryId) : null,
-      description: description.trim(),
-      amount:      Number(amount),
-      expenseDate,
-      paidTo:      paidTo ? paidTo.trim() : null,
-      notes:       notes  ? notes.trim()  : null,
-      createdBy:   req.userId || null
-    });
+    // Validar producto si viene
+    let product = null;
+    if (productId) {
+      product = await Product.findOne({ where: { id: Number(productId), tenantId } });
+      if (!product) return res.status(400).json({ error: 'Producto no encontrado' });
+    }
+    const finalQty = product ? (Number(productQty) || 1) : 0;
 
-    // Recargar con categoría
-    const full = await Expense.findByPk(expense.id, {
-      include: [{ model: ExpenseCategory, as: 'category', attributes: ['id', 'name'] }]
-    });
+    const t = await sequelize.transaction();
+    try {
+      const expense = await Expense.create({
+        tenantId,
+        categoryId:  categoryId ? Number(categoryId) : null,
+        description: description.trim(),
+        amount:      Number(amount),
+        expenseDate,
+        paidTo:      paidTo ? paidTo.trim() : null,
+        notes:       notes  ? notes.trim()  : null,
+        createdBy:   req.userId || null,
+        productId:   product ? product.id : null,
+        productQty:  product ? finalQty : null
+      }, { transaction: t });
 
-    AuditService.log({
-      ...AuditService.fromReq(req),
-      action: 'CREATE', entity: 'expense', entityId: expense.id,
-      description: `Registró gasto "${description.trim()}" — $${Number(amount).toFixed(2)}`,
-      metadata: { created: { description: description.trim(), amount: Number(amount), expenseDate, categoryId: categoryId || null } }
-    });
+      // Descontar del inventario si tiene producto
+      if (product) {
+        await InventoryMovement.create({
+          tenantId,
+          productId:    product.id,
+          movementType: 'OUT',
+          reason:       'WASTE',
+          qty:          finalQty,
+          unitCost:     product.unitCost || null,
+          refType:      'expense',
+          refId:        expense.id
+        }, { transaction: t });
+      }
 
-    res.status(201).json({ expense: full });
+      await t.commit();
+
+      const full = await Expense.findByPk(expense.id, {
+        include: [{ model: ExpenseCategory, as: 'category', attributes: ['id', 'name'] }]
+      });
+
+      AuditService.log({
+        ...AuditService.fromReq(req),
+        action: 'CREATE', entity: 'expense', entityId: expense.id,
+        description: `Registró gasto "${description.trim()}" — $${Number(amount).toFixed(2)}${product ? ` (${finalQty} × ${product.name})` : ''}`,
+        metadata: { created: { description: description.trim(), amount: Number(amount), expenseDate, categoryId: categoryId || null, productId: product?.id || null } }
+      });
+
+      res.status(201).json({ expense: full });
+    } catch (err) {
+      await t.rollback();
+      throw err;
+    }
   } catch (error) {
     console.error('Error creando gasto:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -212,8 +247,30 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Gasto no encontrado' });
     }
 
-    const snap = { description: expense.description, amount: Number(expense.amount), expenseDate: expense.expenseDate };
-    await expense.destroy();
+    const snap = { description: expense.description, amount: Number(expense.amount), expenseDate: expense.expenseDate, productId: expense.productId, productQty: expense.productQty };
+
+    const t = await sequelize.transaction();
+    try {
+      // Revertir movimiento de inventario si tenía producto
+      if (expense.productId) {
+        await InventoryMovement.create({
+          tenantId,
+          productId:    expense.productId,
+          movementType: 'IN',
+          reason:       'ADJUST',
+          qty:          Number(expense.productQty) || 1,
+          unitCost:     null,
+          refType:      'expense_reversal',
+          refId:        expense.id
+        }, { transaction: t });
+      }
+      await expense.destroy({ transaction: t });
+      await t.commit();
+    } catch (err) {
+      await t.rollback();
+      throw err;
+    }
+
     AuditService.log({
       ...AuditService.fromReq(req),
       action: 'DELETE', entity: 'expense', entityId: req.params.id,

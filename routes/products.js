@@ -267,6 +267,7 @@ router.get('/', async (req, res) => {
       isActive,
       categoryId,
       presentationId,
+      search,
       page = 1,
       limit = 50
     } = req.query;
@@ -277,6 +278,12 @@ router.get('/', async (req, res) => {
     if (isActive !== undefined) whereClause.isActive = isActive === 'true';
     if (categoryId) whereClause.categoryId = categoryId;
     if (presentationId) whereClause.presentationId = presentationId;
+    if (search) {
+      whereClause[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { sku:  { [Op.iLike]: `%${search}%` } }
+      ];
+    }
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -396,6 +403,7 @@ router.put('/:id', requireRole('ADMIN'), upload.single('image'), async (req, res
     const {
       tenantId,
       name,
+      sku,
       salePrice,
       costMode,
       isActive,
@@ -435,6 +443,7 @@ router.put('/:id', requireRole('ADMIN'), upload.single('image'), async (req, res
     // Update fields
     const updates = {};
     if (name !== undefined && name !== null && name !== '') updates.name = name;
+    if (sku !== undefined && sku !== null && sku !== '' && sku !== product.sku) updates.sku = sku;
     if (salePrice !== undefined && salePrice !== null && salePrice !== '' && !isNaN(salePrice)) updates.salePrice = parseFloat(salePrice);
     if (costMode !== undefined && costMode !== null && costMode !== '') updates.costMode = costMode;
     if (isActive !== undefined) updates.isActive = isActive === 'true' || isActive === true;
@@ -489,6 +498,9 @@ router.put('/:id', requireRole('ADMIN'), upload.single('image'), async (req, res
 
     res.json(updatedProduct);
   } catch (error) {
+    if (error.original && error.original.code === '23505' && error.original.constraint === 'products_tenant_id_sku') {
+      return res.status(400).json({ error: 'Ya existe otro producto con ese código SKU', code: 'SKU_DUPLICATE' });
+    }
     console.error('Error updating product:', error);
     res.status(500).json({
       error: 'Internal server error',

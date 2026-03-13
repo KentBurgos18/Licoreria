@@ -484,13 +484,13 @@ router.get('/stats/profitability', async (req, res) => {
       ),
       cogs_agg AS (
         SELECT
-          COALESCE(SUM(CASE WHEN DATE(created_at AT TIME ZONE 'UTC') = CURRENT_DATE THEN unit_cost * qty ELSE 0 END), 0)::float AS today_cogs,
-          COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('week', NOW()) THEN unit_cost * qty ELSE 0 END), 0)::float AS week_cogs,
-          COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('month', NOW()) THEN unit_cost * qty ELSE 0 END), 0)::float AS month_cogs,
-          COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('month', NOW() - INTERVAL '1 month')
-            AND created_at < DATE_TRUNC('month', NOW()) THEN unit_cost * qty ELSE 0 END), 0)::float AS prev_cogs
-        FROM inventory_movements
-        WHERE tenant_id = :tid AND movement_type = 'OUT' AND reason = 'SALE'
+          COALESCE(SUM(CASE WHEN purchase_date = CURRENT_DATE THEN total_amount ELSE 0 END), 0)::float AS today_cogs,
+          COALESCE(SUM(CASE WHEN purchase_date >= DATE_TRUNC('week', CURRENT_DATE) THEN total_amount ELSE 0 END), 0)::float AS week_cogs,
+          COALESCE(SUM(CASE WHEN purchase_date >= DATE_TRUNC('month', CURRENT_DATE) THEN total_amount ELSE 0 END), 0)::float AS month_cogs,
+          COALESCE(SUM(CASE WHEN purchase_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+            AND purchase_date < DATE_TRUNC('month', CURRENT_DATE) THEN total_amount ELSE 0 END), 0)::float AS prev_cogs
+        FROM purchase_orders
+        WHERE tenant_id = :tid
       ),
       exp_agg AS (
         SELECT

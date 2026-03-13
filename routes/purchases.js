@@ -99,10 +99,12 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Calculate total amount
-    const totalAmount = items.reduce((sum, item) => {
+    // Calculate total amount (subtotal + IVA)
+    const subtotal = items.reduce((sum, item) => {
       return sum + (parseFloat(item.quantity) * parseFloat(item.unitCost || 0));
     }, 0);
+    const taxAmount = parseFloat(req.body.taxAmount) || 0;
+    const totalAmount = subtotal + taxAmount;
 
     // Calculate due date
     const effectivePurchaseDate = purchaseDate || new Date().toISOString().split('T')[0];

@@ -1,0 +1,23 @@
+{
+  "name": "LOCOBAR - Licorería",
+  "short_name": "LOCOBAR Admin",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#0f3460",
+  "icons": [
+    {
+      "src": "/public/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/public/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

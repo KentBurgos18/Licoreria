@@ -11,5 +11,7 @@ module.exports = (sequelize) =>
     paidTo:      { type: DataTypes.STRING(150), allowNull: true, field: 'paid_to' },
     notes:       { type: DataTypes.TEXT, allowNull: true },
     createdBy:   { type: DataTypes.BIGINT, allowNull: true, field: 'created_by' },
+    productId:   { type: DataTypes.BIGINT, allowNull: true, field: 'product_id' },
+    productQty:  { type: DataTypes.DECIMAL(12, 3), allowNull: true, defaultValue: 1, field: 'product_qty' },
     createdAt:   { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' }
   }, { tableName: 'expenses', timestamps: false });

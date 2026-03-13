@@ -1084,6 +1084,14 @@ async function initializeApp() {
       console.warn('⚠️ Migración transfer_account:', e.message);
     }
 
+    // Migración: product_id y product_qty en expenses (gasto con consumo de inventario)
+    try {
+      await sequelize.query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS product_id BIGINT REFERENCES products(id) ON DELETE SET NULL`);
+      await sequelize.query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS product_qty DECIMAL(12,3) DEFAULT 1`);
+    } catch (e) {
+      console.warn('⚠️ Migración expenses product_id/product_qty:', e.message);
+    }
+
     // Sync models (create tables if they don't exist)
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: true });

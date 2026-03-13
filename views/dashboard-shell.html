@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
     <link rel="apple-touch-icon" href="/public/img/icon-192.png">
-    <link rel="manifest" href="/public/manifest.webmanifest">
+    <link rel="manifest" href="/public/manifest-admin.webmanifest">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title id="dashboardPageTitle">Sistema de Licorería - Dashboard</title>
@@ -1375,6 +1375,7 @@
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="expenseEditId">
+                    <input type="hidden" id="expenseProductId">
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label">Categoría</label>
@@ -1386,6 +1387,43 @@
                             <label class="form-label">Descripción <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="expenseDescription" placeholder="Ej: Pago arriendo local">
                         </div>
+
+                        <!-- Sección: descontar producto del inventario -->
+                        <div class="col-12">
+                            <label class="form-label mb-1">
+                                <svg style="width:1em;height:1em;vertical-align:-0.1em;margin-right:4px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                                Descontar producto del inventario <span class="text-muted small">(opcional)</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="expenseProductSearch"
+                                    placeholder="Buscar producto por nombre..."
+                                    oninput="searchExpenseProduct(this.value)"
+                                    autocomplete="off">
+                                <button class="btn btn-outline-secondary" type="button" onclick="clearExpenseProduct()" title="Quitar producto">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                            <div id="expenseProductResults" class="list-group mt-1" style="display:none;max-height:160px;overflow-y:auto;position:relative;z-index:10;"></div>
+                            <div id="expenseProductSelected" class="mt-2" style="display:none;">
+                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--th-hover,#f8f9fa);border:1px solid var(--th-border,#dee2e6)">
+                                    <svg style="width:1.1em;height:1.1em;color:var(--th-accent,#0d6efd)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold small" id="expenseProductName">—</div>
+                                        <div class="text-muted" style="font-size:0.78rem">Costo unitario: <span id="expenseProductUnitCost">—</span> &nbsp;|&nbsp; Stock: <span id="expenseProductStock">—</span></div>
+                                    </div>
+                                    <div style="width:80px">
+                                        <label class="form-label mb-0" style="font-size:0.75rem">Cantidad</label>
+                                        <input type="number" class="form-control form-control-sm" id="expenseProductQty"
+                                            value="1" min="0.001" step="0.001"
+                                            oninput="recalcExpenseAmount()">
+                                    </div>
+                                </div>
+                                <div class="text-muted small mt-1">
+                                    <i class="bi bi-info-circle"></i> El monto se calculó con el costo de compra. Puedes modificarlo si es necesario.
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="col-md-6">
                             <label class="form-label">Monto <span class="text-danger">*</span></label>
                             <div class="input-group">
@@ -1726,15 +1764,14 @@
                                     <tr>
                                         <th>Producto</th>
                                         <th>Cantidad</th>
-                                        <th>Precio Compra Unitario</th>
-                                        <th>Precio Venta Sugerido</th>
+                                        <th>Costo Unitario</th>
                                         <th>Subtotal</th>
-                                        <th>Acciones</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted">
+                                        <td colspan="5" class="text-center text-muted">
                                             Haga clic en "Agregar Producto" para añadir items
                                         </td>
                                     </tr>
@@ -1748,8 +1785,29 @@
                                 <textarea class="form-control" id="purchaseNotes" rows="3"></textarea>
                             </div>
                             <div class="col-md-6">
-                                <h5>Total de la Compra:</h5>
-                                <h3 id="purchaseTotal">$0.00</h3>
+                                <table class="table table-sm mb-0" style="font-size:0.9rem">
+                                    <tr>
+                                        <td class="text-muted border-0 py-1">Subtotal</td>
+                                        <td class="text-end border-0 py-1" id="purchaseSubtotal">$0.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border-0 py-1">
+                                            <span class="text-muted">IVA</span>
+                                            <div class="input-group input-group-sm d-inline-flex ms-1" style="width:90px;vertical-align:middle">
+                                                <input type="number" id="purchaseTaxRate" class="form-control form-control-sm text-center"
+                                                    value="0" min="0" max="100" step="0.1"
+                                                    oninput="recalcPurchaseTotals()"
+                                                    style="padding:2px 4px">
+                                                <span class="input-group-text px-1">%</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-end border-0 py-1" id="purchaseTaxAmount">$0.00</td>
+                                    </tr>
+                                    <tr style="border-top:2px solid var(--th-border,#dee2e6)">
+                                        <td class="fw-bold pt-2 border-0">Total</td>
+                                        <td class="text-end fw-bold fs-5 pt-2 border-0" id="purchaseTotal">$0.00</td>
+                                    </tr>
+                                </table>
                             </div>
                         </div>
                     </form>
@@ -1788,13 +1846,20 @@
                     <form id="purchaseItemForm">
                         <div class="mb-3">
                             <label class="form-label">Producto <span class="text-danger">*</span></label>
+                            <input type="hidden" id="purchaseItemProduct">
                             <div class="input-group">
-                                <select class="form-select" id="purchaseItemProduct" required>
-                                    <option value="">Seleccione un producto...</option>
-                                </select>
+                                <input type="text" class="form-control" id="purchaseItemProductSearch"
+                                    placeholder="Buscar por nombre o SKU..."
+                                    oninput="searchPurchaseProduct(this.value)"
+                                    autocomplete="off">
                                 <button type="button" class="btn btn-outline-secondary" onclick="scanForPurchaseProduct()" title="Escanear código de barras">
                                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="10" y1="8" x2="10" y2="16"/><line x1="13" y1="8" x2="13" y2="12"/><line x1="16" y1="8" x2="16" y2="16"/><line x1="19" y1="12" x2="13" y2="12"/></svg>
                                 </button>
+                            </div>
+                            <div id="purchaseItemProductResults" class="list-group mt-1" style="display:none;max-height:180px;overflow-y:auto;z-index:9999;position:relative;"></div>
+                            <div id="purchaseItemProductSelected" class="mt-1 small text-success" style="display:none;">
+                                <i class="bi bi-check-circle-fill"></i> <span id="purchaseItemProductSelectedName"></span>
+                                <a href="#" class="ms-2 text-danger" onclick="clearPurchaseItemProduct();return false;">✕</a>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -3628,7 +3693,7 @@
                   bar(100, 'var(--th-accent)') +
                 '</div>' +
                 '<div class="prof-row">' +
-                  '<div class="prof-row-label"><span class="prof-row-name">Costo mercancía (COGS)</span><span class="prof-row-val" style="color:#f59e0b;">-' + fmtM(d.cogs) + '<span class="prof-row-pct">' + d.cogsRatio + '%</span></span></div>' +
+                  '<div class="prof-row-label"><span class="prof-row-name">Costo de compras</span><span class="prof-row-val" style="color:#f59e0b;">-' + fmtM(d.cogs) + '<span class="prof-row-pct">' + d.cogsRatio + '%</span></span></div>' +
                   bar(d.cogsRatio, '#f59e0b') +
                 '</div>' +
                 '<div class="prof-row">' +
@@ -3709,12 +3774,17 @@
                 var paidTo = e.paidTo ? e.paidTo : '<span class="text-muted">—</span>';
                 var amt = '$' + parseFloat(e.amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
                 var fecha = e.expenseDate ? e.expenseDate.substring(0, 10) : '—';
+                var prodBadge = e.productId
+                    ? '<br><span class="badge rounded-pill text-bg-warning mt-1" style="font-size:0.7rem;font-weight:500">' +
+                      '<svg style="width:.75em;height:.75em;vertical-align:-.05em;margin-right:2px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>' +
+                      'Inventario: ' + parseFloat(e.productQty) + ' uds. descontadas</span>'
+                    : '';
 
                 $tbody.append(
                     '<tr>' +
                     '<td>' + fecha + '</td>' +
                     '<td>' + catName + '</td>' +
-                    '<td>' + (e.description || '') + (e.notes ? '<br><small class="text-muted">' + e.notes + '</small>' : '') + '</td>' +
+                    '<td>' + (e.description || '') + prodBadge + (e.notes ? '<br><small class="text-muted">' + e.notes + '</small>' : '') + '</td>' +
                     '<td>' + paidTo + '</td>' +
                     '<td class="text-end fw-semibold">' + amt + '</td>' +
                     '<td class="text-end" style="white-space:nowrap">' +
@@ -3726,6 +3796,8 @@
             });
         }
 
+        var _expenseSelectedProduct = null;
+
         function showCreateExpenseModal() {
             $('#expenseEditId').val('');
             $('#expenseModalTitle').text('Nuevo Gasto');
@@ -3736,6 +3808,7 @@
             $('#expenseNotes').val('');
             loadExpenseCategories(null, $('#expenseCategoryId'));
             $('#expenseCategoryId').val('');
+            _clearExpenseProductUI();
             var modal = new bootstrap.Modal(document.getElementById('expenseModal'));
             modal.show();
         }
@@ -3751,19 +3824,90 @@
             $('#expensePaidTo').val(e.paidTo || '');
             $('#expenseNotes').val(e.notes || '');
             loadExpenseCategories(e.categoryId, $('#expenseCategoryId'));
+            // Si tenía producto asociado, mostrarlo (solo lectura en edición)
+            _clearExpenseProductUI();
+            if (e.productId && e.productName) {
+                _setExpenseProduct({ id: e.productId, name: e.productName, unitCost: e.productUnitCost, stock: e.productStock }, e.productQty);
+            }
             var modal = new bootstrap.Modal(document.getElementById('expenseModal'));
             modal.show();
         }
 
+        function _clearExpenseProductUI() {
+            _expenseSelectedProduct = null;
+            $('#expenseProductId').val('');
+            $('#expenseProductSearch').val('');
+            $('#expenseProductResults').hide().empty();
+            $('#expenseProductSelected').hide();
+        }
+
+        function clearExpenseProduct() {
+            _clearExpenseProductUI();
+        }
+
+        function _setExpenseProduct(prod, qty) {
+            _expenseSelectedProduct = prod;
+            $('#expenseProductId').val(prod.id);
+            $('#expenseProductSearch').val(prod.name);
+            $('#expenseProductResults').hide().empty();
+            $('#expenseProductName').text(prod.name);
+            $('#expenseProductUnitCost').text(prod.unitCost ? '$' + parseFloat(prod.unitCost).toFixed(2) : '—');
+            $('#expenseProductStock').text(prod.stock != null ? prod.stock : '—');
+            $('#expenseProductQty').val(qty || 1);
+            $('#expenseProductSelected').show();
+            recalcExpenseAmount();
+        }
+
+        function recalcExpenseAmount() {
+            if (!_expenseSelectedProduct || !_expenseSelectedProduct.unitCost) return;
+            var qty = parseFloat($('#expenseProductQty').val()) || 1;
+            var cost = parseFloat(_expenseSelectedProduct.unitCost) || 0;
+            $('#expenseAmount').val((qty * cost).toFixed(2));
+        }
+
+        var _expenseSearchTimer = null;
+        function searchExpenseProduct(q) {
+            if (_expenseSearchTimer) clearTimeout(_expenseSearchTimer);
+            if (!q || q.length < 2) { $('#expenseProductResults').hide().empty(); return; }
+            _expenseSearchTimer = setTimeout(function() {
+                $.ajax({
+                    url: '/api/products',
+                    method: 'GET',
+                    data: { tenantId: 1, search: q, limit: 8 },
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
+                    success: function(res) {
+                        var prods = res.products || res || [];
+                        var $r = $('#expenseProductResults');
+                        $r.empty();
+                        if (!prods.length) { $r.hide(); return; }
+                        prods.forEach(function(p) {
+                            var cost = p.unitCost ? '$' + parseFloat(p.unitCost).toFixed(2) : 'sin costo';
+                            var btn = $('<button type="button" class="list-group-item list-group-item-action py-1 px-2 small"></button>')
+                                .html('<strong>' + p.name + '</strong> <span class="text-muted">— costo: ' + cost + '</span>');
+                            btn.on('click', function() {
+                                _setExpenseProduct({ id: p.id, name: p.name, unitCost: p.unitCost, stock: p.stock }, 1);
+                            });
+                            $r.append(btn);
+                        });
+                        $r.show();
+                    }
+                });
+            }, 300);
+        }
+
         function saveExpense() {
             var id = $('#expenseEditId').val();
+            var productId = $('#expenseProductId').val() || null;
+            var productQty = productId ? (parseFloat($('#expenseProductQty').val()) || 1) : null;
             var data = {
                 categoryId:  $('#expenseCategoryId').val() || null,
                 description: $('#expenseDescription').val().trim(),
                 amount:      parseFloat($('#expenseAmount').val()),
                 expenseDate: $('#expenseDate').val(),
                 paidTo:      $('#expensePaidTo').val().trim() || null,
-                notes:       $('#expenseNotes').val().trim() || null
+                notes:       $('#expenseNotes').val().trim() || null,
+                productId:   productId ? Number(productId) : null,
+                productQty:  productQty
             };
 
             if (!data.description) { alert('La descripción es requerida'); return; }
@@ -6350,6 +6494,7 @@
                     method: method,
                     processData: false,
                     contentType: false,
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
                     data: formData,
                     success: function(resp) {
                         const productId = resp && resp.id ? resp.id : (isEditing ? currentEditingProduct.id : null);
@@ -6359,6 +6504,7 @@
                                 url: '/api/products/' + productId + '/components',
                                 method: 'POST',
                                 contentType: 'application/json',
+                                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
                                 data: JSON.stringify({ tenantId: 1, components: componentsToSave }),
                                 success: function() {
                                     showAlert(isEditing ? 'Producto actualizado exitosamente' : 'Producto creado exitosamente', 'success');
@@ -6419,6 +6565,7 @@
                     url: url,
                     method: method,
                     contentType: 'application/json',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
                     data: JSON.stringify(formData),
                     success: function(resp) {
                         const productId = resp && resp.id ? resp.id : (isEditing ? currentEditingProduct.id : null);
@@ -6428,6 +6575,7 @@
                                 url: '/api/products/' + productId + '/components',
                                 method: 'POST',
                                 contentType: 'application/json',
+                                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
                                 data: JSON.stringify({ tenantId: 1, components: componentsToSave }),
                                 success: function() {
                                     showAlert(isEditing ? 'Producto actualizado exitosamente' : 'Producto creado exitosamente', 'success');
@@ -6601,6 +6749,8 @@
             $('#purchaseForm')[0].reset();
             $('#purchaseDate').val(new Date().toISOString().split('T')[0]);
             $('#purchaseCreditDays').val(0);
+            // Precargar IVA desde la tasa configurada en settings
+            $('#purchaseTaxRate').val(currentTaxRate != null ? currentTaxRate : 0);
             purchaseItems = [];
             updatePurchaseItemsTable();
             // Load suppliers into the select
@@ -6628,82 +6778,89 @@
             }
         }
 
+        var _purchaseItemSearchTimer = null;
+
         function addPurchaseItem() {
-            // Load simple products for selection
-            $.ajax({
-                url: '/api/products',
-                method: 'GET',
-                data: {
-                    tenantId: 1,
-                    productType: 'SIMPLE',
-                    isActive: true,
-                    limit: 100
-                },
-                success: function(response) {
-                    const select = $('#purchaseItemProduct');
-                    select.empty();
-                    select.append('<option value="">Seleccione un producto...</option>');
-                    
-                    response.products.forEach(product => {
-                        select.append(`
-                            <option value="${product.id}" data-price="${product.salePrice}">
-                                ${product.name} (${product.sku})
-                            </option>
-                        `);
-                    });
-                    
-                    // Set suggested sale price when product is selected
-                    $('#purchaseItemProduct').change(function() {
-                        const selectedOption = $(this).find('option:selected');
-                        const suggestedPrice = selectedOption.data('price');
-                        if (suggestedPrice) {
-                            // Could show suggested price somewhere
+            // Limpiar búsqueda anterior y abrir modal directamente
+            $('#purchaseItemProduct').val('');
+            $('#purchaseItemProductSearch').val('');
+            $('#purchaseItemProductResults').hide().empty();
+            $('#purchaseItemProductSelected').hide();
+            $('#purchaseItemQuantity').val('');
+            $('#purchaseItemUnitCost').val('');
+            const modal = new bootstrap.Modal(document.getElementById('purchaseItemModal'));
+            modal.show();
+            setTimeout(function() { $('#purchaseItemProductSearch').focus(); }, 300);
+        }
+
+        function searchPurchaseProduct(q) {
+            if (_purchaseItemSearchTimer) clearTimeout(_purchaseItemSearchTimer);
+            var $r = $('#purchaseItemProductResults');
+            if (!q || q.length < 1) { $r.hide().empty(); return; }
+            _purchaseItemSearchTimer = setTimeout(function() {
+                $.ajax({
+                    url: '/api/products',
+                    method: 'GET',
+                    data: { tenantId: 1, productType: 'SIMPLE', isActive: true, search: q, limit: 12 },
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
+                    success: function(res) {
+                        var prods = res.products || [];
+                        $r.empty();
+                        if (!prods.length) {
+                            $r.html('<div class="list-group-item text-muted small">Sin resultados</div>').show();
+                            return;
                         }
-                    });
-                    
-                    const modal = new bootstrap.Modal(document.getElementById('purchaseItemModal'));
-                    modal.show();
-                },
-                error: function() {
-                    showAlert('Error al cargar productos', 'danger');
-                }
-            });
+                        prods.forEach(function(p) {
+                            var btn = $('<button type="button" class="list-group-item list-group-item-action py-1 px-2 small"></button>')
+                                .html('<strong>' + p.name + '</strong> <span class="text-muted">SKU: ' + (p.sku || '—') + '</span>' +
+                                      (p.unitCost ? ' <span class="text-success ms-1">$' + parseFloat(p.unitCost).toFixed(2) + '</span>' : ''));
+                            btn.on('click', function() { selectPurchaseItemProduct(p); });
+                            $r.append(btn);
+                        });
+                        $r.show();
+                    }
+                });
+            }, 250);
+        }
+
+        function selectPurchaseItemProduct(p) {
+            $('#purchaseItemProduct').val(p.id);
+            $('#purchaseItemProductSearch').val(p.name + (p.sku ? ' (' + p.sku + ')' : ''));
+            $('#purchaseItemProductResults').hide().empty();
+            $('#purchaseItemProductSelectedName').text(p.name);
+            $('#purchaseItemProductSelected').show();
+            // Precargar costo unitario si el producto tiene uno registrado
+            if (p.unitCost) $('#purchaseItemUnitCost').val(parseFloat(p.unitCost).toFixed(2));
+            $('#purchaseItemQuantity').focus();
+        }
+
+        function clearPurchaseItemProduct() {
+            $('#purchaseItemProduct').val('');
+            $('#purchaseItemProductSearch').val('').focus();
+            $('#purchaseItemProductResults').hide().empty();
+            $('#purchaseItemProductSelected').hide();
         }
         
         function confirmAddPurchaseItem() {
             const productId = $('#purchaseItemProduct').val();
-            const quantity = parseFloat($('#purchaseItemQuantity').val());
-            const unitCost = parseFloat($('#purchaseItemUnitCost').val());
-            
-            if (!productId || !quantity || quantity <= 0 || !unitCost || unitCost < 0) {
-                showAlert('Por favor complete todos los campos correctamente', 'warning');
-                return;
-            }
-            
-            // Get product name
-            const productName = $('#purchaseItemProduct option:selected').text();
-            
-            // Check if product already in cart
+            const quantity  = parseFloat($('#purchaseItemQuantity').val());
+            const unitCost  = parseFloat($('#purchaseItemUnitCost').val());
+
+            if (!productId) { showAlert('Seleccione un producto', 'warning'); return; }
+            if (!quantity || quantity <= 0) { showAlert('Ingrese una cantidad válida', 'warning'); return; }
+            if (isNaN(unitCost) || unitCost < 0) { showAlert('Ingrese un costo unitario válido', 'warning'); return; }
+
+            const productName = $('#purchaseItemProductSelectedName').text() || $('#purchaseItemProductSearch').val();
             const existingIndex = purchaseItems.findIndex(item => item.productId === parseInt(productId));
             if (existingIndex >= 0) {
-                // Update existing item
                 purchaseItems[existingIndex].quantity += quantity;
-                purchaseItems[existingIndex].unitCost = (purchaseItems[existingIndex].unitCost + unitCost) / 2; // Average cost
+                purchaseItems[existingIndex].unitCost = unitCost;
             } else {
-                // Add new item
-                purchaseItems.push({
-                    productId: parseInt(productId),
-                    productName: productName,
-                    quantity: quantity,
-                    unitCost: unitCost
-                });
+                purchaseItems.push({ productId: parseInt(productId), productName, quantity, unitCost });
             }
-            
+
             updatePurchaseItemsTable();
-            
-            // Close modal and reset form
             bootstrap.Modal.getInstance(document.getElementById('purchaseItemModal')).hide();
-            $('#purchaseItemForm')[0].reset();
         }
 
         function updatePurchaseItemsTable() {
@@ -6712,7 +6869,7 @@
             if (purchaseItems.length === 0) {
                 tbody.html(`
                     <tr>
-                        <td colspan="6" class="text-center text-muted">
+                        <td colspan="5" class="text-center text-muted">
                             Haga clic en "Agregar Producto" para añadir items
                         </td>
                     </tr>
@@ -6727,28 +6884,21 @@
             purchaseItems.forEach((item, index) => {
                 const subtotal = item.quantity * item.unitCost;
                 total += subtotal;
-                
-                // Get suggested sale price (would need to fetch from product)
-                const suggestedPrice = item.unitCost * 1.5; // Simple markup
-                
+
                 const row = `
                     <tr>
                         <td>${item.productName}</td>
                         <td>
-                            <input type="number" class="form-control form-control-sm" 
+                            <input type="number" class="form-control form-control-sm"
                                    value="${item.quantity}" step="0.001" min="0.001"
                                    onchange="updatePurchaseItemQuantity(${index}, this.value)">
                         </td>
                         <td>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">$</span>
-                                <input type="number" class="form-control" 
-                                       value="${item.unitCost.toFixed(2)}" step="0.01" min="0"
-                                       onchange="updatePurchaseItemCost(${index}, this.value)">
-                            </div>
+                            <input type="number" class="form-control form-control-sm" style="min-width:72px"
+                                   value="${item.unitCost.toFixed(2)}" step="0.01" min="0"
+                                   onchange="updatePurchaseItemCost(${index}, this.value)">
                         </td>
-                        <td>$${suggestedPrice.toFixed(2)}</td>
-                        <td>$${subtotal.toFixed(2)}</td>
+                        <td style="white-space:nowrap">$${subtotal.toFixed(2)}</td>
                         <td>
                             <button class="btn btn-sm btn-outline-danger" onclick="removePurchaseItem(${index})">
                                 <i class="bi bi-trash"></i>
@@ -6759,9 +6909,20 @@
                 tbody.append(row);
             });
             
+            $('#purchaseSubtotal').text('$' + total.toFixed(2));
+            recalcPurchaseTotals();
+        }
+
+        function recalcPurchaseTotals() {
+            var subtotalText = $('#purchaseSubtotal').text().replace('$', '').replace(/,/g, '');
+            var subtotal = parseFloat(subtotalText) || 0;
+            var taxRate  = parseFloat($('#purchaseTaxRate').val()) || 0;
+            var taxAmt   = subtotal * taxRate / 100;
+            var total    = subtotal + taxAmt;
+            $('#purchaseTaxAmount').text('$' + taxAmt.toFixed(2));
             $('#purchaseTotal').text('$' + total.toFixed(2));
         }
-        
+
         function updatePurchaseItemQuantity(index, quantity) {
             if (quantity > 0) {
                 purchaseItems[index].quantity = parseFloat(quantity);
@@ -6804,6 +6965,10 @@
                 unitCost: item.unitCost
             }));
 
+            var taxRate = parseFloat($('#purchaseTaxRate').val()) || 0;
+            var subtotalVal = purchaseItems.reduce(function(s, i) { return s + i.quantity * i.unitCost; }, 0);
+            var taxAmount = subtotalVal * taxRate / 100;
+
             $.ajax({
                 url: '/api/purchases',
                 method: 'POST',
@@ -6815,7 +6980,8 @@
                     invoiceNumber: invoiceNumber,
                     creditDays: creditDays,
                     items: items,
-                    notes: notes
+                    notes: notes,
+                    taxAmount: taxAmount
                 }),
                 success: function() {
                     showAlert('Compra registrada exitosamente', 'success');
@@ -7022,7 +7188,10 @@
                 filtered = filtered.filter(p => parseInt(p.presentationId, 10) === pid);
             }
             if (searchTerm) {
-                filtered = filtered.filter(p => (p.name || '').toLowerCase().indexOf(searchTerm) >= 0);
+                filtered = filtered.filter(p =>
+                    (p.name || '').toLowerCase().indexOf(searchTerm) >= 0 ||
+                    (p.sku  || '').toLowerCase().indexOf(searchTerm) >= 0
+                );
             }
             // Misma lógica que cliente: mostrar con stock, en carrito, o cuando hay filtro activo
             // stockInfo ya viene cart-aware del bulk (combo+individual, caja/six)
@@ -7434,21 +7603,28 @@
             });
         };
 
-        // Escanear para buscar producto en compras (selecciona por SKU en el <select>)
+        // Escanear para buscar producto en compras (busca en API por SKU)
         window.scanForPurchaseProduct = function() {
             openBarcodeScanner(function(code) {
-                var sel = document.getElementById('purchaseItemProduct');
-                if (!sel) return;
-                var found = false;
-                for (var i = 0; i < sel.options.length; i++) {
-                    if (sel.options[i].text.toLowerCase().includes(code.toLowerCase())) {
-                        sel.value = sel.options[i].value;
-                        $(sel).trigger('change');
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) showAlert('Producto con código "' + code + '" no encontrado', 'warning');
+                $.ajax({
+                    url: '/api/products',
+                    method: 'GET',
+                    data: { tenantId: 1, productType: 'SIMPLE', isActive: true, search: code, limit: 5 },
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
+                    success: function(res) {
+                        var prods = res.products || [];
+                        if (prods.length === 0) {
+                            showAlert('Producto con código "' + code + '" no encontrado', 'warning');
+                        } else if (prods.length === 1) {
+                            selectPurchaseItemProduct(prods[0]);
+                        } else {
+                            // Múltiples resultados: mostrar en el buscador
+                            $('#purchaseItemProductSearch').val(code);
+                            searchPurchaseProduct(code);
+                        }
+                    },
+                    error: function() { showAlert('Error al buscar el producto', 'danger'); }
+                });
             });
         };
 
