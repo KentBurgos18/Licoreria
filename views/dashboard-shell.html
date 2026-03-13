@@ -2994,7 +2994,8 @@
                 updateMobileNavActive(sectionToShow);
             }
             
-            // Cargar datos de la sección (sin actualizar URL para evitar movimiento)
+            // Cargar datos de la sección inicial (marcar como cargada para evitar doble carga)
+            _markSectionLoaded(sectionToShow);
             switch(sectionToShow) {
                 case 'dashboard':
                     loadDashboardData();
@@ -3460,7 +3461,7 @@
                     allProductsList = response.products;
                     displayProducts(response.products);
 
-                    // Cargar stock en paralelo y actualizar solo las celdas
+                    // Cargar stock en paralelo y actualizar SOLO las celdas (sin re-renderizar)
                     const productIds = response.products.map(p => p.id);
                     $.ajax({
                         url: '/api/products/availability/bulk',
@@ -3474,12 +3475,18 @@
                             });
                             response.products.forEach(product => {
                                 const av = availabilityMap[product.id];
-                                product.currentStock = av
+                                const stock = av
                                     ? (av.productType === 'SIMPLE' ? (av.currentStock || 0) : (av.availableStock || 0))
                                     : 0;
+                                product.currentStock = stock;
+                                // Actualizar solo la celda de stock sin re-renderizar la fila
+                                const stockClass = stock > 10 ? 'stock-high' : stock > 5 ? 'stock-medium' : stock > 0 ? 'stock-low' : 'stock-zero';
+                                const $row = $(`#productsTable tr[data-product-id="${product.id}"] td`).eq(7);
+                                if ($row.length) {
+                                    $row.html(`<span class="stock-indicator ${stockClass}"></span>${stock}`);
+                                }
                             });
                             allProductsList = response.products;
-                            displayProducts(response.products);
                         }
                     });
                 },
