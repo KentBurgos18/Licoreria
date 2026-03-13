@@ -105,9 +105,7 @@
     window.initProductsView = function() {
       if (typeof loadCategoriesForDropdowns === 'function') loadCategoriesForDropdowns();
       if (typeof loadPresentationsForDropdowns === 'function') loadPresentationsForDropdowns();
-      if (typeof loadProducts === 'function' && typeof _sectionNeedsReload === 'function') {
-        if (_sectionNeedsReload('products')) { _markSectionLoaded('products'); loadProducts(); }
-      } else if (typeof loadProducts === 'function') {
+      if (typeof loadProducts === 'function') {
         loadProducts();
       }
     };
