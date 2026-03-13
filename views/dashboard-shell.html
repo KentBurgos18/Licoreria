@@ -2572,6 +2572,21 @@
     <script src="/libs/js/google-maps-helper.js"></script>
     <script>
         // Global variables
+        // Caché por sección: evita recargar datos si se navegó hace menos de 60s
+        var _sectionLastLoaded = {};
+        var SECTION_CACHE_TTL = 60000; // 60 segundos
+        function _sectionNeedsReload(section) {
+            var last = _sectionLastLoaded[section] || 0;
+            return (Date.now() - last) > SECTION_CACHE_TTL;
+        }
+        function _markSectionLoaded(section) {
+            _sectionLastLoaded[section] = Date.now();
+        }
+        // Invalidar caché de una sección (llamar cuando se crea/edita/elimina algo)
+        function _invalidateSection(section) {
+            _sectionLastLoaded[section] = 0;
+        }
+
         let currentEditingProduct = null;
         let currentEditingCustomer = null;
         let currentEditingUser = null;
@@ -3111,47 +3126,50 @@
             if (section === 'sell') document.body.classList.add('section-sell');
             if (typeof updateSellCart === 'function') updateSellCart();
             
-            // Load section-specific data
-            switch(section) {
-                case 'dashboard':
-                    loadDashboardData();
-                    break;
-                case 'products':
-                    loadProducts();
-                    break;
-                case 'suppliers':
-                    loadSuppliers();
-                    loadPendingSupplierPayments();
-                    checkSupplierDebtsAndNotify();
-                    break;
-                case 'purchases':
-                    loadPurchases();
-                    loadPurchaseSupplierFilter();
-                    break;
-                case 'audit':
-                    initAuditSection();
-                    break;
-                case 'settings':
-                    loadSettings();
-                    break;
-                case 'sell':
-                    loadSellProducts();
-                    break;
-                case 'sales':
-                    loadSales();
-                    break;
-                case 'group-purchases':
-                    loadGroupPurchases();
-                    break;
-                case 'credits':
-                    loadCredits();
-                    break;
-                case 'customers':
-                    loadCustomers();
-                    break;
-                case 'users':
-                    loadUsers();
-                    break;
+            // Load section-specific data (con caché de 60s)
+            if (_sectionNeedsReload(section)) {
+                _markSectionLoaded(section);
+                switch(section) {
+                    case 'dashboard':
+                        loadDashboardData();
+                        break;
+                    case 'products':
+                        loadProducts();
+                        break;
+                    case 'suppliers':
+                        loadSuppliers();
+                        loadPendingSupplierPayments();
+                        checkSupplierDebtsAndNotify();
+                        break;
+                    case 'purchases':
+                        loadPurchases();
+                        loadPurchaseSupplierFilter();
+                        break;
+                    case 'audit':
+                        initAuditSection();
+                        break;
+                    case 'settings':
+                        loadSettings();
+                        break;
+                    case 'sell':
+                        loadSellProducts();
+                        break;
+                    case 'sales':
+                        loadSales();
+                        break;
+                    case 'group-purchases':
+                        loadGroupPurchases();
+                        break;
+                    case 'credits':
+                        loadCredits();
+                        break;
+                    case 'customers':
+                        loadCustomers();
+                        break;
+                    case 'users':
+                        loadUsers();
+                        break;
+                }
             }
             // Aplicar modo lectura (ocultar botones de acción) si el permiso es 'read'
             if (section !== 'dashboard') {
@@ -3613,7 +3631,14 @@
         var _profitData = null;
         var _profitPeriod = 'today';
 
+        var _profitCache = { ts: 0, data: null };
         function loadProfitability() {
+            // Caché de 5 minutos — es la query más pesada del dashboard
+            if (_profitCache.data && (Date.now() - _profitCache.ts) < 300000) {
+                _profitData = _profitCache.data;
+                renderProfitPanel(_profitPeriod);
+                return;
+            }
             $.ajax({
                 url: '/api/sales/stats/profitability',
                 method: 'GET',
@@ -3621,6 +3646,7 @@
                 data: { tenantId: 1 },
                 success: function(data) {
                     _profitData = data;
+                    _profitCache = { ts: Date.now(), data: data };
                     // Update KPI cards (month)
                     var m = data.month;
                     var fmtMoney = function(n) {

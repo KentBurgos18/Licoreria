@@ -1092,6 +1092,25 @@ async function initializeApp() {
       console.warn('⚠️ Migración expenses product_id/product_qty:', e.message);
     }
 
+    // Índices de rendimiento
+    try {
+      // Sales: consultas de rentabilidad y estadísticas
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_sales_tenant_status_created   ON sales(tenant_id, status, created_at)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_sale_items_product            ON sale_items(product_id, tenant_id)`);
+      // Purchase orders: cálculo de COGS
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_purchase_orders_tenant_date   ON purchase_orders(tenant_id, purchase_date)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_purchase_orders_tenant_status ON purchase_orders(tenant_id, status)`);
+      // Expenses: resumen mensual/anual
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_expenses_tenant_date          ON expenses(tenant_id, expense_date)`);
+      // Products: filtros de lista
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_products_tenant_type_active   ON products(tenant_id, product_type, is_active)`);
+      // Inventory movements: cálculo de costos promedio y stock
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_inv_mov_tenant_product_type   ON inventory_movements(tenant_id, product_id, movement_type)`);
+      console.log('✅ Índices de rendimiento verificados');
+    } catch (e) {
+      console.warn('⚠️ Índices de rendimiento:', e.message);
+    }
+
     // Sync models (create tables if they don't exist)
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: true });
