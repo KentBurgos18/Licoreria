@@ -3454,49 +3454,30 @@
                 url: '/api/products',
                 method: 'GET',
                 data: { tenantId: 1, limit: 500 },
-                cache: false,
                 success: function(response) {
+                    // Mostrar tabla inmediatamente sin esperar el stock
+                    response.products.forEach(p => { p.currentStock = null; });
+                    allProductsList = response.products;
+                    displayProducts(response.products);
+
+                    // Cargar stock en paralelo y actualizar solo las celdas
                     const productIds = response.products.map(p => p.id);
-                    
-                    // Get availability for all products
                     $.ajax({
                         url: '/api/products/availability/bulk',
                         method: 'POST',
                         contentType: 'application/json',
-                        data: JSON.stringify({
-                            tenantId: 1,
-                            productIds: productIds
-                        }),
+                        data: JSON.stringify({ tenantId: 1, productIds: productIds }),
                         success: function(availabilityResponse) {
-                            // Merge stock info into products
                             const availabilityMap = {};
                             availabilityResponse.products.forEach(av => {
                                 availabilityMap[av.productId] = av;
                             });
-                            
                             response.products.forEach(product => {
-                                const availability = availabilityMap[product.id];
-                                if (availability) {
-                                    if (availability.productType === 'SIMPLE') {
-                                        product.currentStock = availability.currentStock || 0;
-                                    } else {
-                                        product.currentStock = availability.availableStock || 0;
-                                    }
-                                } else {
-                                    product.currentStock = 0;
-                                }
+                                const av = availabilityMap[product.id];
+                                product.currentStock = av
+                                    ? (av.productType === 'SIMPLE' ? (av.currentStock || 0) : (av.availableStock || 0))
+                                    : 0;
                             });
-                            
-                            // Store all products for real-time filtering
-                            allProductsList = response.products;
-                            displayProducts(response.products);
-                        },
-                        error: function() {
-                            // Fallback: display without stock
-                            response.products.forEach(product => {
-                                product.currentStock = 0;
-                            });
-                            // Store all products for real-time filtering
                             allProductsList = response.products;
                             displayProducts(response.products);
                         }
@@ -3526,9 +3507,10 @@
                 const poolName = (product.baseProduct && product.baseProduct.name) ? '<span class="badge bg-warning text-dark">' + product.baseProduct.name + '</span>' : '<span class="text-muted">—</span>';
                 const taxBadge = product.taxApplies !== false ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-secondary">No</span>';
 
-                const stockIndicator = product.currentStock > 10 ? 'stock-high' :
-                                     product.currentStock > 5 ? 'stock-medium' :
-                                     product.currentStock > 0 ? 'stock-low' : 'stock-zero';
+                const stockIndicator = product.currentStock === null ? '' :
+                                     product.currentStock > 10 ? 'stock-high' :
+                                     product.currentStock > 5  ? 'stock-medium' :
+                                     product.currentStock > 0  ? 'stock-low' : 'stock-zero';
 
                 const row = `
                     <tr data-product-id="${product.id}">
