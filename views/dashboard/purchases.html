@@ -75,6 +75,9 @@
             </div>
         </div>
   <script>
-    window.initPurchasesView = function() { if (typeof loadPurchases === 'function') loadPurchases(); };
+    window.initPurchasesView = function() {
+      if (typeof loadPurchases === 'function') loadPurchases();
+      if (typeof loadPurchaseSupplierFilter === 'function') loadPurchaseSupplierFilter();
+    };
   </script>
 </div>

@@ -87,6 +87,10 @@
             </div>
         </div>
   <script>
-    window.initSuppliersView = function() { if (typeof loadSuppliers === 'function') loadSuppliers(); };
+    window.initSuppliersView = function() {
+      if (typeof loadSuppliers === 'function') loadSuppliers();
+      if (typeof loadPendingSupplierPayments === 'function') loadPendingSupplierPayments();
+      if (typeof checkSupplierDebtsAndNotify === 'function') checkSupplierDebtsAndNotify();
+    };
   </script>
 </div>

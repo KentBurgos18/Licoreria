@@ -86,6 +86,9 @@
         </div>
         </div>
   <script>
-    window.initExpensesView = function() { if (typeof loadExpenses === 'function') loadExpenses(); };
+    window.initExpensesView = function() {
+      if (typeof loadExpenses === 'function') loadExpenses();
+      if (typeof loadExpenseSummary === 'function') loadExpenseSummary();
+    };
   </script>
 </div>
