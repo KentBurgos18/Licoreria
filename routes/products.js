@@ -51,24 +51,38 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   fileFilter: function (req, file, cb) {
-    // Accept images only
     if (!file.mimetype.startsWith('image/')) {
       return cb(new Error('Solo se permiten imágenes'), false);
     }
     cb(null, true);
   },
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB max file size
+    fileSize: 20 * 1024 * 1024 // 20MB — sharp comprime después
   }
 });
+
+// Wrapper para capturar errores de multer y retornar 400 en vez de 500
+function uploadSingle(field) {
+  return function(req, res, next) {
+    upload.single(field)(req, res, function(err) {
+      if (err) {
+        const msg = err.code === 'LIMIT_FILE_SIZE'
+          ? 'La imagen es demasiado grande (máximo 20 MB)'
+          : err.message || 'Error al subir la imagen';
+        return res.status(400).json({ error: msg });
+      }
+      next();
+    });
+  };
+}
 
 const router = express.Router();
 
 // POST /products - Create product (SIMPLE or COMBO) - ADMIN only
-router.post('/', requireRole('ADMIN'), upload.single('image'), async (req, res) => {
+router.post('/', requireRole('ADMIN'), uploadSingle('image'), async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     // Parse FormData values (they come as strings)
@@ -432,7 +446,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // PUT /products/:id - Update product - ADMIN only
-router.put('/:id', requireRole('ADMIN'), upload.single('image'), async (req, res) => {
+router.put('/:id', requireRole('ADMIN'), uploadSingle('image'), async (req, res) => {
   try {
     const { id } = req.params;
     const {
