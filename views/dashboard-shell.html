@@ -2131,6 +2131,7 @@
                             <thead>
                                 <tr>
                                     <th>Cliente</th>
+                                    <th>Pago</th>
                                     <th>Monto a Pagar</th>
                                     <th>Pagado</th>
                                     <th>Pendiente</th>
@@ -3917,7 +3918,7 @@
             $('#expenseModalTitle').text('Nuevo Gasto');
             $('#expenseDescription').val('');
             $('#expenseAmount').val('');
-            $('#expenseDate').val(new Date().toISOString().slice(0, 10));
+            var _ed = new Date(); $('#expenseDate').val(_ed.getFullYear() + '-' + String(_ed.getMonth()+1).padStart(2,'0') + '-' + String(_ed.getDate()).padStart(2,'0'));
             $('#expensePaidTo').val('');
             $('#expenseNotes').val('');
             loadExpenseCategories(null, $('#expenseCategoryId'));
@@ -5228,9 +5229,15 @@
                             
                             const dueDateText = participant.dueDate ? new Date(participant.dueDate).toLocaleDateString('es-ES') : 'N/A';
                             
+                            const pmLabels = { CASH: '💵 Efectivo', TRANSFER: '📲 Transferencia', CREDIT: '🏦 Crédito' };
+                            const pmLabel = pmLabels[participant.paymentMethod] || (participant.paymentMethod || '—');
+                            const accountInfo = participant.paymentMethod === 'TRANSFER' && participant.transferAccountInfo
+                                ? `<br><small class="text-muted">${participant.transferAccountInfo}</small>` : '';
+
                             const row = `
                                 <tr>
                                     <td>${participant.customer ? participant.customer.name : 'N/A'}</td>
+                                    <td>${pmLabel}${accountInfo}</td>
                                     <td>$${amountDue.toFixed(2)}</td>
                                     <td>$${amountPaid.toFixed(2)}</td>
                                     <td>$${remaining.toFixed(2)}</td>
@@ -5294,7 +5301,7 @@
             $('#participantPaymentParticipantId').val(participantId);
             $('#participantPaymentAmount').val('');
             $('#participantPaymentMethod').val('CASH');
-            $('#participantPaymentDate').val(new Date().toISOString().split('T')[0]);
+            var _pd = new Date(); $('#participantPaymentDate').val(_pd.getFullYear() + '-' + String(_pd.getMonth()+1).padStart(2,'0') + '-' + String(_pd.getDate()).padStart(2,'0'));
             $('#participantPaymentNotes').val('');
             
             const modal = new bootstrap.Modal(document.getElementById('participantPaymentModal'));
@@ -5472,7 +5479,7 @@
             $('#creditPaymentCreditId').val(creditId);
             $('#creditPaymentAmount').val('');
             $('#creditPaymentMethod').val('CASH');
-            $('#creditPaymentDate').val(new Date().toISOString().split('T')[0]);
+            var _cpd = new Date(); $('#creditPaymentDate').val(_cpd.getFullYear() + '-' + String(_cpd.getMonth()+1).padStart(2,'0') + '-' + String(_cpd.getDate()).padStart(2,'0'));
             $('#creditPaymentNotes').val('');
             
             $.ajax({
