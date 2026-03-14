@@ -6094,7 +6094,7 @@
             $.ajax({
                 url: '/api/products',
                 method: 'GET',
-                data: { tenantId: 1, productType: 'SIMPLE', isActive: 'true' },
+                data: { tenantId: 1, productType: 'SIMPLE', isActive: 'true', limit: 500 },
                 success: function(data) {
                     var products = (data.products || []).filter(function(p) {
                         if (p.baseProductId) return false;
