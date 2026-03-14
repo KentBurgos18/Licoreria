@@ -4185,7 +4185,20 @@
                     </tr>`);
                 });
             }
-            // Siempre usar el total de la orden (fuente de verdad)
+            // Subtotal derivado de ítems; IVA = totalAmount - itemsSubtotal
+            var itemsSubtotal = displayRows.reduce(function(sum, row) {
+                var qty = parseFloat(row.quantity != null ? row.quantity : row.qty || 0);
+                var uc  = parseFloat(row.unitCost || 0);
+                return sum + qty * uc;
+            }, 0);
+            var taxAmount = Math.round((totalAmount - itemsSubtotal) * 100) / 100;
+            var taxRow = taxAmount > 0.005
+                ? `<tr><td colspan="3" class="text-end text-muted">IVA</td><td class="text-end">$${taxAmount.toFixed(2)}</td></tr>`
+                : '';
+            var subtotalRow = taxAmount > 0.005
+                ? `<tr><td colspan="3" class="text-end text-muted">Subtotal</td><td class="text-end">$${itemsSubtotal.toFixed(2)}</td></tr>`
+                : '';
+            itemsTbody.append(subtotalRow + taxRow);
             $('#purchaseDetailTotal').text('$' + totalAmount.toFixed(2));
 
             new bootstrap.Modal(document.getElementById('purchaseDetailModal')).show();
@@ -6861,7 +6874,8 @@
 
         function showCreatePurchaseModal() {
             $('#purchaseForm')[0].reset();
-            $('#purchaseDate').val(new Date().toISOString().split('T')[0]);
+            var _dn = new Date(); var _localDate = _dn.getFullYear() + '-' + String(_dn.getMonth()+1).padStart(2,'0') + '-' + String(_dn.getDate()).padStart(2,'0');
+            $('#purchaseDate').val(_localDate);
             $('#purchaseCreditDays').val(0);
             // Precargar IVA desde la tasa configurada en settings
             $('#purchaseTaxRate').val(currentTaxRate != null ? currentTaxRate : 0);
