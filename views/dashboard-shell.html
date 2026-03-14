@@ -6090,18 +6090,24 @@
             });
         }
 
-        function loadBaseProductOptions(excludeId) {
+        function loadBaseProductOptions(excludeId, onlyIndividual) {
             $.ajax({
                 url: '/api/products',
                 method: 'GET',
                 data: { tenantId: 1, productType: 'SIMPLE', isActive: 'true' },
                 success: function(data) {
                     var products = (data.products || []).filter(function(p) {
-                        return !p.baseProductId && (!excludeId || p.id != excludeId);
+                        if (p.baseProductId) return false;
+                        if (excludeId && p.id == excludeId) return false;
+                        if (onlyIndividual && parseFloat(p.unitsPerSale || 1) !== 1) return false;
+                        return true;
                     });
-                    var opts = '<option value="">Ninguno (es producto base)</option>';
+                    var label = onlyIndividual
+                        ? 'Ninguno (es producto base individual)'
+                        : 'Ninguno (es producto base)';
+                    var opts = '<option value="">' + label + '</option>';
                     products.forEach(function(p) {
-                        opts += '<option value="' + p.id + '">' + p.name + ' (' + p.sku + ')</option>';
+                        opts += '<option value="' + p.id + '">' + p.name + ' (' + (p.sku || '—') + ')</option>';
                     });
                     $('#productBaseProduct').html(opts);
                 },
@@ -6109,14 +6115,20 @@
             });
         }
 
-        // Auto-fill unitsPerSale when presentation changes
+        // Auto-fill unitsPerSale when presentation changes + filtrar producto base
         $(document).on('change', '#productPresentation', function() {
             var selId = $(this).val();
+            var excludeId = $('#productId').val() || null;
             if (selId) {
                 var pres = allPresentations.find(function(p) { return p.id == selId; });
                 if (pres) {
                     $('#productUnitsPerSale').val(pres.unitsPerSale);
+                    var onlyIndividual = parseFloat(pres.unitsPerSale || 1) > 1;
+                    loadBaseProductOptions(excludeId, onlyIndividual);
                 }
+            } else {
+                $('#productUnitsPerSale').val(1);
+                loadBaseProductOptions(excludeId, false);
             }
         });
 
