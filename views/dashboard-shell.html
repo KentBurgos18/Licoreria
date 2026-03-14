@@ -3743,11 +3743,6 @@
         }
 
         function loadProfitability() {
-            // Caché de 5 minutos — es la query más pesada del dashboard
-            if (_profitCache.data && (Date.now() - _profitCache.ts) < 300000) {
-                applyProfitData(_profitCache.data);
-                return;
-            }
             $.ajax({
                 url: '/api/sales/stats/profitability',
                 method: 'GET',
