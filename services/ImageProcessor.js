@@ -43,7 +43,7 @@ async function processProductImage(filePath) {
 
     if (!needsResize && !needsCompress) return; // ya está bien
 
-    const tmpPath = path.join(os.tmpdir(), 'lb-img-' + Date.now() + '.jpg');
+    const tmpPath = path.join(path.dirname(filePath), '.tmp-' + Date.now() + '.jpg');
 
     await sharp(filePath)
       .rotate()                    // corrige orientación EXIF automáticamente
