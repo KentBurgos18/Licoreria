@@ -1803,7 +1803,15 @@
                                                 <span class="input-group-text px-1">%</span>
                                             </div>
                                         </td>
-                                        <td class="text-end border-0 py-1" id="purchaseTaxAmount">$0.00</td>
+                                        <td class="text-end border-0 py-1">
+                                            <div class="input-group input-group-sm" style="width:115px;margin-left:auto">
+                                                <span class="input-group-text px-1">$</span>
+                                                <input type="number" id="purchaseTaxAmount" class="form-control form-control-sm text-end"
+                                                    value="0" min="0" step="0.01"
+                                                    oninput="recalcPurchaseTotalFromAmount()"
+                                                    style="padding:2px 4px" title="Editable: ajusta si la factura muestra un valor diferente">
+                                            </div>
+                                        </td>
                                     </tr>
                                     <tr style="border-top:2px solid var(--th-border,#dee2e6)">
                                         <td class="fw-bold pt-2 border-0">Total</td>
@@ -6891,8 +6899,19 @@
             var _dn = new Date(); var _localDate = _dn.getFullYear() + '-' + String(_dn.getMonth()+1).padStart(2,'0') + '-' + String(_dn.getDate()).padStart(2,'0');
             $('#purchaseDate').val(_localDate);
             $('#purchaseCreditDays').val(0);
-            // Precargar IVA desde la tasa configurada en settings
-            $('#purchaseTaxRate').val(currentTaxRate != null ? currentTaxRate : 0);
+            // Precargar IVA desde settings (lectura fresca del servidor)
+            $.ajax({
+                url: '/api/settings/tax_rate', method: 'GET', data: { tenantId: 1 },
+                success: function(resp) {
+                    var rate = parseFloat(resp.value);
+                    if (!isNaN(rate)) { currentTaxRate = rate; }
+                    $('#purchaseTaxRate').val(currentTaxRate != null ? currentTaxRate : 0);
+                    recalcPurchaseTotals();
+                },
+                error: function() {
+                    $('#purchaseTaxRate').val(currentTaxRate != null ? currentTaxRate : 0);
+                }
+            });
             purchaseItems = [];
             updatePurchaseItemsTable();
             // Load suppliers into the select
@@ -7059,9 +7078,17 @@
             var subtotalText = $('#purchaseSubtotal').text().replace('$', '').replace(/,/g, '');
             var subtotal = parseFloat(subtotalText) || 0;
             var taxRate  = parseFloat($('#purchaseTaxRate').val()) || 0;
-            var taxAmt   = subtotal * taxRate / 100;
+            var taxAmt   = Math.round(subtotal * taxRate) / 100;
             var total    = subtotal + taxAmt;
-            $('#purchaseTaxAmount').text('$' + taxAmt.toFixed(2));
+            $('#purchaseTaxAmount').val(taxAmt.toFixed(2));
+            $('#purchaseTotal').text('$' + total.toFixed(2));
+        }
+
+        function recalcPurchaseTotalFromAmount() {
+            var subtotalText = $('#purchaseSubtotal').text().replace('$', '').replace(/,/g, '');
+            var subtotal = parseFloat(subtotalText) || 0;
+            var taxAmt   = parseFloat($('#purchaseTaxAmount').val()) || 0;
+            var total    = subtotal + taxAmt;
             $('#purchaseTotal').text('$' + total.toFixed(2));
         }
 
@@ -7107,9 +7134,7 @@
                 unitCost: item.unitCost
             }));
 
-            var taxRate = parseFloat($('#purchaseTaxRate').val()) || 0;
-            var subtotalVal = purchaseItems.reduce(function(s, i) { return s + i.quantity * i.unitCost; }, 0);
-            var taxAmount = subtotalVal * taxRate / 100;
+            var taxAmount = parseFloat($('#purchaseTaxAmount').val()) || 0;
 
             $.ajax({
                 url: '/api/purchases',
