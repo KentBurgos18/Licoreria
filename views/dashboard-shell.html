@@ -6099,7 +6099,7 @@
                     var products = (data.products || []).filter(function(p) {
                         if (p.baseProductId) return false;
                         if (excludeId && p.id == excludeId) return false;
-                        if (onlyIndividual && parseFloat(p.unitsPerSale || 1) !== 1) return false;
+                        if (onlyIndividual && (!p.presentation || parseFloat(p.presentation.unitsPerSale || 1) !== 1)) return false;
                         return true;
                     });
                     var label = onlyIndividual
