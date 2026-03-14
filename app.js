@@ -1111,6 +1111,15 @@ async function initializeApp() {
       console.warn('⚠️ Índices de rendimiento:', e.message);
     }
 
+    // Migración: asegurar que el check constraint de sales.payment_method incluye CREDIT
+    try {
+      await sequelize.query(`ALTER TABLE sales DROP CONSTRAINT IF EXISTS sales_payment_method_check`);
+      await sequelize.query(`ALTER TABLE sales ADD CONSTRAINT sales_payment_method_check CHECK (payment_method IN ('CASH', 'CARD', 'TRANSFER', 'CREDIT'))`);
+      console.log('✅ Constraint sales_payment_method_check actualizado');
+    } catch (e) {
+      console.warn('⚠️ Constraint sales_payment_method_check:', e.message);
+    }
+
     // Sync models (create tables if they don't exist)
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: true });
