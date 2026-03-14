@@ -502,7 +502,9 @@
             }
 
             if (wasEmpty && !localStorage.getItem('cartExpiresAt')) {
-                localStorage.setItem('cartExpiresAt', String(Date.now() + cartReservationMinutes * 60 * 1000));
+                var cartTotalMs = cartReservationMinutes * 60 * 1000;
+                localStorage.setItem('cartExpiresAt', String(Date.now() + cartTotalMs));
+                localStorage.setItem('cartTotalMs', String(cartTotalMs));
             }
             localStorage.setItem('customerCart', JSON.stringify(cart));
             updateCartBar();

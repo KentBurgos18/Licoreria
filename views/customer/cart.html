@@ -431,6 +431,7 @@
             if (expiresAt && Date.now() >= expiresAt) {
                 localStorage.removeItem('customerCart');
                 localStorage.removeItem('cartExpiresAt');
+                localStorage.removeItem('cartTotalMs');
                 cart = [];
             }
 
@@ -598,7 +599,7 @@
             setTimeout(function() {
                 cart.splice(index, 1);
                 localStorage.setItem('customerCart', JSON.stringify(cart));
-                if (cart.length === 0) localStorage.removeItem('cartExpiresAt');
+                if (cart.length === 0) { localStorage.removeItem('cartExpiresAt'); localStorage.removeItem('cartTotalMs'); }
                 displayCart();
             }, 200);
         }
@@ -662,7 +663,7 @@
                 clearInterval(window._cartTimerInterval);
                 window._cartTimerInterval = null;
             }
-            var totalMs = 15 * 60 * 1000;
+            var totalMs = parseInt(localStorage.getItem('cartTotalMs'), 10) || 15 * 60 * 1000;
 
             function tick() {
                 var currentCart   = JSON.parse(localStorage.getItem('customerCart')) || [];
@@ -684,6 +685,7 @@
                 if (remaining <= 0) {
                     localStorage.removeItem('customerCart');
                     localStorage.removeItem('cartExpiresAt');
+                localStorage.removeItem('cartTotalMs');
                     cart = [];
                     clearInterval(window._cartTimerInterval);
                     window._cartTimerInterval = null;
@@ -716,6 +718,7 @@
             if (expiresAt && Date.now() >= expiresAt) {
                 localStorage.removeItem('customerCart');
                 localStorage.removeItem('cartExpiresAt');
+                localStorage.removeItem('cartTotalMs');
                 cart = [];
             } else {
                 cart = JSON.parse(localStorage.getItem('customerCart')) || [];

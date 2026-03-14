@@ -1060,6 +1060,7 @@
             if (expiresAt && Date.now() >= expiresAt) {
                 localStorage.removeItem('customerCart');
                 localStorage.removeItem('cartExpiresAt');
+                localStorage.removeItem('cartTotalMs');
                 cart = [];
                 if (window.spaNavigate) window.spaNavigate('/customer/catalog'); else window.location.href = '/customer/catalog';
                 return;
@@ -1853,6 +1854,7 @@
                             showAlert('¡Pedido realizado exitosamente!', 'success');
                             localStorage.removeItem('customerCart');
                             localStorage.removeItem('cartExpiresAt');
+                localStorage.removeItem('cartTotalMs');
                             cart = [];
                             setTimeout(function() { if (window.spaNavigate) window.spaNavigate('/customer/orders'); else window.location.href = '/customer/orders'; }, 2000);
                         },
@@ -2088,6 +2090,7 @@
                 waitModal.hide();
                 localStorage.removeItem('customerCart');
                 localStorage.removeItem('cartExpiresAt');
+                localStorage.removeItem('cartTotalMs');
                 cart = [];
                 $.get('/api/public/brand-slogan', function(r) {
                     const slogan = (r && r.brandSlogan) ? r.brandSlogan : 'Sistema de Licorería';
@@ -2108,6 +2111,7 @@
                 waitModal.hide();
                 localStorage.removeItem('customerCart');
                 localStorage.removeItem('cartExpiresAt');
+                localStorage.removeItem('cartTotalMs');
                 cart = [];
                 const cancelledModal = new bootstrap.Modal(document.getElementById('orderCancelledModal'));
                 cancelledModal.show();
@@ -2164,7 +2168,7 @@
                 clearInterval(window._cartTimerInterval);
                 window._cartTimerInterval = null;
             }
-            var totalDuration = cartReservationMinutes * 60 * 1000;
+            var totalDuration = parseInt(localStorage.getItem('cartTotalMs'), 10) || cartReservationMinutes * 60 * 1000;
             function tick() {
                 var currentCart = JSON.parse(localStorage.getItem('customerCart')) || [];
                 var banner = document.getElementById('cartExpiryBanner');
@@ -2182,6 +2186,7 @@
                 if (remaining <= 0) {
                     localStorage.removeItem('customerCart');
                     localStorage.removeItem('cartExpiresAt');
+                localStorage.removeItem('cartTotalMs');
                     cart = [];
                     clearInterval(window._cartTimerInterval);
                     window._cartTimerInterval = null;
@@ -2231,6 +2236,7 @@
             if (expiresAt && Date.now() >= expiresAt) {
                 localStorage.removeItem('customerCart');
                 localStorage.removeItem('cartExpiresAt');
+                localStorage.removeItem('cartTotalMs');
                 cart = [];
                 if (window.spaNavigate) window.spaNavigate('/customer/catalog'); else window.location.href = '/customer/catalog';
                 return;
