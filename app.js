@@ -1120,6 +1120,14 @@ async function initializeApp() {
       console.warn('⚠️ Constraint sales_payment_method_check:', e.message);
     }
 
+    // Migración: agregar transfer_account_info a group_purchase_participants
+    try {
+      await sequelize.query(`ALTER TABLE group_purchase_participants ADD COLUMN IF NOT EXISTS transfer_account_info VARCHAR(255)`);
+      console.log('✅ Migración group_purchase_participants.transfer_account_info completada');
+    } catch (e) {
+      console.warn('⚠️ Migración transfer_account_info:', e.message);
+    }
+
     // Sync models (create tables if they don't exist)
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: true });

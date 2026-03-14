@@ -66,6 +66,11 @@ module.exports = (sequelize) => {
       type: DataTypes.DATE,
       allowNull: true,
       field: 'paid_at'
+    },
+    transferAccountInfo: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'transfer_account_info'
     }
   }, {
     tableName: 'group_purchase_participants',

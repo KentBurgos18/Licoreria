@@ -2101,7 +2101,7 @@
 
     <!-- Group Purchase Details Modal -->
     <div class="modal fade" id="groupPurchaseDetailsModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Detalles de Compra Grupal #<span id="groupPurchaseDetailsId"></span></h5>
@@ -5229,7 +5229,7 @@
                             
                             const dueDateText = participant.dueDate ? new Date(participant.dueDate).toLocaleDateString('es-ES') : 'N/A';
                             
-                            const pmLabels = { CASH: '💵 Efectivo', TRANSFER: '📲 Transferencia', CREDIT: '🏦 Crédito' };
+                            const pmLabels = { CASH: 'Efectivo', TRANSFER: 'Transferencia', CREDIT: 'Crédito' };
                             const pmLabel = pmLabels[participant.paymentMethod] || (participant.paymentMethod || '—');
                             const accountInfo = participant.paymentMethod === 'TRANSFER' && participant.transferAccountInfo
                                 ? `<br><small class="text-muted">${participant.transferAccountInfo}</small>` : '';

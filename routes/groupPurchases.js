@@ -257,6 +257,7 @@ router.post('/from-cart', async (req, res) => {
         amountDue,
         amountPaid,
         paymentMethod: payMethod,
+        transferAccountInfo: payMethod === 'TRANSFER' ? (pData.transferAccountInfo || null) : null,
         status: amountPaid >= amountDue ? 'PAID' : 'PENDING',
         dueDate: pData.dueDate || null,
         interestRate: pData.interestRate || 0,
