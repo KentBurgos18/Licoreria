@@ -11578,6 +11578,22 @@
     </script>
 
     <script src="/js/dashboard-spa-router.js"></script>
-    <script>document.body.style.visibility='visible';</script>
+    <script>
+        document.body.style.visibility='visible';
+        // Si Bootstrap no cargó (CSS falló silenciosamente al abrir PWA), recargar una vez
+        (function() {
+            var t = document.createElement('div');
+            t.className = 'container';
+            document.body.appendChild(t);
+            var loaded = getComputedStyle(t).maxWidth !== 'none';
+            document.body.removeChild(t);
+            if (!loaded && !sessionStorage.getItem('_cssReloaded')) {
+                sessionStorage.setItem('_cssReloaded', '1');
+                window.location.reload(true);
+            } else {
+                sessionStorage.removeItem('_cssReloaded');
+            }
+        })();
+    </script>
 </body>
 </html>
