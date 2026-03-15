@@ -502,44 +502,45 @@ router.get('/stats/monthly-total', async (req, res) => {
 // GET /sales/stats/profitability - Rentabilidad (ingresos, COGS, gastos, ganancia neta)
 router.get('/stats/profitability', async (req, res) => {
   try {
-    const { tenantId } = req.query;
+    const { tenantId, localDate } = req.query;
     if (!tenantId) return res.status(400).json({ error: 'tenantId is required' });
     const tid = parseInt(tenantId);
+    const today = localDate || new Date().toISOString().slice(0, 10);
 
     const rows = await sequelize.query(`
       WITH
       sales_agg AS (
         SELECT
-          COALESCE(SUM(CASE WHEN DATE(created_at AT TIME ZONE 'UTC') = CURRENT_DATE THEN total_amount ELSE 0 END), 0)::float AS today_rev,
-          COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('week', NOW()) THEN total_amount ELSE 0 END), 0)::float AS week_rev,
-          COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('month', NOW()) THEN total_amount ELSE 0 END), 0)::float AS month_rev,
-          COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('month', NOW() - INTERVAL '1 month')
-            AND created_at < DATE_TRUNC('month', NOW()) THEN total_amount ELSE 0 END), 0)::float AS prev_rev
+          COALESCE(SUM(CASE WHEN DATE(created_at AT TIME ZONE 'America/Guayaquil') = :today::date THEN total_amount ELSE 0 END), 0)::float AS today_rev,
+          COALESCE(SUM(CASE WHEN DATE(created_at AT TIME ZONE 'America/Guayaquil') >= DATE_TRUNC('week', :today::date) THEN total_amount ELSE 0 END), 0)::float AS week_rev,
+          COALESCE(SUM(CASE WHEN DATE(created_at AT TIME ZONE 'America/Guayaquil') >= DATE_TRUNC('month', :today::date) THEN total_amount ELSE 0 END), 0)::float AS month_rev,
+          COALESCE(SUM(CASE WHEN DATE(created_at AT TIME ZONE 'America/Guayaquil') >= DATE_TRUNC('month', :today::date - INTERVAL '1 month')
+            AND DATE(created_at AT TIME ZONE 'America/Guayaquil') < DATE_TRUNC('month', :today::date) THEN total_amount ELSE 0 END), 0)::float AS prev_rev
         FROM sales
         WHERE tenant_id = :tid AND status = 'COMPLETED'
       ),
       cogs_agg AS (
         SELECT
-          COALESCE(SUM(CASE WHEN purchase_date = CURRENT_DATE THEN total_amount ELSE 0 END), 0)::float AS today_cogs,
-          COALESCE(SUM(CASE WHEN purchase_date >= DATE_TRUNC('week', CURRENT_DATE) THEN total_amount ELSE 0 END), 0)::float AS week_cogs,
-          COALESCE(SUM(CASE WHEN purchase_date >= DATE_TRUNC('month', CURRENT_DATE) THEN total_amount ELSE 0 END), 0)::float AS month_cogs,
-          COALESCE(SUM(CASE WHEN purchase_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
-            AND purchase_date < DATE_TRUNC('month', CURRENT_DATE) THEN total_amount ELSE 0 END), 0)::float AS prev_cogs
+          COALESCE(SUM(CASE WHEN purchase_date = :today::date THEN total_amount ELSE 0 END), 0)::float AS today_cogs,
+          COALESCE(SUM(CASE WHEN purchase_date >= DATE_TRUNC('week', :today::date) THEN total_amount ELSE 0 END), 0)::float AS week_cogs,
+          COALESCE(SUM(CASE WHEN purchase_date >= DATE_TRUNC('month', :today::date) THEN total_amount ELSE 0 END), 0)::float AS month_cogs,
+          COALESCE(SUM(CASE WHEN purchase_date >= DATE_TRUNC('month', :today::date - INTERVAL '1 month')
+            AND purchase_date < DATE_TRUNC('month', :today::date) THEN total_amount ELSE 0 END), 0)::float AS prev_cogs
         FROM purchase_orders
         WHERE tenant_id = :tid
       ),
       exp_agg AS (
         SELECT
-          COALESCE(SUM(CASE WHEN expense_date = CURRENT_DATE THEN amount ELSE 0 END), 0)::float AS today_exp,
-          COALESCE(SUM(CASE WHEN expense_date >= DATE_TRUNC('week', CURRENT_DATE) THEN amount ELSE 0 END), 0)::float AS week_exp,
-          COALESCE(SUM(CASE WHEN expense_date >= DATE_TRUNC('month', CURRENT_DATE) THEN amount ELSE 0 END), 0)::float AS month_exp,
-          COALESCE(SUM(CASE WHEN expense_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
-            AND expense_date < DATE_TRUNC('month', CURRENT_DATE) THEN amount ELSE 0 END), 0)::float AS prev_exp
+          COALESCE(SUM(CASE WHEN expense_date = :today::date THEN amount ELSE 0 END), 0)::float AS today_exp,
+          COALESCE(SUM(CASE WHEN expense_date >= DATE_TRUNC('week', :today::date) THEN amount ELSE 0 END), 0)::float AS week_exp,
+          COALESCE(SUM(CASE WHEN expense_date >= DATE_TRUNC('month', :today::date) THEN amount ELSE 0 END), 0)::float AS month_exp,
+          COALESCE(SUM(CASE WHEN expense_date >= DATE_TRUNC('month', :today::date - INTERVAL '1 month')
+            AND expense_date < DATE_TRUNC('month', :today::date) THEN amount ELSE 0 END), 0)::float AS prev_exp
         FROM expenses
         WHERE tenant_id = :tid
       )
       SELECT s.*, c.*, e.* FROM sales_agg s, cogs_agg c, exp_agg e
-    `, { replacements: { tid }, type: sequelize.QueryTypes.SELECT });
+    `, { replacements: { tid, today }, type: sequelize.QueryTypes.SELECT });
 
     const r = rows[0] || {};
 

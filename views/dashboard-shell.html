@@ -3755,7 +3755,7 @@
                 url: '/api/sales/stats/profitability',
                 method: 'GET',
                 headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
-                data: { tenantId: 1 },
+                data: { tenantId: 1, localDate: (function(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })() },
                 success: function(data) {
                     _profitCache = { ts: Date.now(), data: data };
                     applyProfitData(data);
@@ -11612,17 +11612,18 @@
     <script src="/js/dashboard-spa-router.js"></script>
     <script>
         document.body.style.visibility='visible';
-        // Si Bootstrap no cargó (CSS falló silenciosamente al abrir PWA), recargar una vez
+        // Si Bootstrap no cargó (CSS falló silenciosamente al abrir PWA), recargar hasta 2 veces
         (function() {
             var t = document.createElement('div');
-            t.className = 'container';
+            t.className = 'd-none';
             document.body.appendChild(t);
-            var loaded = getComputedStyle(t).maxWidth !== 'none';
+            var loaded = getComputedStyle(t).display === 'none';
             document.body.removeChild(t);
-            if (!loaded && !sessionStorage.getItem('_cssReloaded')) {
-                sessionStorage.setItem('_cssReloaded', '1');
+            var attempts = parseInt(sessionStorage.getItem('_cssReloaded') || '0', 10);
+            if (!loaded && attempts < 2) {
+                sessionStorage.setItem('_cssReloaded', String(attempts + 1));
                 window.location.reload(true);
-            } else {
+            } else if (loaded) {
                 sessionStorage.removeItem('_cssReloaded');
             }
         })();
