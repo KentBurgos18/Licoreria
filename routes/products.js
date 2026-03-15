@@ -101,6 +101,7 @@ router.post('/', requireRole('ADMIN'), uploadSingle('image'), async (req, res) =
     const presentationId = req.body.presentationId && req.body.presentationId !== '' && req.body.presentationId !== 'null' ? parseInt(req.body.presentationId) : null;
     const unitsPerSale = req.body.unitsPerSale !== undefined && req.body.unitsPerSale !== '' ? parseFloat(req.body.unitsPerSale) : 1;
     const taxApplies = req.body.taxApplies !== 'false' && req.body.taxApplies !== false;
+    const isReturnable = req.body.isReturnable === 'true' || req.body.isReturnable === true;
 
     // Parse components if it's a string (from FormData)
     let components = req.body.components;
@@ -205,6 +206,7 @@ router.post('/', requireRole('ADMIN'), uploadSingle('image'), async (req, res) =
       presentationId,
       unitsPerSale,
       taxApplies,
+      isReturnable,
       stockMin: productType === 'SIMPLE' ? stockMin : null,
       unitCost: unitCost !== undefined && unitCost !== null ? unitCost : null,
       createdAt: new Date()
@@ -502,6 +504,7 @@ router.put('/:id', requireRole('ADMIN'), uploadSingle('image'), async (req, res)
     if (presentationId !== undefined) updates.presentationId = presentationId === '' || presentationId === 'null' || presentationId === null ? null : parseInt(presentationId);
     if (unitsPerSale !== undefined) updates.unitsPerSale = parseFloat(unitsPerSale) || 1;
     if (taxApplies !== undefined) updates.taxApplies = taxApplies === 'true' || taxApplies === true;
+    if (req.body.isReturnable !== undefined) updates.isReturnable = req.body.isReturnable === 'true' || req.body.isReturnable === true;
     if (unitCost !== undefined) updates.unitCost = (unitCost !== null && unitCost !== '') ? parseFloat(unitCost) : null;
 
     // Only update stockMin for SIMPLE products

@@ -86,6 +86,12 @@ module.exports = (sequelize) => {
       defaultValue: true,
       field: 'tax_applies'
     },
+    isReturnable: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'is_returnable'
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,

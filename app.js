@@ -1128,6 +1128,14 @@ async function initializeApp() {
       console.warn('⚠️ Migración transfer_account_info:', e.message);
     }
 
+    // Migración: agregar is_returnable a products
+    try {
+      await sequelize.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_returnable BOOLEAN NOT NULL DEFAULT false`);
+      console.log('✅ Migración products.is_returnable completada');
+    } catch (e) {
+      console.warn('⚠️ Migración is_returnable:', e.message);
+    }
+
     // Sync models (create tables if they don't exist)
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: true });

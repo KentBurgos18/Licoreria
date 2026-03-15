@@ -1548,6 +1548,14 @@
                                     </label>
                                 </div>
                             </div>
+                            <div class="col-md-4 d-flex align-items-center pt-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="productIsReturnable">
+                                    <label class="form-check-label" for="productIsReturnable">
+                                        <i class="bi bi-arrow-repeat"></i> Retornable
+                                    </label>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="row mt-3">
@@ -3629,6 +3637,8 @@
                 const row = `
                     <tr data-product-id="${product.id}">
                         <td>
+                            <div style="position:relative;display:inline-block">
+                            ${product.isReturnable ? `<span style="position:absolute;top:0;left:0;background:#0d6efd;color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:6px 0 6px 0;z-index:1;line-height:1.2;letter-spacing:.3px">RET.</span>` : ''}
                             ${product.imageUrl ?
                                 `<img src="${product.imageUrl}" alt="${product.name}"
                                       style="width: 56px; height: 56px; object-fit: cover; border-radius: 6px;
@@ -3641,6 +3651,7 @@
                                     <i class="bi bi-image"></i>
                                  </div>`
                             }
+                            </div>
                         </td>
                         <td class="fw-semibold">${product.name}</td>
                         <td>${categoryName}</td>
@@ -6386,6 +6397,7 @@
             $('#productBaseProduct').val('');
             $('#productUnitsPerSale').val('1');
             $('#productTaxApplies').prop('checked', true);
+            $('#productIsReturnable').prop('checked', false);
             $('#presentationRow').show();
             
             // Load categories, presentations and component options
@@ -6421,6 +6433,7 @@
                     $('#productStatus').val(product.isActive.toString());
                     $('#productCategory').val(product.categoryId || '');
                     $('#productTaxApplies').prop('checked', product.taxApplies !== false);
+                    $('#productIsReturnable').prop('checked', product.isReturnable === true);
 
                     // Set presentation/pool fields after a short delay to allow dropdowns to load
                     setTimeout(function() {
@@ -6619,6 +6632,7 @@
                 formData.append('baseProductId', $('#productBaseProduct').val() || '');
                 formData.append('unitsPerSale', $('#productUnitsPerSale').val() || '1');
                 formData.append('taxApplies', $('#productTaxApplies').is(':checked'));
+                formData.append('isReturnable', $('#productIsReturnable').is(':checked'));
 
                 if ($('#productType').val() === 'SIMPLE') {
                     const stockMin = $('#productStockMin').val();
@@ -6701,6 +6715,7 @@
                     baseProductId: $('#productBaseProduct').val() || null,
                     unitsPerSale: parseFloat($('#productUnitsPerSale').val()) || 1,
                     taxApplies: $('#productTaxApplies').is(':checked'),
+                    isReturnable: $('#productIsReturnable').is(':checked'),
                     components: $('#productType').val() === 'COMBO' ? comboComponents : undefined
                 };
 
