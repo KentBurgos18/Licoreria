@@ -1880,7 +1880,7 @@
                             <label class="form-label">Costo Unitario <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
-                                <input type="number" class="form-control" id="purchaseItemUnitCost" step="0.01" min="0" required>
+                                <input type="number" class="form-control" id="purchaseItemUnitCost" step="0.0001" min="0" required>
                             </div>
                         </div>
                     </form>
@@ -6991,7 +6991,7 @@
             $('#purchaseItemProductSelectedName').text(p.name);
             $('#purchaseItemProductSelected').show();
             // Precargar costo unitario si el producto tiene uno registrado
-            if (p.unitCost) $('#purchaseItemUnitCost').val(parseFloat(p.unitCost).toFixed(2));
+            if (p.unitCost) $('#purchaseItemUnitCost').val(parseFloat(p.unitCost).toFixed(4));
             $('#purchaseItemQuantity').focus();
         }
 
@@ -7055,8 +7055,8 @@
                                    onchange="updatePurchaseItemQuantity(${index}, this.value)">
                         </td>
                         <td>
-                            <input type="number" class="form-control form-control-sm" style="min-width:72px"
-                                   value="${item.unitCost.toFixed(2)}" step="0.01" min="0"
+                            <input type="number" class="form-control form-control-sm" style="min-width:90px"
+                                   value="${item.unitCost.toFixed(4)}" step="0.0001" min="0"
                                    onchange="updatePurchaseItemCost(${index}, this.value)">
                         </td>
                         <td style="white-space:nowrap">$${subtotal.toFixed(2)}</td>

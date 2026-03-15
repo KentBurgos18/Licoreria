@@ -521,13 +521,13 @@ router.get('/stats/profitability', async (req, res) => {
       ),
       cogs_agg AS (
         SELECT
-          COALESCE(SUM(CASE WHEN purchase_date = :today::date THEN total_amount ELSE 0 END), 0)::float AS today_cogs,
-          COALESCE(SUM(CASE WHEN purchase_date >= DATE_TRUNC('week', :today::date) THEN total_amount ELSE 0 END), 0)::float AS week_cogs,
-          COALESCE(SUM(CASE WHEN purchase_date >= DATE_TRUNC('month', :today::date) THEN total_amount ELSE 0 END), 0)::float AS month_cogs,
-          COALESCE(SUM(CASE WHEN purchase_date >= DATE_TRUNC('month', :today::date - INTERVAL '1 month')
-            AND purchase_date < DATE_TRUNC('month', :today::date) THEN total_amount ELSE 0 END), 0)::float AS prev_cogs
+          COALESCE(SUM(CASE WHEN DATE(paid_at AT TIME ZONE 'America/Guayaquil') = :today::date THEN total_amount ELSE 0 END), 0)::float AS today_cogs,
+          COALESCE(SUM(CASE WHEN DATE(paid_at AT TIME ZONE 'America/Guayaquil') >= DATE_TRUNC('week', :today::date) THEN total_amount ELSE 0 END), 0)::float AS week_cogs,
+          COALESCE(SUM(CASE WHEN DATE(paid_at AT TIME ZONE 'America/Guayaquil') >= DATE_TRUNC('month', :today::date) THEN total_amount ELSE 0 END), 0)::float AS month_cogs,
+          COALESCE(SUM(CASE WHEN DATE(paid_at AT TIME ZONE 'America/Guayaquil') >= DATE_TRUNC('month', :today::date - INTERVAL '1 month')
+            AND DATE(paid_at AT TIME ZONE 'America/Guayaquil') < DATE_TRUNC('month', :today::date) THEN total_amount ELSE 0 END), 0)::float AS prev_cogs
         FROM purchase_orders
-        WHERE tenant_id = :tid
+        WHERE tenant_id = :tid AND paid_at IS NOT NULL
       ),
       exp_agg AS (
         SELECT
