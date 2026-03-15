@@ -6109,7 +6109,7 @@
             });
         }
 
-        function loadBaseProductOptions(excludeId, onlyIndividual) {
+        function loadBaseProductOptions(excludeId, onlyIndividual, afterLoad) {
             $.ajax({
                 url: '/api/products',
                 method: 'GET',
@@ -6129,6 +6129,7 @@
                         opts += '<option value="' + p.id + '">' + p.name + ' (' + (p.sku || '—') + ')</option>';
                     });
                     $('#productBaseProduct').html(opts);
+                    if (afterLoad) afterLoad();
                 },
                 error: function() { console.warn('No se pudieron cargar productos base'); }
             });
@@ -6413,7 +6414,6 @@
         function editProduct(productId) {
             loadCategoriesForDropdowns();
             loadPresentationsForDropdowns();
-            loadBaseProductOptions(productId);
             $.ajax({
                 url: `/api/products/${productId}`,
                 method: 'GET',
@@ -6421,10 +6421,10 @@
                 success: function(product) {
                     currentEditingProduct = product;
                     $('#productModalTitle').text('Editar Producto');
-                    
+
                     // Hide initial stock section when editing
                     $('#initialStockSection').hide();
-                    
+
                     // Populate form with product data
                     $('#productName').val(product.name);
                     $('#productSku').val(product.sku);
@@ -6435,12 +6435,17 @@
                     $('#productTaxApplies').prop('checked', product.taxApplies !== false);
                     $('#productIsReturnable').prop('checked', product.isReturnable === true);
 
-                    // Set presentation/pool fields after a short delay to allow dropdowns to load
+                    // Set presentation and unitsPerSale after dropdowns load
                     setTimeout(function() {
                         $('#productPresentation').val(product.presentationId || '');
-                        $('#productBaseProduct').val(product.baseProductId || '');
                         $('#productUnitsPerSale').val(product.unitsPerSale || 1);
                     }, 300);
+
+                    // Cargar opciones de producto base y setear el valor cuando ya estén listas
+                    var onlyIndividual = parseFloat(product.unitsPerSale || 1) > 1;
+                    loadBaseProductOptions(productId, onlyIndividual, function() {
+                        $('#productBaseProduct').val(product.baseProductId || '');
+                    });
                     
                     if (product.productType === 'SIMPLE') {
                         $('#presentationRow').show();
