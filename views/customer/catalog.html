@@ -458,12 +458,12 @@
                 const productCard = `
                     <div class="product-card${isCombo ? ' is-combo' : ''} position-relative">
                         ${isCombo ? '<span class="combo-badge position-absolute" style="top:8px;right:8px;z-index:1">COMBO</span>' : ''}
-                        <div class="product-card-image-wrap" style="position:relative;overflow:hidden">
+                        <div class="product-card-image-wrap">
                             ${product.imageUrl
                                 ? `<img src="${product.imageUrl}" alt="${nameEscaped}" class="lb-zoomable" data-src="${product.imageUrl.replace(/"/g,'&quot;')}" data-alt="${nameEscaped}">`
                                 : `<div class="product-card-image-placeholder"><i class="bi bi-image"></i></div>`}
-                            ${product.isReturnable ? `<span style="position:absolute;bottom:0;left:0;right:0;background:rgba(13,110,253,0.82);color:#fff;font-size:10px;font-weight:700;text-align:center;padding:3px 0;letter-spacing:.5px">RETORNABLE</span>` : ''}
                         </div>
+                        ${product.isReturnable ? `<span style="position:absolute;bottom:0;left:0;width:88px;background:#0d6efd;color:#fff;font-size:9px;font-weight:700;letter-spacing:.4px;text-align:center;padding:3px 0;border-radius:0 0 0 12px;z-index:2">&#x21BA; RETORNABLE</span>` : ''}
                         <div class="product-card-body">
                             <div class="pname" onclick="this.classList.toggle('expanded')">${product.name}</div>
                             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">

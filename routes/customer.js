@@ -163,6 +163,7 @@ router.get('/products', async (req, res) => {
         presentationId: product.presentationId || null,
         presentationName: product.presentation ? product.presentation.name : null,
         taxApplies: product.taxApplies !== false,
+        isReturnable: product.isReturnable === true,
         currentStock: availability?.currentStock ?? 0,
         availableForSale: availability?.availableForSale ?? false,
         components: product.components || []
