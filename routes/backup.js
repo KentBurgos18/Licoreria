@@ -29,63 +29,37 @@ function spawnPromise(cmd, args, opts = {}) {
   });
 }
 
-// GET /api/backup/download — genera .tar.gz con BD + imágenes y lo descarga
+// GET /api/backup/download — genera .tar.gz con BD (formato custom) + imágenes
 router.get('/download', requireRole('ADMIN'), async (req, res) => {
   const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
   const filename = `licoreria_backup_${timestamp}.tar.gz`;
   const tmpDir = path.join(os.tmpdir(), `backup_${Date.now()}`);
-  const sqlFile = path.join(tmpDir, 'database.sql');
+  const dumpFile = path.join(tmpDir, 'database.dump');
   const tarFile = path.join(os.tmpdir(), filename);
 
   try {
     fs.mkdirSync(tmpDir, { recursive: true });
 
-    // 1. Volcar la base de datos — stdout pipe al archivo; esperamos finish del stream
-    await new Promise((resolve, reject) => {
-      const pgDump = spawn('pg_dump', [
-        '-h', DB_HOST,
-        '-p', String(DB_PORT),
-        '-U', DB_USER,
-        '-d', DB_NAME,
-        '--clean',
-        '--if-exists',
-        '--no-owner',
-        '--no-acl',
-      ], { env: pgEnv() });
+    // 1. Volcar la BD en formato custom (-Fc): maneja dependencias FK correctamente
+    await spawnPromise('pg_dump', [
+      '-h', DB_HOST,
+      '-p', String(DB_PORT),
+      '-U', DB_USER,
+      '-d', DB_NAME,
+      '-Fc',            // formato custom (binario, pg_restore lo usa)
+      '--no-owner',
+      '--no-acl',
+      '-f', dumpFile,
+    ], { env: pgEnv() });
 
-      const outStream = fs.createWriteStream(sqlFile);
-      pgDump.stdout.pipe(outStream); // pipe cierra outStream automáticamente al terminar
+    if (!fs.existsSync(dumpFile) || fs.statSync(dumpFile).size === 0) {
+      throw new Error('pg_dump no generó datos. Verifica la conexión a la BD.');
+    }
 
-      let stderr = '';
-      let pgCode = null;
-      let streamDone = false;
-
-      function tryResolve() {
-        if (pgCode === null || !streamDone) return; // esperar ambos eventos
-        if (pgCode !== 0) {
-          reject(new Error(`pg_dump falló (código ${pgCode}): ${stderr.slice(0, 400)}`));
-        } else if (!fs.existsSync(sqlFile) || fs.statSync(sqlFile).size === 0) {
-          reject(new Error('pg_dump no generó datos. Verifica la conexión a la BD. ' + stderr.slice(0, 200)));
-        } else {
-          resolve();
-        }
-      }
-
-      pgDump.stderr.on('data', d => {
-        stderr += d.toString();
-        console.error('[backup] pg_dump:', d.toString().trim());
-      });
-      pgDump.on('error', err => reject(new Error('No se pudo ejecutar pg_dump: ' + err.message)));
-      pgDump.on('close', code => { pgCode = code; tryResolve(); });
-      outStream.on('finish', () => { streamDone = true; tryResolve(); });
-      outStream.on('error', err => reject(new Error('Error escribiendo backup: ' + err.message)));
-    });
-
-    // 2. Construir el .tar.gz usando cwd=tmpDir (compatible con BusyBox/Alpine tar)
+    // 2. Construir el .tar.gz usando cwd=tmpDir
     const uploadsExists = fs.existsSync(UPLOADS_DIR) && fs.readdirSync(UPLOADS_DIR).length > 0;
-    const filesToInclude = ['database.sql'];
+    const filesToInclude = ['database.dump'];
     if (uploadsExists) {
-      // Copiar uploads dentro del tmpDir para que tar los encuentre con ruta relativa
       try {
         await spawnPromise('cp', ['-rp', UPLOADS_DIR, path.join(tmpDir, 'uploads')]);
         filesToInclude.push('uploads');
@@ -93,7 +67,6 @@ router.get('/download', requireRole('ADMIN'), async (req, res) => {
         console.warn('[backup] No se pudieron incluir uploads (se omiten):', e.message);
       }
     }
-    // tar con cwd=tmpDir: todos los paths son relativos, sin -C
     await spawnPromise('tar', ['-czf', tarFile, ...filesToInclude], { cwd: tmpDir });
 
     // 3. Enviar archivo al cliente
@@ -113,7 +86,7 @@ router.get('/download', requireRole('ADMIN'), async (req, res) => {
   }
 });
 
-// POST /api/backup/restore — acepta .tar.gz (BD + imágenes) o .sql (solo BD)
+// POST /api/backup/restore — acepta .tar.gz (BD + imágenes) o .sql (solo BD, legacy)
 const upload = multer({
   dest: os.tmpdir(),
   limits: { fileSize: 500 * 1024 * 1024 },
@@ -136,19 +109,11 @@ router.post('/restore', requireRole('ADMIN'), upload.single('backup'), async (re
   const extractDir = path.join(os.tmpdir(), `restore_${Date.now()}`);
 
   try {
-    let sqlFile = filePath;
     let uploadsRestored = 0;
 
     if (isTarGz) {
-      // Extraer el .tar.gz a un directorio temporal
       fs.mkdirSync(extractDir, { recursive: true });
       await spawnPromise('tar', ['-xzf', filePath, '-C', extractDir]);
-
-      const extractedSql = path.join(extractDir, 'database.sql');
-      if (!fs.existsSync(extractedSql)) {
-        throw new Error('El archivo .tar.gz no contiene database.sql');
-      }
-      sqlFile = extractedSql;
 
       // Restaurar imágenes si vienen en el backup
       const extractedUploads = path.join(extractDir, 'uploads');
@@ -159,33 +124,53 @@ router.post('/restore', requireRole('ADMIN'), upload.single('backup'), async (re
           try { return fs.statSync(path.join(UPLOADS_DIR, f)).isFile(); } catch { return false; }
         }).length;
       }
-    }
 
-    // Restaurar base de datos
-    const stderr = await new Promise((resolve, reject) => {
-      const psql = spawn('psql', [
+      // Detectar formato: nuevo (.dump) o legacy (.sql)
+      const dumpFile = path.join(extractDir, 'database.dump');
+      const sqlFile = path.join(extractDir, 'database.sql');
+
+      if (fs.existsSync(dumpFile)) {
+        // Formato custom: pg_restore maneja orden de FKs correctamente
+        await spawnPromise('pg_restore', [
+          '-h', DB_HOST,
+          '-p', String(DB_PORT),
+          '-U', DB_USER,
+          '-d', DB_NAME,
+          '--clean',
+          '--if-exists',
+          '--no-owner',
+          '--no-acl',
+          '--exit-on-error',
+          dumpFile,
+        ], { env: pgEnv() });
+      } else if (fs.existsSync(sqlFile)) {
+        // Formato legacy .sql — desactivar FK checks para evitar errores de dependencias
+        await spawnPromise('psql', [
+          '-h', DB_HOST,
+          '-p', String(DB_PORT),
+          '-U', DB_USER,
+          '-d', DB_NAME,
+          '-c', 'SET session_replication_role = replica',
+          '-f', sqlFile,
+          '-c', 'SET session_replication_role = DEFAULT',
+        ], { env: pgEnv() });
+      } else {
+        throw new Error('El archivo .tar.gz no contiene database.dump ni database.sql');
+      }
+
+    } else {
+      // .sql legacy directo
+      await spawnPromise('psql', [
         '-h', DB_HOST,
         '-p', String(DB_PORT),
         '-U', DB_USER,
         '-d', DB_NAME,
-        '-f', sqlFile,
+        '-f', filePath,
       ], { env: pgEnv() });
-
-      let stderrBuf = '';
-      psql.stdout.on('data', d => process.stdout.write(d));
-      psql.stderr.on('data', d => { stderrBuf += d.toString(); process.stderr.write(d); });
-      psql.on('error', reject);
-      psql.on('close', code => {
-        if (code === 0 || code === 3) resolve(stderrBuf);
-        else reject(new Error(`psql salió con código ${code}: ${stderrBuf.slice(0, 400)}`));
-      });
-    });
-
-    const warnings = stderr.split('\n').filter(l => l.includes('ERROR')).length;
+    }
 
     res.json({
       message: 'Backup restaurado exitosamente',
-      warnings: warnings > 0 ? `${warnings} advertencia(s) en el log (normal en restauración completa)` : null,
       uploadsRestored: uploadsRestored > 0 ? `${uploadsRestored} imagen(es) restaurada(s)` : null,
     });
 

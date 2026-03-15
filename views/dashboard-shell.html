@@ -10912,7 +10912,7 @@
 
         // ── Backup / Restore ──────────────────────────────────────────────────
 
-        $('#backupFileInput').on('change', function() {
+        $(document).on('change', '#backupFileInput', function() {
             const file = this.files[0];
             if (file) {
                 $('#backupFileName').text(file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)');
