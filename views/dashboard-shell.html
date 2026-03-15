@@ -5227,8 +5227,16 @@
                         groupPurchase.participants.forEach(participant => {
                             const amountDue = parseFloat(participant.amountDue);
                             const amountPaid = parseFloat(participant.amountPaid || 0);
+                            // Leer interés acumulado real desde el crédito asociado
+                            var interestAmount = 0;
+                            if (participant.credit) {
+                                const bal = parseFloat(participant.credit.currentBalance || 0);
+                                const ini = parseFloat(participant.credit.initialAmount || 0);
+                                interestAmount = Math.max(0, bal - ini);
+                            } else {
+                                interestAmount = parseFloat(participant.interestAmount || 0);
+                            }
                             const remaining = amountDue - amountPaid;
-                            const interestAmount = parseFloat(participant.interestAmount || 0);
                             
                             let statusBadge = '';
                             if (participant.status === 'PAID') {
