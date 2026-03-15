@@ -130,14 +130,21 @@ router.post('/restore', requireRole('ADMIN'), upload.single('backup'), async (re
       const sqlFile = path.join(extractDir, 'database.sql');
 
       if (fs.existsSync(dumpFile)) {
-        // Formato custom: pg_restore maneja orden de FKs correctamente
+        // Limpiar el schema completo con CASCADE para evitar errores de FK
+        await spawnPromise('psql', [
+          '-h', DB_HOST,
+          '-p', String(DB_PORT),
+          '-U', DB_USER,
+          '-d', DB_NAME,
+          '-c', 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;',
+        ], { env: pgEnv() });
+
+        // pg_restore sin --clean (ya limpiamos arriba)
         await spawnPromise('pg_restore', [
           '-h', DB_HOST,
           '-p', String(DB_PORT),
           '-U', DB_USER,
           '-d', DB_NAME,
-          '--clean',
-          '--if-exists',
           '--no-owner',
           '--no-acl',
           '--exit-on-error',
