@@ -339,6 +339,163 @@ app.use('/api/notifications', authenticateAdmin, require('./routes/notifications
 app.use('/api/email', require('./routes/email'));
 app.use('/api/backup', authenticateAdmin, require('./routes/backup'));
 
+// API: Tesorería — resumen de ingresos por método de pago y cuenta bancaria
+app.get('/api/treasury', authenticateAdmin, async (req, res) => {
+  try {
+    const tenantId = parseInt(req.query.tenantId) || 1;
+
+    // Obtener cuentas bancarias registradas en settings
+    const raw = await Setting.getSetting(tenantId, 'bank_accounts', '[]');
+    let bankAccounts = [];
+    try { bankAccounts = JSON.parse(raw); } catch(e) { bankAccounts = []; }
+
+    // Ventas agrupadas por método de pago y transfer_account_info
+    const [salesRows] = await sequelize.query(`
+      SELECT
+        payment_method,
+        COALESCE(transfer_account_info, '') AS transfer_account_info,
+        SUM(total_amount) AS total
+      FROM sales
+      WHERE tenant_id = :tenantId
+        AND status != 'VOIDED'
+      GROUP BY payment_method, transfer_account_info
+    `, { replacements: { tenantId } });
+
+    // Cobros de crédito agrupados por método de pago y transfer_account_info
+    const [paymentsRows] = await sequelize.query(`
+      SELECT
+        payment_method,
+        COALESCE(transfer_account_info, '') AS transfer_account_info,
+        SUM(amount) AS total
+      FROM customer_payments
+      WHERE tenant_id = :tenantId
+      GROUP BY payment_method, transfer_account_info
+    `, { replacements: { tenantId } });
+
+    // Salidas: compras pagadas directamente (no crédito proveedor)
+    const [purchaseOutflowRows] = await sequelize.query(`
+      SELECT
+        COALESCE(payment_method, 'CASH') AS payment_method,
+        COALESCE(transfer_account_info, '') AS transfer_account_info,
+        SUM(total_amount) AS total
+      FROM purchase_orders
+      WHERE tenant_id = :tenantId
+        AND status != 'PENDING'
+        AND status != 'OVERDUE'
+        AND (payment_method IS NULL OR payment_method != 'SUPPLIER_CREDIT')
+      GROUP BY payment_method, transfer_account_info
+    `, { replacements: { tenantId } });
+
+    // Salidas: gastos
+    const [expenseOutflowRows] = await sequelize.query(`
+      SELECT
+        COALESCE(payment_method, 'CASH') AS payment_method,
+        COALESCE(transfer_account_info, '') AS transfer_account_info,
+        SUM(amount) AS total
+      FROM expenses
+      WHERE tenant_id = :tenantId
+      GROUP BY payment_method, transfer_account_info
+    `, { replacements: { tenantId } });
+
+    // Construir resumen
+    const summary = {
+      cash:     { salesTotal: 0, creditsTotal: 0, total: 0 },
+      card:     { salesTotal: 0, creditsTotal: 0, total: 0 },
+      transfer: {},
+      grandTotal: 0
+    };
+
+    // Outflows structure mirrors inflows
+    const outflows = {
+      cash:     { purchasesTotal: 0, expensesTotal: 0, total: 0 },
+      card:     { purchasesTotal: 0, expensesTotal: 0, total: 0 },
+      transfer: {},
+      grandTotal: 0
+    };
+
+    for (const row of salesRows) {
+      const amt = parseFloat(row.total) || 0;
+      const method = (row.payment_method || '').toUpperCase();
+      if (method === 'CASH') {
+        summary.cash.salesTotal += amt;
+      } else if (method === 'CARD') {
+        summary.card.salesTotal += amt;
+      } else if (method === 'TRANSFER') {
+        const key = row.transfer_account_info || 'unassigned';
+        if (!summary.transfer[key]) summary.transfer[key] = { salesTotal: 0, creditsTotal: 0, total: 0 };
+        summary.transfer[key].salesTotal += amt;
+      }
+    }
+
+    for (const row of paymentsRows) {
+      const amt = parseFloat(row.total) || 0;
+      const method = (row.payment_method || '').toUpperCase();
+      if (method === 'CASH') {
+        summary.cash.creditsTotal += amt;
+      } else if (method === 'CARD') {
+        summary.card.creditsTotal += amt;
+      } else if (method === 'TRANSFER') {
+        const key = row.transfer_account_info || 'unassigned';
+        if (!summary.transfer[key]) summary.transfer[key] = { salesTotal: 0, creditsTotal: 0, total: 0 };
+        summary.transfer[key].creditsTotal += amt;
+      }
+    }
+
+    for (const row of purchaseOutflowRows) {
+      const amt = parseFloat(row.total) || 0;
+      const method = (row.payment_method || '').toUpperCase();
+      if (method === 'CASH') {
+        outflows.cash.purchasesTotal += amt;
+      } else if (method === 'CARD') {
+        outflows.card.purchasesTotal += amt;
+      } else if (method === 'TRANSFER') {
+        const key = row.transfer_account_info || 'unassigned';
+        if (!outflows.transfer[key]) outflows.transfer[key] = { purchasesTotal: 0, expensesTotal: 0, total: 0 };
+        outflows.transfer[key].purchasesTotal += amt;
+      }
+    }
+
+    for (const row of expenseOutflowRows) {
+      const amt = parseFloat(row.total) || 0;
+      const method = (row.payment_method || '').toUpperCase();
+      if (method === 'CASH') {
+        outflows.cash.expensesTotal += amt;
+      } else if (method === 'CARD') {
+        outflows.card.expensesTotal += amt;
+      } else if (method === 'TRANSFER') {
+        const key = row.transfer_account_info || 'unassigned';
+        if (!outflows.transfer[key]) outflows.transfer[key] = { purchasesTotal: 0, expensesTotal: 0, total: 0 };
+        outflows.transfer[key].expensesTotal += amt;
+      }
+    }
+
+    // Calcular totales de ingresos
+    summary.cash.total = summary.cash.salesTotal + summary.cash.creditsTotal;
+    summary.card.total = summary.card.salesTotal + summary.card.creditsTotal;
+    let transferGrand = 0;
+    for (const key of Object.keys(summary.transfer)) {
+      summary.transfer[key].total = summary.transfer[key].salesTotal + summary.transfer[key].creditsTotal;
+      transferGrand += summary.transfer[key].total;
+    }
+    summary.grandTotal = summary.cash.total + summary.card.total + transferGrand;
+
+    // Calcular totales de egresos
+    outflows.cash.total = outflows.cash.purchasesTotal + outflows.cash.expensesTotal;
+    outflows.card.total = outflows.card.purchasesTotal + outflows.card.expensesTotal;
+    let outflowTransferGrand = 0;
+    for (const key of Object.keys(outflows.transfer)) {
+      outflows.transfer[key].total = outflows.transfer[key].purchasesTotal + outflows.transfer[key].expensesTotal;
+      outflowTransferGrand += outflows.transfer[key].total;
+    }
+    outflows.grandTotal = outflows.cash.total + outflows.card.total + outflowTransferGrand;
+
+    res.json({ bankAccounts, summary, outflows });
+  } catch (err) {
+    console.error('Error en /api/treasury:', err);
+    res.status(500).json({ error: 'Error al cargar tesorería' });
+  }
+});
+
 // View routes (continuación - rutas adicionales)
 app.get('/dashboard.html', (req, res) => res.redirect(302, '/dashboard'));
 
@@ -367,6 +524,7 @@ app.get('/dashboard/settings', (req, res) => sendDashboardView(req, res, 'settin
 app.get('/dashboard/expenses', (req, res) => sendDashboardView(req, res, 'expenses.html'));
 app.get('/dashboard/sell/pos', (req, res) => sendDashboardView(req, res, 'pos.html'));
 app.get('/dashboard/profitability', (req, res) => sendDashboardView(req, res, 'profitability.html'));
+app.get('/dashboard/treasury', (req, res) => sendDashboardView(req, res, 'treasury.html'));
 
 app.get('/products', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'create-product.html'));
@@ -1092,6 +1250,17 @@ async function initializeApp() {
       console.warn('⚠️ Migración expenses product_id/product_qty:', e.message);
     }
 
+    // Migración: payment_method y transfer_account_info en purchase_orders y expenses
+    try {
+      await sequelize.query(`ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(30) DEFAULT 'SUPPLIER_CREDIT'`);
+      await sequelize.query(`ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS transfer_account_info VARCHAR(255)`);
+      await sequelize.query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS payment_method VARCHAR(30) DEFAULT 'CASH'`);
+      await sequelize.query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS transfer_account_info VARCHAR(255)`);
+      console.log('✅ Migración payment_method/transfer_account_info en purchase_orders y expenses completada');
+    } catch (e) {
+      console.warn('⚠️ Migración payment_method/transfer_account_info:', e.message);
+    }
+
     // Índices de rendimiento
     try {
       // Sales: consultas de rentabilidad y estadísticas
@@ -1126,6 +1295,14 @@ async function initializeApp() {
       console.log('✅ Migración group_purchase_participants.transfer_account_info completada');
     } catch (e) {
       console.warn('⚠️ Migración transfer_account_info:', e.message);
+    }
+
+    // Migración: agregar transfer_account_info a customer_payments
+    try {
+      await sequelize.query(`ALTER TABLE customer_payments ADD COLUMN IF NOT EXISTS transfer_account_info VARCHAR(255)`);
+      console.log('✅ Migración customer_payments.transfer_account_info completada');
+    } catch (e) {
+      console.warn('⚠️ Migración customer_payments.transfer_account_info:', e.message);
     }
 
     // Migración: agregar is_returnable a products

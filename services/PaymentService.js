@@ -23,7 +23,8 @@ class PaymentService {
       paymentMethod,
       paymentDate = new Date(),
       groupPurchaseParticipantId,
-      notes
+      notes,
+      transferAccountInfo
     } = data;
 
     const useTransaction = transaction || await sequelize.transaction();
@@ -38,7 +39,8 @@ class PaymentService {
         amount,
         paymentMethod,
         paymentDate: paymentDate instanceof Date ? paymentDate.toISOString().split('T')[0] : paymentDate,
-        notes
+        notes,
+        transferAccountInfo: transferAccountInfo || null
       }, { transaction: useTransaction });
 
       // If payment is for a group purchase participant, apply it
@@ -83,12 +85,19 @@ class PaymentService {
     const paymentAmount = parseFloat(amount);
     const remainingDue = parseFloat(participant.amountDue) - parseFloat(participant.amountPaid);
 
-    if (paymentAmount > remainingDue) {
-      throw new Error(`Payment amount (${paymentAmount}) exceeds remaining due (${remainingDue})`);
+    // Permitir pagar hasta remainingDue + interés acumulado en el crédito
+    const creditInterest = (participant.credit && participant.credit.status === 'ACTIVE')
+      ? Math.max(0, parseFloat(participant.credit.currentBalance || 0) - parseFloat(participant.credit.initialAmount || 0))
+      : 0;
+    const maxAllowed = remainingDue + creditInterest;
+
+    if (paymentAmount > maxAllowed + 0.01) {
+      throw new Error(`Payment amount (${paymentAmount}) exceeds remaining due (${maxAllowed.toFixed(2)})`);
     }
 
-    // Update participant
-    participant.amountPaid = parseFloat(participant.amountPaid || 0) + paymentAmount;
+    // Update participant — solo el monto base (sin interés) cuenta para amountPaid
+    const basePayment = Math.min(paymentAmount, remainingDue);
+    participant.amountPaid = parseFloat(participant.amountPaid || 0) + basePayment;
 
     if (participant.amountPaid >= participant.amountDue) {
       participant.status = 'PAID';

@@ -31,6 +31,11 @@ module.exports = (sequelize) => {
       allowNull: false,
       field: 'payment_method'
     },
+    transferAccountInfo: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'transfer_account_info'
+    },
     paymentDate: {
       type: DataTypes.DATEONLY,
       allowNull: false,

@@ -64,6 +64,17 @@ module.exports = (sequelize) => {
       allowNull: true,
       field: 'last_notified_at'
     },
+    paymentMethod: {
+      type: DataTypes.STRING(30),
+      allowNull: true,
+      defaultValue: 'SUPPLIER_CREDIT',
+      field: 'payment_method'
+    },
+    transferAccountInfo: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'transfer_account_info'
+    },
     paidAt: {
       type: DataTypes.DATE,
       allowNull: true,

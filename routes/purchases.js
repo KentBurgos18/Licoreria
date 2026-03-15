@@ -43,7 +43,9 @@ router.post('/', async (req, res) => {
       purchaseDate,
       creditDays: creditDaysParam,
       items,
-      notes
+      notes,
+      paymentMethod: paymentMethodParam,
+      transferAccountInfo: transferAccountInfoParam
     } = req.body;
 
     if (!tenantId || !items || !Array.isArray(items) || items.length === 0) {
@@ -112,6 +114,10 @@ router.post('/', async (req, res) => {
     const status = creditDays > 0 ? 'PENDING' : 'PAID';
     const paidAt = creditDays === 0 ? new Date() : null;
 
+    // Determine payment method: force SUPPLIER_CREDIT when creditDays > 0
+    const paymentMethod = creditDays > 0 ? 'SUPPLIER_CREDIT' : (paymentMethodParam || 'CASH');
+    const transferAccountInfo = paymentMethod === 'TRANSFER' ? (transferAccountInfoParam || null) : null;
+
     // Create PurchaseOrder
     const purchaseOrder = await PurchaseOrder.create({
       tenantId,
@@ -124,7 +130,9 @@ router.post('/', async (req, res) => {
       amountPaid: creditDays === 0 ? totalAmount : 0,
       status,
       notes: notes || null,
-      paidAt
+      paidAt,
+      paymentMethod,
+      transferAccountInfo
     }, { transaction });
 
     // Create inventory movements + purchase order items

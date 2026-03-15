@@ -13,5 +13,7 @@ module.exports = (sequelize) =>
     createdBy:   { type: DataTypes.BIGINT, allowNull: true, field: 'created_by' },
     productId:   { type: DataTypes.BIGINT, allowNull: true, field: 'product_id' },
     productQty:  { type: DataTypes.DECIMAL(12, 3), allowNull: true, defaultValue: 1, field: 'product_qty' },
+    paymentMethod: { type: DataTypes.STRING(30), allowNull: true, defaultValue: 'CASH', field: 'payment_method' },
+    transferAccountInfo: { type: DataTypes.STRING(255), allowNull: true, field: 'transfer_account_info' },
     createdAt:   { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'created_at' }
   }, { tableName: 'expenses', timestamps: false });

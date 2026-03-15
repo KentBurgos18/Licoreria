@@ -1,0 +1,333 @@
+<div id="spa-view-content">
+  <div id="treasury" class="content-section active">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+      <h2 class="mb-0">
+        <svg style="width:1.2em;height:1.2em;vertical-align:-0.2em;margin-right:8px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        Tesorería
+      </h2>
+      <button class="btn btn-sm btn-outline-secondary" onclick="loadTreasury()">
+        <svg style="width:1em;height:1em;vertical-align:-0.1em;margin-right:4px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Actualizar
+      </button>
+    </div>
+
+    <!-- Spinner de carga -->
+    <div id="treasurySpinner" class="text-center py-5" style="display:none">
+      <div class="spinner-border" role="status" style="color:var(--th-accent,#6c9bd1)">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+
+    <!-- Contenido principal (oculto hasta cargar) -->
+    <div id="treasuryContent" style="display:none">
+
+      <!-- Tarjetas resumen -->
+      <div class="row g-3 mb-4" id="treasurySummaryCards">
+        <div class="col-12 col-md-4">
+          <div class="card h-100" style="background:var(--th-card);border:2px solid #22c55e">
+            <div class="card-body">
+              <div class="d-flex align-items-center gap-3 mb-2">
+                <div style="width:44px;height:44px;border-radius:50%;background:rgba(34,197,94,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                  <svg style="width:22px;height:22px;color:#22c55e" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                </div>
+                <div>
+                  <div class="small text-muted mb-1">Efectivo — Saldo neto</div>
+                  <div class="fw-bold fs-5" id="treasuryCashNet" style="color:#22c55e">$0.00</div>
+                </div>
+              </div>
+              <div class="small text-muted" id="treasuryCashDetail"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="card h-100" style="background:var(--th-card);border:2px solid #3b82f6">
+            <div class="card-body">
+              <div class="d-flex align-items-center gap-3 mb-2">
+                <div style="width:44px;height:44px;border-radius:50%;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                  <svg style="width:22px;height:22px;color:#3b82f6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                </div>
+                <div>
+                  <div class="small text-muted mb-1">Tarjeta — Saldo neto</div>
+                  <div class="fw-bold fs-5" id="treasuryCardNet" style="color:#3b82f6">$0.00</div>
+                </div>
+              </div>
+              <div class="small text-muted" id="treasuryCardDetail"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="card h-100" style="background:var(--th-card);border:2px solid #a855f7">
+            <div class="card-body">
+              <div class="d-flex align-items-center gap-3 mb-2">
+                <div style="width:44px;height:44px;border-radius:50%;background:rgba(168,85,247,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                  <svg style="width:22px;height:22px;color:#a855f7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 11 3 21 21 21 21 11"/><path d="M12 3L2 12h20L12 3z"/><rect x="9" y="15" width="6" height="6"/></svg>
+                </div>
+                <div>
+                  <div class="small text-muted mb-1">Transferencias — Saldo neto</div>
+                  <div class="fw-bold fs-5" id="treasuryTransferNet" style="color:#a855f7">$0.00</div>
+                </div>
+              </div>
+              <div class="small text-muted" id="treasuryTransferDetail"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla Por Cuenta Bancaria -->
+      <div class="card mb-4" style="background:var(--th-card);border:1px solid var(--th-border)">
+        <div class="card-header" style="background:transparent;border-bottom:1px solid var(--th-border)">
+          <h6 class="mb-0 fw-semibold">
+            <svg style="width:1em;height:1em;vertical-align:-0.1em;margin-right:6px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            Por Cuenta Bancaria
+          </h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr style="border-bottom:1px solid var(--th-border)">
+                  <th>Banco</th>
+                  <th>Número de cuenta</th>
+                  <th class="text-end" style="width:130px">Entradas</th>
+                  <th class="text-end" style="width:130px">Salidas</th>
+                  <th class="text-end" style="width:130px">Saldo neto</th>
+                </tr>
+              </thead>
+              <tbody id="treasuryBankTableBody">
+                <tr><td colspan="5" class="text-center py-3 text-muted">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla Resumen General -->
+      <div class="card" style="background:var(--th-card);border:1px solid var(--th-border)">
+        <div class="card-header" style="background:transparent;border-bottom:1px solid var(--th-border)">
+          <h6 class="mb-0 fw-semibold">
+            <svg style="width:1em;height:1em;vertical-align:-0.1em;margin-right:6px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            Resumen General
+          </h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr style="border-bottom:1px solid var(--th-border)">
+                  <th>Método de pago</th>
+                  <th class="text-end" style="width:130px">Ventas</th>
+                  <th class="text-end" style="width:130px">Cobros crédito</th>
+                  <th class="text-end" style="width:130px">Entradas</th>
+                  <th class="text-end" style="width:130px">Compras</th>
+                  <th class="text-end" style="width:130px">Gastos</th>
+                  <th class="text-end" style="width:130px">Salidas</th>
+                  <th class="text-end" style="width:130px">Saldo neto</th>
+                </tr>
+              </thead>
+              <tbody id="treasurySummaryTableBody">
+                <tr><td colspan="8" class="text-center py-3 text-muted">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /treasuryContent -->
+
+    <!-- Error -->
+    <div id="treasuryError" class="alert alert-danger mt-3" style="display:none"></div>
+
+  </div>
+
+  <script>
+    window.initTreasuryView = function() {
+      loadTreasury();
+    };
+
+    function fmtMoney(v) {
+      return '$' + (parseFloat(v) || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function netColor(v) {
+      return parseFloat(v) >= 0 ? '#22c55e' : '#ef4444';
+    }
+
+    function loadTreasury() {
+      document.getElementById('treasurySpinner').style.display = '';
+      document.getElementById('treasuryContent').style.display = 'none';
+      document.getElementById('treasuryError').style.display = 'none';
+
+      fetch('/api/treasury?tenantId=1', {
+        headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '') }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        document.getElementById('treasurySpinner').style.display = 'none';
+        if (data.error) {
+          document.getElementById('treasuryError').textContent = data.error;
+          document.getElementById('treasuryError').style.display = '';
+          return;
+        }
+        renderTreasury(data);
+        document.getElementById('treasuryContent').style.display = '';
+      })
+      .catch(function(err) {
+        document.getElementById('treasurySpinner').style.display = 'none';
+        document.getElementById('treasuryError').textContent = 'Error al cargar tesorería: ' + err.message;
+        document.getElementById('treasuryError').style.display = '';
+      });
+    }
+
+    function renderTreasury(data) {
+      var summary = data.summary || {};
+      var outflows = data.outflows || {};
+      var bankAccounts = data.bankAccounts || [];
+
+      var cash     = summary.cash     || { salesTotal: 0, creditsTotal: 0, total: 0 };
+      var card     = summary.card     || { salesTotal: 0, creditsTotal: 0, total: 0 };
+      var transfer = summary.transfer || {};
+
+      var outCash     = outflows.cash     || { purchasesTotal: 0, expensesTotal: 0, total: 0 };
+      var outCard     = outflows.card     || { purchasesTotal: 0, expensesTotal: 0, total: 0 };
+      var outTransfer = outflows.transfer || {};
+
+      // Saldos netos por método
+      var cashNet     = (parseFloat(cash.total)  || 0) - (parseFloat(outCash.total)  || 0);
+      var cardNet     = (parseFloat(card.total)  || 0) - (parseFloat(outCard.total)  || 0);
+
+      var transferInGrand  = 0, transferOutGrand = 0;
+      var transferSalesSum = 0, transferCreditsSum = 0;
+      for (var k in transfer) {
+        transferInGrand   += parseFloat(transfer[k].total)       || 0;
+        transferSalesSum  += parseFloat(transfer[k].salesTotal)  || 0;
+        transferCreditsSum+= parseFloat(transfer[k].creditsTotal)|| 0;
+      }
+      for (var k2 in outTransfer) {
+        transferOutGrand += parseFloat(outTransfer[k2].total) || 0;
+      }
+      var transferNet = transferInGrand - transferOutGrand;
+
+      // Tarjetas resumen — saldo neto prominente + detalle entradas/salidas
+      document.getElementById('treasuryCashNet').textContent = fmtMoney(cashNet);
+      document.getElementById('treasuryCashNet').style.color = netColor(cashNet);
+      document.getElementById('treasuryCashDetail').textContent =
+        'Entradas: ' + fmtMoney(cash.total) + ' · Salidas: ' + fmtMoney(outCash.total);
+
+      document.getElementById('treasuryCardNet').textContent = fmtMoney(cardNet);
+      document.getElementById('treasuryCardNet').style.color = netColor(cardNet);
+      document.getElementById('treasuryCardDetail').textContent =
+        'Entradas: ' + fmtMoney(card.total) + ' · Salidas: ' + fmtMoney(outCard.total);
+
+      document.getElementById('treasuryTransferNet').textContent = fmtMoney(transferNet);
+      document.getElementById('treasuryTransferNet').style.color = netColor(transferNet);
+      document.getElementById('treasuryTransferDetail').textContent =
+        'Entradas: ' + fmtMoney(transferInGrand) + ' · Salidas: ' + fmtMoney(transferOutGrand);
+
+      // Tabla Por Cuenta Bancaria
+      var bankRows = '';
+      var shownKeys = {};
+
+      for (var i = 0; i < bankAccounts.length; i++) {
+        var acct = bankAccounts[i];
+        var bankName      = acct.bankName      || acct.bank    || '';
+        var accountNumber = acct.accountNumber || acct.account || '';
+        var key = bankName && accountNumber ? (bankName + ' - ' + accountNumber) : (bankName || accountNumber);
+        var inRow  = transfer[key]    || { salesTotal: 0, creditsTotal: 0, total: 0 };
+        var outRow = outTransfer[key] || { purchasesTotal: 0, expensesTotal: 0, total: 0 };
+        var net    = (parseFloat(inRow.total) || 0) - (parseFloat(outRow.total) || 0);
+        shownKeys[key] = true;
+        bankRows += '<tr>' +
+          '<td>' + escHtml(bankName) + '</td>' +
+          '<td class="text-muted">' + escHtml(accountNumber) + '</td>' +
+          '<td class="text-end">' + fmtMoney(inRow.total) + '</td>' +
+          '<td class="text-end">' + fmtMoney(outRow.total) + '</td>' +
+          '<td class="text-end fw-semibold" style="color:' + netColor(net) + '">' + fmtMoney(net) + '</td>' +
+        '</tr>';
+      }
+
+      // Rows for transfer keys not matching any registered account
+      for (var tKey in transfer) {
+        if (tKey === 'unassigned' || shownKeys[tKey]) continue;
+        var tIn  = transfer[tKey];
+        var tOut = outTransfer[tKey] || { total: 0 };
+        var tNet = (parseFloat(tIn.total) || 0) - (parseFloat(tOut.total) || 0);
+        bankRows += '<tr>' +
+          '<td colspan="2" class="text-muted fst-italic">' + escHtml(tKey) + '</td>' +
+          '<td class="text-end">' + fmtMoney(tIn.total) + '</td>' +
+          '<td class="text-end">' + fmtMoney(tOut.total) + '</td>' +
+          '<td class="text-end fw-semibold" style="color:' + netColor(tNet) + '">' + fmtMoney(tNet) + '</td>' +
+        '</tr>';
+      }
+
+      // Row for unassigned transfers
+      var unassignedIn  = transfer['unassigned']    || { total: 0 };
+      var unassignedOut = outTransfer['unassigned'] || { total: 0 };
+      var unassignedNet = (parseFloat(unassignedIn.total) || 0) - (parseFloat(unassignedOut.total) || 0);
+      if (parseFloat(unassignedIn.total) > 0 || parseFloat(unassignedOut.total) > 0 || bankAccounts.length === 0) {
+        bankRows += '<tr style="border-top:1px dashed var(--th-border)">' +
+          '<td colspan="2" class="text-muted fst-italic">Sin cuenta asignada</td>' +
+          '<td class="text-end">' + fmtMoney(unassignedIn.total) + '</td>' +
+          '<td class="text-end">' + fmtMoney(unassignedOut.total) + '</td>' +
+          '<td class="text-end fw-semibold" style="color:' + netColor(unassignedNet) + '">' + fmtMoney(unassignedNet) + '</td>' +
+        '</tr>';
+      }
+
+      if (!bankRows) {
+        bankRows = '<tr><td colspan="5" class="text-center py-3 text-muted">Sin movimientos de transferencia</td></tr>';
+      }
+      document.getElementById('treasuryBankTableBody').innerHTML = bankRows;
+
+      // Tabla Resumen General
+      var grandIn  = parseFloat(summary.grandTotal)   || 0;
+      var grandOut = parseFloat(outflows.grandTotal)  || 0;
+      var grandNet = grandIn - grandOut;
+
+      var outTransferSum = 0;
+      var outTransferPurchases = 0, outTransferExpenses = 0;
+      for (var ok in outTransfer) {
+        outTransferPurchases += parseFloat(outTransfer[ok].purchasesTotal) || 0;
+        outTransferExpenses  += parseFloat(outTransfer[ok].expensesTotal)  || 0;
+        outTransferSum       += parseFloat(outTransfer[ok].total)          || 0;
+      }
+
+      function summaryRow(label, color, inRow2, outRow2) {
+        var inTotal  = parseFloat(inRow2.total)  || 0;
+        var outTotal = parseFloat(outRow2.total) || 0;
+        var net2     = inTotal - outTotal;
+        return '<tr>' +
+          '<td><span class="badge rounded-pill" style="background:' + color + '22;color:' + color + '">' + label + '</span></td>' +
+          '<td class="text-end">' + fmtMoney(inRow2.salesTotal)      + '</td>' +
+          '<td class="text-end">' + fmtMoney(inRow2.creditsTotal)    + '</td>' +
+          '<td class="text-end fw-semibold">' + fmtMoney(inTotal)    + '</td>' +
+          '<td class="text-end">' + fmtMoney(outRow2.purchasesTotal) + '</td>' +
+          '<td class="text-end">' + fmtMoney(outRow2.expensesTotal)  + '</td>' +
+          '<td class="text-end fw-semibold">' + fmtMoney(outTotal)   + '</td>' +
+          '<td class="text-end fw-semibold" style="color:' + netColor(net2) + '">' + fmtMoney(net2) + '</td>' +
+        '</tr>';
+      }
+
+      var transferInSummary  = { salesTotal: transferSalesSum, creditsTotal: transferCreditsSum, total: transferInGrand };
+      var transferOutSummary = { purchasesTotal: outTransferPurchases, expensesTotal: outTransferExpenses, total: outTransferSum };
+
+      var summaryRows =
+        summaryRow('Efectivo',       '#22c55e', cash, outCash) +
+        summaryRow('Tarjeta',        '#3b82f6', card, outCard) +
+        summaryRow('Transferencia',  '#a855f7', transferInSummary, transferOutSummary) +
+        '<tr style="border-top:2px solid var(--th-border);font-weight:600">' +
+          '<td>Total general</td>' +
+          '<td class="text-end">' + fmtMoney((parseFloat(cash.salesTotal)||0)+(parseFloat(card.salesTotal)||0)+transferSalesSum) + '</td>' +
+          '<td class="text-end">' + fmtMoney((parseFloat(cash.creditsTotal)||0)+(parseFloat(card.creditsTotal)||0)+transferCreditsSum) + '</td>' +
+          '<td class="text-end">' + fmtMoney(grandIn) + '</td>' +
+          '<td class="text-end">' + fmtMoney((parseFloat(outCash.purchasesTotal)||0)+(parseFloat(outCard.purchasesTotal)||0)+outTransferPurchases) + '</td>' +
+          '<td class="text-end">' + fmtMoney((parseFloat(outCash.expensesTotal)||0)+(parseFloat(outCard.expensesTotal)||0)+outTransferExpenses) + '</td>' +
+          '<td class="text-end">' + fmtMoney(grandOut) + '</td>' +
+          '<td class="text-end" style="color:' + netColor(grandNet) + '">' + fmtMoney(grandNet) + '</td>' +
+        '</tr>';
+      document.getElementById('treasurySummaryTableBody').innerHTML = summaryRows;
+    }
+
+    function escHtml(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+</div>

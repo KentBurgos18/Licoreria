@@ -1269,6 +1269,9 @@
                 <a class="nav-link admin-only" href="/dashboard/profitability" data-section="profitability" title="Rentabilidad">
                     <svg class="sb-icon" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg><span>Rentabilidad</span>
                 </a>
+                <a class="nav-link admin-only" href="/dashboard/treasury" data-section="treasury" title="Tesorería">
+                    <svg class="sb-icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg><span>Tesorería</span>
+                </a>
                 <a class="nav-link" href="/dashboard/settings" data-section="settings" title="Configuración">
                     <svg class="sb-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Configuración</span>
                 </a>
@@ -1436,6 +1439,20 @@
                         <div class="col-md-6">
                             <label class="form-label">Fecha <span class="text-danger">*</span></label>
                             <input type="date" class="form-control" id="expenseDate">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Forma de Pago</label>
+                            <select class="form-select" id="expensePaymentMethod" onchange="onExpensePaymentMethodChange()">
+                                <option value="CASH">Efectivo</option>
+                                <option value="TRANSFER">Transferencia</option>
+                                <option value="CARD">Tarjeta</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6" id="expenseTransferAccountRow" style="display:none">
+                            <label class="form-label">Cuenta destino</label>
+                            <select class="form-select" id="expenseTransferAccount">
+                                <option value="">— Seleccionar —</option>
+                            </select>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Pagado a</label>
@@ -1758,6 +1775,20 @@
                                     <input type="number" class="form-control" id="purchaseCreditDays" min="0" value="0">
                                     <span class="input-group-text">d</span>
                                 </div>
+                            </div>
+                            <div class="col-md-3" id="purchasePaymentMethodRow">
+                                <label class="form-label">Forma de Pago</label>
+                                <select class="form-select" id="purchasePaymentMethod" onchange="onPurchasePaymentMethodChange()">
+                                    <option value="CASH">Efectivo</option>
+                                    <option value="TRANSFER">Transferencia</option>
+                                    <option value="CARD">Tarjeta</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3" id="purchaseTransferAccountRow" style="display:none">
+                                <label class="form-label">Cuenta destino</label>
+                                <select class="form-select" id="purchaseTransferAccount">
+                                    <option value="">— Seleccionar —</option>
+                                </select>
                             </div>
                         </div>
 
@@ -2183,13 +2214,20 @@
                         <div class="mb-3">
                             <label class="form-label">Monto <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" id="participantPaymentAmount" step="0.01" min="0.01" required>
+                            <div id="participantPaymentAmountHint" class="form-text text-muted" style="display:none"></div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Método de Pago <span class="text-danger">*</span></label>
-                            <select class="form-select" id="participantPaymentMethod" required>
+                            <select class="form-select" id="participantPaymentMethod" required onchange="onParticipantPaymentMethodChange()">
                                 <option value="CASH">Efectivo</option>
                                 <option value="CARD">Tarjeta</option>
                                 <option value="TRANSFER">Transferencia</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="participantPaymentAccountRow" style="display:none">
+                            <label class="form-label">Cuenta destino <span class="text-danger">*</span></label>
+                            <select class="form-select" id="participantPaymentAccount" onchange="$('#btnSaveParticipantPayment').prop('disabled', !this.value)">
+                                <option value="">— Seleccionar cuenta —</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -2204,7 +2242,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="saveParticipantPayment()">Registrar Pago</button>
+                    <button type="button" class="btn btn-primary" id="btnSaveParticipantPayment" onclick="saveParticipantPayment()">Registrar Pago</button>
                 </div>
             </div>
         </div>
@@ -2582,7 +2620,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="/libs/js/chart.umd.min.js"></script>
     <script src="/libs/js/zxing-browser.min.js"></script>
     <script src="/libs/js/jquery.min.js"></script>
     <script src="/libs/js/bootstrap.bundle.min.js"></script>
@@ -3933,6 +3971,8 @@
             $('#expenseDescription').val('');
             $('#expenseAmount').val('');
             var _ed = new Date(); $('#expenseDate').val(_ed.getFullYear() + '-' + String(_ed.getMonth()+1).padStart(2,'0') + '-' + String(_ed.getDate()).padStart(2,'0'));
+            $('#expensePaymentMethod').val('CASH');
+            $('#expenseTransferAccountRow').hide();
             $('#expensePaidTo').val('');
             $('#expenseNotes').val('');
             loadExpenseCategories(null, $('#expenseCategoryId'));
@@ -3950,6 +3990,14 @@
             $('#expenseDescription').val(e.description || '');
             $('#expenseAmount').val(parseFloat(e.amount).toFixed(2));
             $('#expenseDate').val(e.expenseDate ? e.expenseDate.substring(0, 10) : '');
+            $('#expensePaymentMethod').val(e.paymentMethod || 'CASH');
+            if ((e.paymentMethod || 'CASH') === 'TRANSFER') {
+                $('#expenseTransferAccountRow').show();
+                onExpensePaymentMethodChange();
+                if (e.transferAccountInfo) { $('#expenseTransferAccount').val(e.transferAccountInfo); }
+            } else {
+                $('#expenseTransferAccountRow').hide();
+            }
             $('#expensePaidTo').val(e.paidTo || '');
             $('#expenseNotes').val(e.notes || '');
             loadExpenseCategories(e.categoryId, $('#expenseCategoryId'));
@@ -4024,10 +4072,40 @@
             }, 300);
         }
 
+        function onExpensePaymentMethodChange() {
+            if ($('#expensePaymentMethod').val() === 'TRANSFER') {
+                $('#expenseTransferAccountRow').show();
+                if ($('#expenseTransferAccount option').length <= 1) {
+                    $.ajax({
+                        url: '/api/settings/bank_accounts', method: 'GET',
+                        data: { tenantId: 1 },
+                        headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '') },
+                        success: function(r) {
+                            var accounts = [];
+                            try {
+                                var raw = r.value || r.accounts;
+                                if (typeof raw === 'string') raw = JSON.parse(raw);
+                                accounts = Array.isArray(raw) ? raw : [];
+                            } catch(e) {}
+                            var opts = '<option value="">— Seleccionar —</option>';
+                            accounts.forEach(function(acc) {
+                                var lbl = (acc.bankName || '') + (acc.accountNumber ? ' - ' + acc.accountNumber : '');
+                                opts += '<option value="' + lbl.replace(/"/g, '&quot;') + '">' + lbl + '</option>';
+                            });
+                            $('#expenseTransferAccount').html(opts);
+                        }
+                    });
+                }
+            } else {
+                $('#expenseTransferAccountRow').hide();
+            }
+        }
+
         function saveExpense() {
             var id = $('#expenseEditId').val();
             var productId = $('#expenseProductId').val() || null;
             var productQty = productId ? (parseFloat($('#expenseProductQty').val()) || 1) : null;
+            var expPM = $('#expensePaymentMethod').val() || 'CASH';
             var data = {
                 categoryId:  $('#expenseCategoryId').val() || null,
                 description: $('#expenseDescription').val().trim(),
@@ -4036,7 +4114,9 @@
                 paidTo:      $('#expensePaidTo').val().trim() || null,
                 notes:       $('#expenseNotes').val().trim() || null,
                 productId:   productId ? Number(productId) : null,
-                productQty:  productQty
+                productQty:  productQty,
+                paymentMethod: expPM,
+                transferAccountInfo: expPM === 'TRANSFER' ? ($('#expenseTransferAccount').val() || null) : null
             };
 
             if (!data.description) { alert('La descripción es requerida'); return; }
@@ -5267,8 +5347,8 @@
                                     <td>${dueDateText}</td>
                                     <td>${statusBadge}</td>
                                     <td>
-                                        ${participant.status !== 'PAID' ? 
-                                            `<button class="btn btn-sm btn-outline-success" onclick="registerParticipantPayment(${participant.id}, ${groupPurchase.id})">
+                                        ${participant.status !== 'PAID' ?
+                                            `<button class="btn btn-sm btn-outline-success" onclick="registerParticipantPayment(${participant.id}, ${groupPurchase.id}, ${(remaining + interestAmount).toFixed(2)}, ${interestAmount.toFixed(2)})">
                                                 <i class="bi bi-cash"></i> Pagar
                                             </button>` : ''
                                         }
@@ -5318,14 +5398,57 @@
         
         let currentGroupPurchaseId = null;
         
-        function registerParticipantPayment(participantId, groupPurchaseId) {
+        function onParticipantPaymentMethodChange() {
+            var method = $('#participantPaymentMethod').val();
+            if (method === 'TRANSFER') {
+                $('#participantPaymentAccountRow').show();
+                $('#btnSaveParticipantPayment').prop('disabled', !$('#participantPaymentAccount').val());
+                // Cargar cuentas bancarias si aún no están cargadas
+                if ($('#participantPaymentAccount option').length <= 1) {
+                    $.ajax({
+                        url: '/api/settings/bank_accounts', method: 'GET',
+                        data: { tenantId: 1 },
+                        headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '') },
+                        success: function(r) {
+                            var accounts = [];
+                            try { var raw = r.value || r.accounts; if (typeof raw === 'string') raw = JSON.parse(raw); accounts = Array.isArray(raw) ? raw : []; } catch(e) {}
+                            var opts = '<option value="">— Seleccionar cuenta —</option>';
+                            accounts.forEach(function(acc) {
+                                var lbl = (acc.bankName || '') + (acc.accountNumber ? ' - ' + acc.accountNumber : '');
+                                opts += '<option value="' + lbl.replace(/"/g,'&quot;') + '">' + lbl + '</option>';
+                            });
+                            $('#participantPaymentAccount').html(opts);
+                        }
+                    });
+                }
+            } else {
+                $('#participantPaymentAccountRow').hide();
+                $('#btnSaveParticipantPayment').prop('disabled', false);
+            }
+        }
+
+        function registerParticipantPayment(participantId, groupPurchaseId, totalDue, interestAmt) {
             currentGroupPurchaseId = groupPurchaseId;
             $('#participantPaymentParticipantId').val(participantId);
-            $('#participantPaymentAmount').val('');
             $('#participantPaymentMethod').val('CASH');
+            $('#participantPaymentAccountRow').hide();
+            $('#participantPaymentAccount').val('');
             var _pd = new Date(); $('#participantPaymentDate').val(_pd.getFullYear() + '-' + String(_pd.getMonth()+1).padStart(2,'0') + '-' + String(_pd.getDate()).padStart(2,'0'));
             $('#participantPaymentNotes').val('');
-            
+
+            // Pre-llenar monto con pendiente + interés
+            if (totalDue > 0) {
+                $('#participantPaymentAmount').val(parseFloat(totalDue).toFixed(2));
+                if (interestAmt > 0) {
+                    $('#participantPaymentAmountHint').text('Incluye $' + parseFloat(interestAmt).toFixed(2) + ' de intereses').show();
+                } else {
+                    $('#participantPaymentAmountHint').hide();
+                }
+            } else {
+                $('#participantPaymentAmount').val('');
+                $('#participantPaymentAmountHint').hide();
+            }
+
             const modal = new bootstrap.Modal(document.getElementById('participantPaymentModal'));
             modal.show();
         }
@@ -5336,9 +5459,14 @@
             const paymentMethod = $('#participantPaymentMethod').val();
             const paymentDate = $('#participantPaymentDate').val();
             const notes = $('#participantPaymentNotes').val() || null;
-            
+            const transferAccountInfo = paymentMethod === 'TRANSFER' ? ($('#participantPaymentAccount').val() || null) : null;
+
             if (!participantId || !amount || amount <= 0 || !paymentMethod) {
                 showAlert('Complete todos los campos requeridos', 'warning');
+                return;
+            }
+            if (paymentMethod === 'TRANSFER' && !transferAccountInfo) {
+                showAlert('Selecciona la cuenta destino de la transferencia', 'warning');
                 return;
             }
             
@@ -5366,14 +5494,26 @@
                             amount: amount,
                             paymentMethod: paymentMethod,
                             paymentDate: paymentDate,
-                            notes: notes
+                            notes: notes,
+                            transferAccountInfo: transferAccountInfo
                         }),
                         success: function() {
                             showAlert('Pago registrado exitosamente', 'success');
-                            bootstrap.Modal.getInstance(document.getElementById('participantPaymentModal')).hide();
-                            viewGroupPurchaseDetails(groupPurchaseId);
-                            loadGroupPurchases();
-                            loadCredits();
+                            var payModal = document.getElementById('participantPaymentModal');
+                            var bsPayModal = bootstrap.Modal.getInstance(payModal);
+                            // Esperar a que el modal se cierre completamente antes de abrir el siguiente
+                            payModal.addEventListener('hidden.bs.modal', function onPayModalHidden() {
+                                payModal.removeEventListener('hidden.bs.modal', onPayModalHidden);
+                                // Limpiar cualquier backdrop residual
+                                document.querySelectorAll('.modal-backdrop').forEach(function(el) { el.remove(); });
+                                document.body.classList.remove('modal-open');
+                                document.body.style.removeProperty('overflow');
+                                document.body.style.removeProperty('padding-right');
+                                viewGroupPurchaseDetails(groupPurchaseId);
+                                loadGroupPurchases();
+                                loadCredits();
+                            }, { once: true });
+                            bsPayModal.hide();
                         },
                         error: function(xhr) {
                             const error = xhr.responseJSON?.error || 'Error al registrar pago';
@@ -6927,6 +7067,9 @@
             var _dn = new Date(); var _localDate = _dn.getFullYear() + '-' + String(_dn.getMonth()+1).padStart(2,'0') + '-' + String(_dn.getDate()).padStart(2,'0');
             $('#purchaseDate').val(_localDate);
             $('#purchaseCreditDays').val(0);
+            $('#purchasePaymentMethod').val('CASH');
+            $('#purchasePaymentMethodRow').show();
+            $('#purchaseTransferAccountRow').hide();
             // Precargar IVA desde settings (lectura fresca del servidor)
             $.ajax({
                 url: '/api/settings/tax_rate', method: 'GET', data: { tenantId: 1 },
@@ -6964,6 +7107,56 @@
             const creditDays = selected.data('credit');
             if (creditDays !== undefined && creditDays !== '') {
                 $('#purchaseCreditDays').val(creditDays);
+                // Trigger visibility update when supplier auto-fills credit days
+                var cd = parseInt(creditDays) || 0;
+                if (cd > 0) {
+                    $('#purchasePaymentMethodRow').hide();
+                    $('#purchaseTransferAccountRow').hide();
+                } else {
+                    $('#purchasePaymentMethodRow').show();
+                }
+            }
+        }
+
+        $(document).on('change', '#purchaseCreditDays', function() {
+            var cd = parseInt($(this).val()) || 0;
+            if (cd > 0) {
+                $('#purchasePaymentMethodRow').hide();
+                $('#purchaseTransferAccountRow').hide();
+            } else {
+                $('#purchasePaymentMethodRow').show();
+                if ($('#purchasePaymentMethod').val() !== 'TRANSFER') {
+                    $('#purchaseTransferAccountRow').hide();
+                }
+            }
+        });
+
+        function onPurchasePaymentMethodChange() {
+            if ($('#purchasePaymentMethod').val() === 'TRANSFER') {
+                $('#purchaseTransferAccountRow').show();
+                if ($('#purchaseTransferAccount option').length <= 1) {
+                    $.ajax({
+                        url: '/api/settings/bank_accounts', method: 'GET',
+                        data: { tenantId: 1 },
+                        headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '') },
+                        success: function(r) {
+                            var accounts = [];
+                            try {
+                                var raw = r.value || r.accounts;
+                                if (typeof raw === 'string') raw = JSON.parse(raw);
+                                accounts = Array.isArray(raw) ? raw : [];
+                            } catch(e) {}
+                            var opts = '<option value="">— Seleccionar —</option>';
+                            accounts.forEach(function(acc) {
+                                var lbl = (acc.bankName || '') + (acc.accountNumber ? ' - ' + acc.accountNumber : '');
+                                opts += '<option value="' + lbl.replace(/"/g, '&quot;') + '">' + lbl + '</option>';
+                            });
+                            $('#purchaseTransferAccount').html(opts);
+                        }
+                    });
+                }
+            } else {
+                $('#purchaseTransferAccountRow').hide();
             }
         }
 
@@ -7150,6 +7343,8 @@
             const invoiceNumber = $('#purchaseInvoice').val() || null;
             const creditDays = parseInt($('#purchaseCreditDays').val()) || 0;
             const notes = $('#purchaseNotes').val() || null;
+            const paymentMethod = creditDays > 0 ? 'SUPPLIER_CREDIT' : ($('#purchasePaymentMethod').val() || 'CASH');
+            const transferAccountInfo = paymentMethod === 'TRANSFER' ? ($('#purchaseTransferAccount').val() || null) : null;
 
             if (!purchaseDate) {
                 showAlert('La fecha de compra es requerida', 'warning');
@@ -7176,7 +7371,9 @@
                     creditDays: creditDays,
                     items: items,
                     notes: notes,
-                    taxAmount: taxAmount
+                    taxAmount: taxAmount,
+                    paymentMethod: paymentMethod,
+                    transferAccountInfo: transferAccountInfo
                 }),
                 success: function() {
                     showAlert('Compra registrada exitosamente', 'success');

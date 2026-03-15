@@ -110,7 +110,7 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const tenantId = req.tenantId || 1;
-    const { categoryId, description, amount, expenseDate, paidTo, notes, productId, productQty } = req.body;
+    const { categoryId, description, amount, expenseDate, paidTo, notes, productId, productQty, paymentMethod, transferAccountInfo } = req.body;
 
     if (!description || !description.trim()) {
       return res.status(400).json({ error: 'La descripción es requerida' });
@@ -132,6 +132,9 @@ router.post('/', async (req, res) => {
 
     const t = await sequelize.transaction();
     try {
+      const finalPaymentMethod = paymentMethod || 'CASH';
+      const finalTransferAccountInfo = finalPaymentMethod === 'TRANSFER' ? (transferAccountInfo || null) : null;
+
       const expense = await Expense.create({
         tenantId,
         categoryId:  categoryId ? Number(categoryId) : null,
@@ -142,7 +145,9 @@ router.post('/', async (req, res) => {
         notes:       notes  ? notes.trim()  : null,
         createdBy:   req.userId || null,
         productId:   product ? product.id : null,
-        productQty:  product ? finalQty : null
+        productQty:  product ? finalQty : null,
+        paymentMethod: finalPaymentMethod,
+        transferAccountInfo: finalTransferAccountInfo
       }, { transaction: t });
 
       // Descontar del inventario si tiene producto
@@ -195,7 +200,7 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Gasto no encontrado' });
     }
 
-    const { categoryId, description, amount, expenseDate, paidTo, notes } = req.body;
+    const { categoryId, description, amount, expenseDate, paidTo, notes, paymentMethod: pmUpdate, transferAccountInfo: taiUpdate } = req.body;
 
     if (description !== undefined && !description.trim()) {
       return res.status(400).json({ error: 'La descripción no puede estar vacía' });
@@ -212,6 +217,10 @@ router.put('/:id', async (req, res) => {
     if (expenseDate !== undefined) updates.expenseDate = expenseDate;
     if (paidTo      !== undefined) updates.paidTo      = paidTo ? paidTo.trim() : null;
     if (notes       !== undefined) updates.notes       = notes  ? notes.trim()  : null;
+    if (pmUpdate    !== undefined) {
+      updates.paymentMethod = pmUpdate || 'CASH';
+      updates.transferAccountInfo = (pmUpdate === 'TRANSFER') ? (taiUpdate || null) : null;
+    }
 
     await expense.update(updates);
 

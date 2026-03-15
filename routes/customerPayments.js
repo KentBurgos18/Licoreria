@@ -23,7 +23,8 @@ router.post('/', async (req, res) => {
       paymentMethod,
       paymentDate,
       groupPurchaseParticipantId,
-      notes
+      notes,
+      transferAccountInfo
     } = req.body;
 
     if (!tenantId || !customerId || !amount || !paymentMethod) {
@@ -58,7 +59,8 @@ router.post('/', async (req, res) => {
       paymentMethod,
       paymentDate,
       groupPurchaseParticipantId,
-      notes
+      notes,
+      transferAccountInfo
     }, transaction);
 
     await transaction.commit();
@@ -207,7 +209,8 @@ router.post('/apply-to-credit', async (req, res) => {
       amount,
       paymentMethod,
       paymentDate,
-      notes
+      notes,
+      transferAccountInfo
     } = req.body;
 
     if (!tenantId || !customerId || !groupPurchaseParticipantId || !amount || !paymentMethod) {
@@ -243,7 +246,8 @@ router.post('/apply-to-credit', async (req, res) => {
       paymentMethod,
       paymentDate,
       groupPurchaseParticipantId,
-      notes
+      notes,
+      transferAccountInfo
     }, transaction);
 
     await transaction.commit();
