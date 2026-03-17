@@ -12140,23 +12140,60 @@
             return loaded;
         }
 
-        // Al cargar: recargar hasta 5 veces si el CSS falla
+        // Reinyecta todos los <link rel="stylesheet"> con cache-busting (evita reload completo)
+        function reinjectCss() {
+            var ts = Date.now();
+            var links = document.querySelectorAll('link[rel="stylesheet"]');
+            links.forEach(function(link) {
+                var href = link.getAttribute('href') || '';
+                if (!href || href.indexOf('fonts.googleapis') !== -1) return; // omitir Google Fonts
+                var newLink = document.createElement('link');
+                newLink.rel = 'stylesheet';
+                newLink.href = href.replace(/[?#].*$/, '') + '?v=' + ts;
+                newLink.onload = function() {
+                    if (link.parentNode) link.parentNode.removeChild(link);
+                };
+                link.parentNode.insertBefore(newLink, link.nextSibling);
+            });
+        }
+
+        // Al cargar: si CSS falla, reinyectar; si sigue fallando tras 3 intentos, reload completo
         (function() {
             if (checkCssLoaded()) {
                 sessionStorage.removeItem('_cssReloaded');
                 return;
             }
             var attempts = parseInt(sessionStorage.getItem('_cssReloaded') || '0', 10);
-            if (attempts < 5) {
+            if (attempts < 3) {
                 sessionStorage.setItem('_cssReloaded', String(attempts + 1));
+                reinjectCss();
+                // Verificar después de que los nuevos links carguen
+                setTimeout(function() {
+                    if (!checkCssLoaded()) window.location.reload(true);
+                }, 2000);
+            } else {
+                sessionStorage.removeItem('_cssReloaded');
                 window.location.reload(true);
             }
         })();
 
-        // Cuando la pestaña vuelve del fondo (ej: móvil después de inactividad)
+        // Cuando la pestaña vuelve del fondo (ej: móvil tras inactividad o bfcache)
         document.addEventListener('visibilitychange', function() {
             if (document.visibilityState === 'visible' && !checkCssLoaded()) {
-                window.location.reload(true);
+                reinjectCss();
+                setTimeout(function() {
+                    if (!checkCssLoaded()) window.location.reload(true);
+                }, 2000);
+            }
+        });
+
+        // pageshow cubre el bfcache de iOS Safari (persisted=true = restaurado de bfcache)
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted && !checkCssLoaded()) {
+                reinjectCss();
+                setTimeout(function() {
+                    if (!checkCssLoaded()) window.location.reload(true);
+                }, 2000);
             }
         });
     </script>
