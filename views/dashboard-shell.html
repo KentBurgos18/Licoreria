@@ -10,7 +10,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title id="dashboardPageTitle">Sistema de Licorería - Dashboard</title>
     <script>window._pwaDeferred = null; window.addEventListener('beforeinstallprompt', function(e) { e.preventDefault(); window._pwaDeferred = e; });</script>
-    <style>body{visibility:hidden}</style>
+    <style>
+        #_appLoading{position:fixed;inset:0;background:#0f3460;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;gap:16px;transition:opacity .3s ease}
+        #_appLoading._hide{opacity:0;pointer-events:none}
+        #_appLoading .al-spinner{width:42px;height:42px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:_alspin .7s linear infinite}
+        #_appLoading .al-brand{color:#fff;font-size:20px;font-weight:700;letter-spacing:2px;opacity:.9}
+        @keyframes _alspin{to{transform:rotate(360deg)}}
+    </style>
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="/public/css/dashboard-themes.css">
@@ -1202,6 +1208,12 @@
     </style>
 </head>
 <body>
+    <!-- Pantalla de carga (CSS inline, sin dependencias externas) -->
+    <div id="_appLoading" aria-hidden="true">
+        <div class="al-brand">LOCOBAR</div>
+        <div class="al-spinner"></div>
+    </div>
+
     <!-- Sidebar Overlay (for mobile) -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileMenu()"></div>
 
@@ -12138,13 +12150,16 @@
             return ok;
         }
 
-        // Muestra el body (sale del visibility:hidden del <head>)
-        var _bodyShown = false;
-        function showBody() {
-            if (_bodyShown) return;
-            _bodyShown = true;
-            document.body.style.visibility = 'visible';
+        // Oculta el overlay de carga con transición suave
+        var _appLoadingHidden = false;
+        function hideAppLoading() {
+            if (_appLoadingHidden) return;
+            _appLoadingHidden = true;
             sessionStorage.removeItem('_cssReloaded');
+            var el = document.getElementById('_appLoading');
+            if (!el) return;
+            el.classList.add('_hide');
+            setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 350);
         }
 
         // Reinyecta <link rel="stylesheet"> con cache-busting y llama cb cuando todos cargan
@@ -12168,29 +12183,28 @@
             });
         }
 
-        // Carga inicial: NO mostrar body hasta confirmar CSS, con timeout máx 4s
+        // Carga inicial: ocultar overlay cuando CSS esté listo, máx 5s de espera
         (function() {
-            if (checkCssLoaded()) { showBody(); return; }
+            if (checkCssLoaded()) { hideAppLoading(); return; }
 
             var attempts = parseInt(sessionStorage.getItem('_cssReloaded') || '0', 10);
             if (attempts >= 3) {
-                // Demasiados intentos: mostrar igual y recargar
                 sessionStorage.removeItem('_cssReloaded');
-                showBody();
+                hideAppLoading();
                 window.location.reload(true);
                 return;
             }
             sessionStorage.setItem('_cssReloaded', String(attempts + 1));
 
-            // Timeout de seguridad: mostrar a los 4s aunque el CSS no haya cargado
-            var safetyTimer = setTimeout(function() { showBody(); }, 4000);
+            // Timeout de seguridad: mostrar dashboard a los 5s aunque CSS no cargue
+            var safetyTimer = setTimeout(function() { hideAppLoading(); }, 5000);
 
             reinjectCss(function() {
                 clearTimeout(safetyTimer);
                 if (checkCssLoaded()) {
-                    showBody();
+                    hideAppLoading();
                 } else {
-                    showBody();
+                    hideAppLoading();
                     window.location.reload(true);
                 }
             });
