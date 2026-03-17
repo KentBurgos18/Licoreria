@@ -10,12 +10,31 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title id="dashboardPageTitle">Sistema de Licorería - Dashboard</title>
     <script>window._pwaDeferred = null; window.addEventListener('beforeinstallprompt', function(e) { e.preventDefault(); window._pwaDeferred = e; });</script>
+    <script>
+        // Leer tema guardado ANTES de pintar para que el overlay use el color correcto
+        (function(){
+            var bg = '#0f1117';
+            try {
+                var u = JSON.parse(localStorage.getItem('adminUser') || '{}');
+                var mode = u.themeMode || 'auto';
+                var h = new Date().getHours();
+                var isDark = mode === 'dark' || (mode === 'auto' && (h < 7 || h >= 19));
+                var id = parseInt(u.themeId) || 1;
+                var darkBgs  = {1:'#0f1117', 2:'#0d1b0e', 3:'#0d1520', 4:'#1a0d10'};
+                var lightBgs = {1:'#f4f5f9', 2:'#f2faf3', 3:'#f0f6ff', 4:'#fff5f7'};
+                bg = isDark ? (darkBgs[id] || '#0f1117') : (lightBgs[id] || '#f4f5f9');
+            } catch(e) {}
+            document.write('<style>#_appLoading{background:' + bg + '}</style>');
+        })();
+    </script>
     <style>
-        #_appLoading{position:fixed;inset:0;background:#0f3460;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;gap:16px;transition:opacity .3s ease}
+        #_appLoading{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;gap:0;transition:opacity .35s ease}
         #_appLoading._hide{opacity:0;pointer-events:none}
-        #_appLoading .al-spinner{width:42px;height:42px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:_alspin .7s linear infinite}
-        #_appLoading .al-brand{color:#fff;font-size:20px;font-weight:700;letter-spacing:2px;opacity:.9}
-        @keyframes _alspin{to{transform:rotate(360deg)}}
+        #_appLoading .al-icon{width:80px;height:80px;object-fit:contain;animation:_alpulse 1.6s ease-in-out infinite}
+        #_appLoading .al-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(128,128,128,.15);overflow:hidden}
+        #_appLoading .al-bar::after{content:'';position:absolute;top:0;left:-60%;width:60%;height:100%;background:var(--th-accent,#7c3aed);animation:_albar 1.4s ease-in-out infinite}
+        @keyframes _alpulse{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.08);opacity:1}}
+        @keyframes _albar{0%{left:-60%}100%{left:110%}}
     </style>
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
@@ -1210,8 +1229,8 @@
 <body>
     <!-- Pantalla de carga (CSS inline, sin dependencias externas) -->
     <div id="_appLoading" aria-hidden="true">
-        <div class="al-brand">LOCOBAR</div>
-        <div class="al-spinner"></div>
+        <img class="al-icon" src="/public/img/icono-LB.png" alt="">
+        <div class="al-bar"></div>
     </div>
 
     <!-- Sidebar Overlay (for mobile) -->
