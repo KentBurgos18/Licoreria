@@ -3935,10 +3935,14 @@
         }
         // ─────────────────────────────────────────────────────────────
 
+        var _expenseCategoryChart = null;
+
         function loadExpenseSummary() {
+            var period = $('#expenseChartPeriod').val() || 'year';
             $.ajax({
                 url: '/api/expenses/summary',
                 method: 'GET',
+                data: { period: period },
                 headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
                 success: function(res) {
                     var fmt = function(n) { return '$' + parseFloat(n || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
@@ -3950,7 +3954,135 @@
                     } else {
                         $('#expenseTopCategory').text('—');
                     }
+                    renderExpenseCategoryChart(res.byCategory || []);
                 }
+            });
+        }
+
+        function renderExpenseCategoryChart(byCategory) {
+            var canvas = document.getElementById('expenseCategoryChart');
+            if (!canvas) return;
+            var hasData = byCategory.length > 0;
+            $('#expenseCategoryEmpty').toggle(!hasData);
+            $(canvas).toggle(hasData);
+            $('#expenseCategoryLegend').toggle(hasData);
+            if (!hasData) {
+                if (_expenseCategoryChart) { _expenseCategoryChart.destroy(); _expenseCategoryChart = null; }
+                return;
+            }
+            var colors = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#34495e','#e91e63','#00bcd4'];
+            var labels = byCategory.map(function(c) { return c.name; });
+            var data   = byCategory.map(function(c) { return c.total; });
+            var total  = data.reduce(function(s, v) { return s + v; }, 0);
+            var bgColors = labels.map(function(_, i) { return colors[i % colors.length]; });
+            if (_expenseCategoryChart) { _expenseCategoryChart.destroy(); }
+            _expenseCategoryChart = new Chart(canvas.getContext('2d'), {
+                type: 'doughnut',
+                data: { labels: labels, datasets: [{ data: data, backgroundColor: bgColors, borderWidth: 2 }] },
+                options: {
+                    cutout: '65%',
+                    plugins: { legend: { display: false }, tooltip: {
+                        callbacks: { label: function(ctx) { return ' $' + ctx.parsed.toFixed(2) + ' (' + (ctx.parsed / total * 100).toFixed(1) + '%)'; } }
+                    }},
+                    animation: { duration: 400 }
+                }
+            });
+            var fmt = function(n) { return '$' + parseFloat(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+            var legendHtml = byCategory.map(function(c, i) {
+                var pct = total > 0 ? (c.total / total * 100).toFixed(1) : '0.0';
+                return '<div class="d-flex align-items-center justify-content-between mb-1 small">' +
+                    '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + bgColors[i] + ';margin-right:6px"></span>' + c.name + '</span>' +
+                    '<span class="text-muted ms-2">' + fmt(c.total) + ' <span class="text-secondary">(' + pct + '%)</span></span></div>';
+            }).join('');
+            $('#expenseCategoryLegend').html(legendHtml);
+        }
+
+        // ── CRUD de Categorías de Gastos ──────────────────────────────
+        function showExpenseCategoriesModal() {
+            document.getElementById('newCategoryName').value = '';
+            document.getElementById('editingCategoryId').value = '';
+            document.getElementById('cancelCategoryEdit').style.display = 'none';
+            renderExpenseCategoriesList();
+            new bootstrap.Modal(document.getElementById('expenseCategoriesModal')).show();
+        }
+
+        function renderExpenseCategoriesList() {
+            $.ajax({
+                url: '/api/expenses/categories', method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
+                success: function(res) {
+                    var cats = res.categories || [];
+                    if (cats.length === 0) {
+                        $('#expenseCategoriesList').html('<li class="list-group-item text-muted small text-center">Sin categorías</li>');
+                        return;
+                    }
+                    var html = cats.map(function(c) {
+                        return '<li class="list-group-item d-flex justify-content-between align-items-center py-1 px-2">' +
+                            '<span class="small">' + c.name + '</span>' +
+                            '<div class="btn-group btn-group-sm">' +
+                            '<button class="btn btn-outline-secondary btn-sm py-0" onclick="editCategoryItem(' + c.id + ',\'' + c.name.replace(/'/g, "\\'") + '\')"><i class="bi bi-pencil"></i></button>' +
+                            '<button class="btn btn-outline-danger btn-sm py-0" onclick="deleteCategoryItem(' + c.id + ',\'' + c.name.replace(/'/g, "\\'") + '\')"><i class="bi bi-trash"></i></button>' +
+                            '</div></li>';
+                    }).join('');
+                    $('#expenseCategoriesList').html(html);
+                    // Refrescar cache
+                    expenseCategoriesCache = cats;
+                }
+            });
+        }
+
+        function saveCategoryForm() {
+            var name = document.getElementById('newCategoryName').value.trim();
+            var id   = document.getElementById('editingCategoryId').value;
+            if (!name) { alert('Ingresa un nombre para la categoría'); return; }
+            var url    = id ? '/api/expenses/categories/' + id : '/api/expenses/categories';
+            var method = id ? 'PUT' : 'POST';
+            $.ajax({
+                url: url, method: method,
+                contentType: 'application/json',
+                data: JSON.stringify({ name: name }),
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
+                success: function() {
+                    expenseCategoriesCache = [];
+                    document.getElementById('newCategoryName').value = '';
+                    document.getElementById('editingCategoryId').value = '';
+                    document.getElementById('cancelCategoryEdit').style.display = 'none';
+                    renderExpenseCategoriesList();
+                    loadExpenseSummary();
+                    // Refrescar selects abiertos
+                    populateExpenseCategorySelect($('#expenseCategoryId'), null);
+                    populateExpenseCategorySelect($('#expenseFilterCategory'), null);
+                },
+                error: function(xhr) { alert((xhr.responseJSON && xhr.responseJSON.error) || 'Error al guardar'); }
+            });
+        }
+
+        function editCategoryItem(id, name) {
+            document.getElementById('editingCategoryId').value = id;
+            document.getElementById('newCategoryName').value = name;
+            document.getElementById('cancelCategoryEdit').style.display = '';
+            document.getElementById('newCategoryName').focus();
+        }
+
+        function cancelCategoryEdit() {
+            document.getElementById('editingCategoryId').value = '';
+            document.getElementById('newCategoryName').value = '';
+            document.getElementById('cancelCategoryEdit').style.display = 'none';
+        }
+
+        function deleteCategoryItem(id, name) {
+            if (!confirm('¿Eliminar la categoría "' + name + '"?')) return;
+            $.ajax({
+                url: '/api/expenses/categories/' + id, method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') },
+                success: function() {
+                    expenseCategoriesCache = [];
+                    renderExpenseCategoriesList();
+                    loadExpenseSummary();
+                    populateExpenseCategorySelect($('#expenseCategoryId'), null);
+                    populateExpenseCategorySelect($('#expenseFilterCategory'), null);
+                },
+                error: function(xhr) { alert((xhr.responseJSON && xhr.responseJSON.error) || 'Error al eliminar'); }
             });
         }
 
@@ -3963,7 +4095,7 @@
             if (from) params.startDate = from;
             if (to) params.endDate = to;
 
-            // Cargar categorías en filtro si aún no están
+            // Cargar categorías en filtros si aún no están
             loadExpenseCategories(null, $('#expenseCategoryId'));
 
             $.ajax({

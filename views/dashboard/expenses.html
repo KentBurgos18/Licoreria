@@ -2,9 +2,14 @@
   <div id="expenses" class="content-section active">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="mb-0"><i class="bi bi-cash-stack"></i> Gastos</h2>
-            <button id="addExpenseBtn" class="btn btn-danger" onclick="showCreateExpenseModal()">
-                <i class="bi bi-plus"></i> Nuevo Gasto
-            </button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-sm" onclick="showExpenseCategoriesModal()">
+                    <i class="bi bi-tags"></i> Categorías
+                </button>
+                <button id="addExpenseBtn" class="btn btn-danger" onclick="showCreateExpenseModal()">
+                    <i class="bi bi-plus"></i> Nuevo Gasto
+                </button>
+            </div>
         </div>
 
         <!-- Tarjetas resumen -->
@@ -32,6 +37,33 @@
                         <div class="fs-5 fw-bold" id="expenseTopCategory">—</div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Gráfico por categoría -->
+        <div class="card mb-4" id="expenseCategoryChartCard">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Gastos por categoría</span>
+                <div class="d-flex gap-2 align-items-center">
+                    <select class="form-select form-select-sm" id="expenseChartPeriod" style="width:auto" onchange="loadExpenseSummary()">
+                        <option value="day">Hoy</option>
+                        <option value="week">Esta semana</option>
+                        <option value="month">Este mes</option>
+                        <option value="year" selected>Este año</option>
+                        <option value="all">Todo</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-5 text-center">
+                        <canvas id="expenseCategoryChart" style="max-height:220px"></canvas>
+                    </div>
+                    <div class="col-md-7">
+                        <div id="expenseCategoryLegend" class="mt-2"></div>
+                    </div>
+                </div>
+                <div id="expenseCategoryEmpty" class="text-center text-muted py-3" style="display:none">Sin datos para el período seleccionado</div>
             </div>
         </div>
 
@@ -85,6 +117,31 @@
             </div>
         </div>
         </div>
+  <!-- Modal gestión de categorías -->
+  <div class="modal fade" id="expenseCategoriesModal" tabindex="-1">
+      <div class="modal-dialog modal-sm">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title">Categorías de Gastos</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body p-2">
+                  <!-- Formulario agregar/editar -->
+                  <div class="input-group input-group-sm mb-2">
+                      <input type="hidden" id="editingCategoryId">
+                      <input type="text" class="form-control" id="newCategoryName" placeholder="Nombre de categoría" maxlength="100">
+                      <button class="btn btn-primary" onclick="saveCategoryForm()"><i class="bi bi-check-lg"></i></button>
+                      <button class="btn btn-outline-secondary" id="cancelCategoryEdit" style="display:none" onclick="cancelCategoryEdit()"><i class="bi bi-x-lg"></i></button>
+                  </div>
+                  <!-- Lista -->
+                  <ul class="list-group list-group-flush" id="expenseCategoriesList">
+                      <li class="list-group-item text-muted small text-center">Cargando...</li>
+                  </ul>
+              </div>
+          </div>
+      </div>
+  </div>
+
   <script>
     window.initExpensesView = function() {
       if (typeof loadExpenses === 'function') loadExpenses();

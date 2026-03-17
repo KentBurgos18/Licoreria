@@ -36,11 +36,74 @@ router.get('/categories', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
+// POST /api/expenses/categories — crear categoría
+// ─────────────────────────────────────────────────────────────
+router.post('/categories', async (req, res) => {
+  try {
+    const tenantId = req.tenantId || 1;
+    const { name } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: 'El nombre es requerido' });
+    const exists = await ExpenseCategory.findOne({ where: { tenantId, name: name.trim() } });
+    if (exists) return res.status(400).json({ error: 'Ya existe una categoría con ese nombre' });
+    const cat = await ExpenseCategory.create({ tenantId, name: name.trim() });
+    res.status(201).json({ category: cat });
+  } catch (error) {
+    console.error('Error creando categoría:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// PUT /api/expenses/categories/:id — editar categoría
+// ─────────────────────────────────────────────────────────────
+router.put('/categories/:id', async (req, res) => {
+  try {
+    const tenantId = req.tenantId || 1;
+    const cat = await ExpenseCategory.findOne({ where: { id: req.params.id, tenantId } });
+    if (!cat) return res.status(404).json({ error: 'Categoría no encontrada' });
+    const { name } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: 'El nombre es requerido' });
+    const dup = await ExpenseCategory.findOne({ where: { tenantId, name: name.trim() } });
+    if (dup && String(dup.id) !== String(cat.id)) return res.status(400).json({ error: 'Ya existe una categoría con ese nombre' });
+    await cat.update({ name: name.trim() });
+    res.json({ category: cat });
+  } catch (error) {
+    console.error('Error editando categoría:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// DELETE /api/expenses/categories/:id — eliminar categoría
+// ─────────────────────────────────────────────────────────────
+router.delete('/categories/:id', async (req, res) => {
+  try {
+    const tenantId = req.tenantId || 1;
+    const cat = await ExpenseCategory.findOne({ where: { id: req.params.id, tenantId } });
+    if (!cat) return res.status(404).json({ error: 'Categoría no encontrada' });
+    const inUse = await Expense.count({ where: { categoryId: cat.id } });
+    if (inUse > 0) return res.status(400).json({ error: `No se puede eliminar: tiene ${inUse} gasto(s) asociado(s)` });
+    await cat.destroy();
+    res.json({ message: 'Categoría eliminada' });
+  } catch (error) {
+    console.error('Error eliminando categoría:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
 // GET /api/expenses/summary — totales del mes, año y por categoría
 // ─────────────────────────────────────────────────────────────
 router.get('/summary', async (req, res) => {
   try {
     const tenantId = req.tenantId || 1;
+    const period = req.query.period || 'year'; // 'month' | 'year' | 'all'
+
+    let periodFilter = '';
+    if (period === 'day')   periodFilter = `AND e.expense_date = CURRENT_DATE`;
+    else if (period === 'week')  periodFilter = `AND DATE_TRUNC('week', e.expense_date) = DATE_TRUNC('week', CURRENT_DATE)`;
+    else if (period === 'month') periodFilter = `AND DATE_TRUNC('month', e.expense_date) = DATE_TRUNC('month', CURRENT_DATE)`;
+    else if (period === 'year')  periodFilter = `AND DATE_PART('year', e.expense_date) = DATE_PART('year', CURRENT_DATE)`;
 
     const [rows] = await sequelize.query(`
       SELECT
@@ -51,7 +114,7 @@ router.get('/summary', async (req, res) => {
           WHEN DATE_PART('year', e.expense_date) = DATE_PART('year', CURRENT_DATE)
           THEN e.amount ELSE 0 END), 0) AS this_year,
         ec.name AS category,
-        COALESCE(SUM(e.amount), 0) AS category_total
+        COALESCE(SUM(CASE WHEN 1=1 ${periodFilter} THEN e.amount ELSE 0 END), 0) AS category_total
       FROM expenses e
       LEFT JOIN expense_categories ec ON ec.id = e.category_id
       WHERE e.tenant_id = :tenantId
@@ -61,7 +124,10 @@ router.get('/summary', async (req, res) => {
 
     const thisMonth    = rows.reduce((sum, r) => sum + parseFloat(r.this_month  || 0), 0);
     const thisYear     = rows.reduce((sum, r) => sum + parseFloat(r.this_year   || 0), 0);
-    const byCategory   = rows.map(r => ({ name: r.category || 'Sin categoría', total: parseFloat(r.category_total) }));
+    const byCategory   = rows
+      .map(r => ({ name: r.category || 'Sin categoría', total: parseFloat(r.category_total) }))
+      .filter(r => r.total > 0)
+      .sort((a, b) => b.total - a.total);
     const topCategory  = byCategory.length > 0 ? byCategory[0] : null;
 
     res.json({ thisMonth, thisYear, byCategory, topCategory });
