@@ -11,30 +11,61 @@
     <title id="dashboardPageTitle">Sistema de Licorería - Dashboard</title>
     <script>window._pwaDeferred = null; window.addEventListener('beforeinstallprompt', function(e) { e.preventDefault(); window._pwaDeferred = e; });</script>
     <script>
-        // Leer tema guardado ANTES de pintar para que el overlay use el color correcto
+        // Leer tema ANTES de pintar → variables CSS del skeleton
         (function(){
-            var bg = '#0f1117';
-            try {
-                var u = JSON.parse(localStorage.getItem('adminUser') || '{}');
-                var mode = u.themeMode || 'auto';
-                var h = new Date().getHours();
-                var isDark = mode === 'dark' || (mode === 'auto' && (h < 7 || h >= 19));
-                var id = parseInt(u.themeId) || 1;
-                var darkBgs  = {1:'#0f1117', 2:'#0d1b0e', 3:'#0d1520', 4:'#1a0d10'};
-                var lightBgs = {1:'#f4f5f9', 2:'#f2faf3', 3:'#f0f6ff', 4:'#fff5f7'};
-                bg = isDark ? (darkBgs[id] || '#0f1117') : (lightBgs[id] || '#f4f5f9');
-            } catch(e) {}
-            document.write('<style>#_appLoading{background:' + bg + '}</style>');
+            var T={
+                '1d':{bg:'#0f1117',surf:'#181c27',base:'#1f2436',shine:'#2a3050',accent:'#7c3aed'},
+                '1l':{bg:'#f4f6fb',surf:'#ffffff',base:'#e0e3ef',shine:'#eceffe',accent:'#6d28d9'},
+                '2d':{bg:'#080d0d',surf:'#0f1a1a',base:'#142222',shine:'#1c2f2f',accent:'#0d9488'},
+                '2l':{bg:'#f0fafa',surf:'#ffffff',base:'#cce8e8',shine:'#ddf2f2',accent:'#0f766e'},
+                '3d':{bg:'#111114',surf:'#1c1c22',base:'#22222a',shine:'#2c2c38',accent:'#e11d48'},
+                '3l':{bg:'#fdf2f5',surf:'#ffffff',base:'#f5d0da',shine:'#fce8ee',accent:'#be123c'},
+                '4d':{bg:'#0a0e1a',surf:'#111826',base:'#182030',shine:'#1f2a3e',accent:'#38bdf8'},
+                '4l':{bg:'#eef4ff',surf:'#ffffff',base:'#cfe0f8',shine:'#e0eeff',accent:'#0284c7'}
+            };
+            var t=T['1d'];
+            try{
+                var u=JSON.parse(localStorage.getItem('adminUser')||'{}');
+                var mo=u.themeMode||'auto',h=new Date().getHours();
+                var dk=mo==='dark'||(mo==='auto'&&(h<7||h>=19));
+                var id=parseInt(u.themeId)||1;
+                t=T[id+(dk?'d':'l')]||t;
+            }catch(e){}
+            document.write('<style>:root{--sk-bg:'+t.bg+';--sk-surf:'+t.surf+';--sk-base:'+t.base+';--sk-shine:'+t.shine+';--sk-accent:'+t.accent+'}</style>');
         })();
     </script>
     <style>
-        #_appLoading{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;gap:0;transition:opacity .35s ease}
+        #_appLoading{position:fixed;inset:0;z-index:99999;background:var(--sk-bg,#0f1117);transition:opacity .35s ease;overflow:hidden}
         #_appLoading._hide{opacity:0;pointer-events:none}
-        #_appLoading .al-icon{width:80px;height:80px;object-fit:contain;animation:_alpulse 1.6s ease-in-out infinite}
-        #_appLoading .al-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(128,128,128,.15);overflow:hidden}
-        #_appLoading .al-bar::after{content:'';position:absolute;top:0;left:-60%;width:60%;height:100%;background:var(--th-accent,#7c3aed);animation:_albar 1.4s ease-in-out infinite}
-        @keyframes _alpulse{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.08);opacity:1}}
-        @keyframes _albar{0%{left:-60%}100%{left:110%}}
+        @keyframes _sk{0%{background-position:-800px 0}100%{background-position:800px 0}}
+        .sk{background:linear-gradient(90deg,var(--sk-base,#1f2436) 25%,var(--sk-shine,#2a3050) 50%,var(--sk-base,#1f2436) 75%);background-size:1600px 100%;animation:_sk 1.7s infinite linear;border-radius:8px}
+        .sk-sb{position:fixed;top:0;left:0;bottom:0;width:240px;background:var(--sk-surf,#181c27);display:flex;flex-direction:column;padding:18px 12px;box-sizing:border-box}
+        .sk-sb-logo{height:32px;width:110px;margin-bottom:22px;flex-shrink:0}
+        .sk-sb-item{height:36px;margin-bottom:7px;flex-shrink:0}
+        .sk-tb{position:fixed;top:0;left:240px;right:0;height:60px;background:var(--sk-surf,#181c27);display:flex;align-items:center;padding:0 20px;gap:10px;box-sizing:border-box}
+        .sk-tb-title{height:18px;width:140px;flex-shrink:0}
+        .sk-tb-btn{height:30px;width:88px;flex-shrink:0}
+        .sk-tb-avatar{height:32px;width:32px;border-radius:50%!important;flex-shrink:0}
+        .sk-main{position:fixed;top:60px;left:240px;right:0;bottom:0;padding:20px;display:flex;flex-direction:column;gap:14px;box-sizing:border-box;overflow:hidden}
+        .sk-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+        .sk-card{height:88px}
+        .sk-charts{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+        .sk-chart-big,.sk-chart-sm{height:188px}
+        .sk-table{flex:1;min-height:80px}
+        .sk-prog{position:fixed;bottom:0;left:0;right:0;height:3px;overflow:hidden;background:rgba(128,128,128,.1)}
+        .sk-prog::after{content:'';position:absolute;top:0;left:-40%;width:40%;height:100%;background:var(--sk-accent,#7c3aed);animation:_skp 1.5s ease-in-out infinite}
+        @keyframes _skp{0%{left:-40%}100%{left:110%}}
+        .al-logo{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .5s;pointer-events:none;background:rgba(0,0,0,.4)}
+        .al-logo.visible{opacity:1}
+        .al-logo img{width:70px;height:70px;object-fit:contain;animation:_alp 1.6s ease-in-out infinite}
+        @keyframes _alp{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.1);opacity:1}}
+        @media(max-width:767px){
+            .sk-sb{display:none}
+            .sk-tb{left:0}
+            .sk-main{left:0;padding:14px}
+            .sk-cards{grid-template-columns:repeat(2,1fr)}
+            .sk-charts{grid-template-columns:1fr}
+        }
     </style>
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
@@ -1227,10 +1258,40 @@
     </style>
 </head>
 <body>
-    <!-- Pantalla de carga (CSS inline, sin dependencias externas) -->
+    <!-- Skeleton loading (CSS inline, sin dependencias externas) -->
     <div id="_appLoading" aria-hidden="true">
-        <img class="al-icon" src="/public/img/icono-LB.png" alt="">
-        <div class="al-bar"></div>
+        <div class="sk-sb">
+            <div class="sk sk-sb-logo"></div>
+            <div class="sk sk-sb-item"></div>
+            <div class="sk sk-sb-item" style="opacity:.75"></div>
+            <div class="sk sk-sb-item" style="opacity:.55"></div>
+            <div class="sk sk-sb-item" style="opacity:.4"></div>
+            <div class="sk sk-sb-item" style="opacity:.28"></div>
+            <div class="sk sk-sb-item" style="opacity:.18"></div>
+        </div>
+        <div class="sk-tb">
+            <div class="sk sk-tb-title"></div>
+            <div style="flex:1"></div>
+            <div class="sk sk-tb-btn"></div>
+            <div class="sk sk-tb-avatar"></div>
+        </div>
+        <div class="sk-main">
+            <div class="sk-cards">
+                <div class="sk sk-card"></div>
+                <div class="sk sk-card"></div>
+                <div class="sk sk-card"></div>
+                <div class="sk sk-card"></div>
+            </div>
+            <div class="sk-charts">
+                <div class="sk sk-chart-big"></div>
+                <div class="sk sk-chart-sm"></div>
+            </div>
+            <div class="sk sk-table"></div>
+        </div>
+        <div class="sk-prog"></div>
+        <div class="al-logo" id="_alLogo">
+            <img src="/public/img/icono-LB.png" alt="">
+        </div>
     </div>
 
     <!-- Sidebar Overlay (for mobile) -->
@@ -12169,16 +12230,25 @@
             return ok;
         }
 
-        // Oculta el overlay de carga con transición suave
+        // Si CSS tarda >2s mostrar logo encima del skeleton
+        var _alLogoTimer = setTimeout(function() {
+            if (!_appLoadingHidden) {
+                var logo = document.getElementById('_alLogo');
+                if (logo) logo.classList.add('visible');
+            }
+        }, 2000);
+
+        // Oculta el skeleton con transición suave
         var _appLoadingHidden = false;
         function hideAppLoading() {
             if (_appLoadingHidden) return;
             _appLoadingHidden = true;
+            clearTimeout(_alLogoTimer);
             sessionStorage.removeItem('_cssReloaded');
             var el = document.getElementById('_appLoading');
             if (!el) return;
             el.classList.add('_hide');
-            setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 350);
+            setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 380);
         }
 
         // Reinyecta <link rel="stylesheet"> con cache-busting y llama cb cuando todos cargan
