@@ -12128,72 +12128,89 @@
 
     <script src="/js/dashboard-spa-router.js"></script>
     <script>
-        document.body.style.visibility='visible';
-
-        // Verifica si Bootstrap CSS cargó correctamente (d-none debe dar display:none)
+        // Verifica si Bootstrap CSS cargó (d-none debe dar display:none)
         function checkCssLoaded() {
             var t = document.createElement('div');
             t.className = 'd-none';
             document.body.appendChild(t);
-            var loaded = getComputedStyle(t).display === 'none';
+            var ok = getComputedStyle(t).display === 'none';
             document.body.removeChild(t);
-            return loaded;
+            return ok;
         }
 
-        // Reinyecta todos los <link rel="stylesheet"> con cache-busting (evita reload completo)
-        function reinjectCss() {
+        // Muestra el body (sale del visibility:hidden del <head>)
+        var _bodyShown = false;
+        function showBody() {
+            if (_bodyShown) return;
+            _bodyShown = true;
+            document.body.style.visibility = 'visible';
+            sessionStorage.removeItem('_cssReloaded');
+        }
+
+        // Reinyecta <link rel="stylesheet"> con cache-busting y llama cb cuando todos cargan
+        function reinjectCss(cb) {
             var ts = Date.now();
-            var links = document.querySelectorAll('link[rel="stylesheet"]');
+            var links = Array.prototype.slice.call(document.querySelectorAll('link[rel="stylesheet"]'))
+                .filter(function(l) {
+                    var h = l.getAttribute('href') || '';
+                    return h && h.indexOf('fonts.googleapis') === -1 && h.indexOf('?v=') === -1;
+                });
+            if (!links.length) { if (cb) cb(); return; }
+            var remaining = links.length;
+            function done() { remaining--; if (remaining <= 0 && cb) cb(); }
             links.forEach(function(link) {
-                var href = link.getAttribute('href') || '';
-                if (!href || href.indexOf('fonts.googleapis') !== -1) return; // omitir Google Fonts
                 var newLink = document.createElement('link');
                 newLink.rel = 'stylesheet';
-                newLink.href = href.replace(/[?#].*$/, '') + '?v=' + ts;
-                newLink.onload = function() {
-                    if (link.parentNode) link.parentNode.removeChild(link);
-                };
+                newLink.href = link.getAttribute('href').replace(/[?#].*$/, '') + '?v=' + ts;
+                newLink.onload  = function() { if (link.parentNode) link.parentNode.removeChild(link); done(); };
+                newLink.onerror = function() { done(); };
                 link.parentNode.insertBefore(newLink, link.nextSibling);
             });
         }
 
-        // Al cargar: si CSS falla, reinyectar; si sigue fallando tras 3 intentos, reload completo
+        // Carga inicial: NO mostrar body hasta confirmar CSS, con timeout máx 4s
         (function() {
-            if (checkCssLoaded()) {
+            if (checkCssLoaded()) { showBody(); return; }
+
+            var attempts = parseInt(sessionStorage.getItem('_cssReloaded') || '0', 10);
+            if (attempts >= 3) {
+                // Demasiados intentos: mostrar igual y recargar
                 sessionStorage.removeItem('_cssReloaded');
+                showBody();
+                window.location.reload(true);
                 return;
             }
-            var attempts = parseInt(sessionStorage.getItem('_cssReloaded') || '0', 10);
-            if (attempts < 3) {
-                sessionStorage.setItem('_cssReloaded', String(attempts + 1));
-                reinjectCss();
-                // Verificar después de que los nuevos links carguen
-                setTimeout(function() {
-                    if (!checkCssLoaded()) window.location.reload(true);
-                }, 2000);
-            } else {
-                sessionStorage.removeItem('_cssReloaded');
-                window.location.reload(true);
-            }
+            sessionStorage.setItem('_cssReloaded', String(attempts + 1));
+
+            // Timeout de seguridad: mostrar a los 4s aunque el CSS no haya cargado
+            var safetyTimer = setTimeout(function() { showBody(); }, 4000);
+
+            reinjectCss(function() {
+                clearTimeout(safetyTimer);
+                if (checkCssLoaded()) {
+                    showBody();
+                } else {
+                    showBody();
+                    window.location.reload(true);
+                }
+            });
         })();
 
-        // Cuando la pestaña vuelve del fondo (ej: móvil tras inactividad o bfcache)
+        // Cuando la pestaña vuelve del fondo (Android)
         document.addEventListener('visibilitychange', function() {
             if (document.visibilityState === 'visible' && !checkCssLoaded()) {
-                reinjectCss();
-                setTimeout(function() {
+                reinjectCss(function() {
                     if (!checkCssLoaded()) window.location.reload(true);
-                }, 2000);
+                });
             }
         });
 
-        // pageshow cubre el bfcache de iOS Safari (persisted=true = restaurado de bfcache)
+        // Restauración bfcache iOS Safari
         window.addEventListener('pageshow', function(e) {
             if (e.persisted && !checkCssLoaded()) {
-                reinjectCss();
-                setTimeout(function() {
+                reinjectCss(function() {
                     if (!checkCssLoaded()) window.location.reload(true);
-                }, 2000);
+                });
             }
         });
     </script>
