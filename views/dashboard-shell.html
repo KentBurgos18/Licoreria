@@ -33,6 +33,12 @@
             }catch(e){}
             document.write('<style>:root{--sk-bg:'+t.bg+';--sk-surf:'+t.surf+';--sk-base:'+t.base+';--sk-shine:'+t.shine+';--sk-accent:'+t.accent+'}</style>');
         })();
+        // Contador de CSS no-bloqueante (3 archivos: bootstrap + icons + themes)
+        window._skCssTotal = 3; window._skCssLoaded = 0;
+        window._skOnCssLoad = function() {
+            window._skCssLoaded++;
+            if (window._skCssLoaded >= window._skCssTotal && typeof hideAppLoading === 'function') hideAppLoading();
+        };
     </script>
     <style>
         #_appLoading{position:fixed;inset:0;z-index:99999;background:var(--sk-bg,#0f1117);transition:opacity .35s ease;overflow:hidden}
@@ -67,9 +73,9 @@
             .sk-charts{grid-template-columns:1fr}
         }
     </style>
-    <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="/public/css/dashboard-themes.css">
+    <link href="/libs/css/bootstrap.min.css" rel="stylesheet" media="print" onload="this.media='all';window._skOnCssLoad&&window._skOnCssLoad()">
+    <link href="/libs/css/bootstrap-icons.css" rel="stylesheet" media="print" onload="this.media='all';window._skOnCssLoad&&window._skOnCssLoad()">
+    <link rel="stylesheet" href="/public/css/dashboard-themes.css" media="print" onload="this.media='all';window._skOnCssLoad&&window._skOnCssLoad()">
     <link id="themeFontLink" rel="stylesheet" href="">
     <!-- Google Maps API (carga optimizada con async) -->
     <script>(g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]);for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.googleapis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
@@ -12238,7 +12244,7 @@
             }
         }, 2000);
 
-        // Oculta el skeleton con transición suave
+        // Oculta el skeleton (NO elimina del DOM para poder re-mostrarlo)
         var _appLoadingHidden = false;
         function hideAppLoading() {
             if (_appLoadingHidden) return;
@@ -12246,14 +12252,26 @@
             clearTimeout(_alLogoTimer);
             sessionStorage.removeItem('_cssReloaded');
             var el = document.getElementById('_appLoading');
-            if (!el) return;
-            el.classList.add('_hide');
-            setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 380);
+            if (el) el.classList.add('_hide');
         }
 
-        // Reinyecta <link rel="stylesheet"> con cache-busting y llama cb cuando todos cargan
+        // Re-muestra el skeleton (para bfcache/visibilitychange)
+        function showAppLoading() {
+            _appLoadingHidden = false;
+            var el = document.getElementById('_appLoading');
+            if (!el) return;
+            el.classList.remove('_hide');
+            var logo = document.getElementById('_alLogo');
+            if (logo) logo.classList.remove('visible');
+            _alLogoTimer = setTimeout(function() {
+                if (!_appLoadingHidden) { var l = document.getElementById('_alLogo'); if (l) l.classList.add('visible'); }
+            }, 2000);
+        }
+
+        // Reinyecta CSS con cache-busting y llama cb cuando todos cargan
         function reinjectCss(cb) {
             var ts = Date.now();
+            window._skCssLoaded = 0;
             var links = Array.prototype.slice.call(document.querySelectorAll('link[rel="stylesheet"]'))
                 .filter(function(l) {
                     var h = l.getAttribute('href') || '';
@@ -12272,47 +12290,32 @@
             });
         }
 
-        // Carga inicial: ocultar overlay cuando CSS esté listo, máx 5s de espera
+        // Carga inicial: CSS es no-bloqueante, _skOnCssLoad llama hideAppLoading al terminar.
+        // Fallback por si onload no dispara (ej: ya estaba en cache sin pasar por onload)
         (function() {
             if (checkCssLoaded()) { hideAppLoading(); return; }
-
-            var attempts = parseInt(sessionStorage.getItem('_cssReloaded') || '0', 10);
-            if (attempts >= 3) {
-                sessionStorage.removeItem('_cssReloaded');
-                hideAppLoading();
-                window.location.reload(true);
-                return;
-            }
-            sessionStorage.setItem('_cssReloaded', String(attempts + 1));
-
-            // Timeout de seguridad: mostrar dashboard a los 5s aunque CSS no cargue
-            var safetyTimer = setTimeout(function() { hideAppLoading(); }, 5000);
-
-            reinjectCss(function() {
-                clearTimeout(safetyTimer);
-                if (checkCssLoaded()) {
-                    hideAppLoading();
-                } else {
-                    hideAppLoading();
-                    window.location.reload(true);
-                }
-            });
+            // Timeout de seguridad: 6s máximo
+            setTimeout(function() { if (!_appLoadingHidden) hideAppLoading(); }, 6000);
         })();
 
-        // Cuando la pestaña vuelve del fondo (Android)
+        // Cuando la pestaña vuelve del fondo (Android/Chrome)
         document.addEventListener('visibilitychange', function() {
             if (document.visibilityState === 'visible' && !checkCssLoaded()) {
+                showAppLoading();
                 reinjectCss(function() {
-                    if (!checkCssLoaded()) window.location.reload(true);
+                    if (checkCssLoaded()) hideAppLoading();
+                    else window.location.reload(true);
                 });
             }
         });
 
-        // Restauración bfcache iOS Safari
+        // Restauración bfcache (iOS Safari y Android Chrome PWA)
         window.addEventListener('pageshow', function(e) {
             if (e.persisted && !checkCssLoaded()) {
+                showAppLoading();
                 reinjectCss(function() {
-                    if (!checkCssLoaded()) window.location.reload(true);
+                    if (checkCssLoaded()) hideAppLoading();
+                    else window.location.reload(true);
                 });
             }
         });
