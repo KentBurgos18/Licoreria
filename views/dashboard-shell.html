@@ -33,12 +33,6 @@
             }catch(e){}
             document.write('<style>:root{--sk-bg:'+t.bg+';--sk-surf:'+t.surf+';--sk-base:'+t.base+';--sk-shine:'+t.shine+';--sk-accent:'+t.accent+'}</style>');
         })();
-        // Contador de CSS no-bloqueante (3 archivos: bootstrap + icons + themes)
-        window._skCssTotal = 3; window._skCssLoaded = 0;
-        window._skOnCssLoad = function() {
-            window._skCssLoaded++;
-            if (window._skCssLoaded >= window._skCssTotal && typeof hideAppLoading === 'function') hideAppLoading();
-        };
     </script>
     <style>
         #_appLoading{position:fixed;inset:0;z-index:99999;background:var(--sk-bg,#0f1117);transition:opacity .35s ease;overflow:hidden}
@@ -73,9 +67,9 @@
             .sk-charts{grid-template-columns:1fr}
         }
     </style>
-    <link href="/libs/css/bootstrap.min.css" rel="stylesheet" media="print" onload="this.media='all';window._skOnCssLoad&&window._skOnCssLoad()">
-    <link href="/libs/css/bootstrap-icons.css" rel="stylesheet" media="print" onload="this.media='all';window._skOnCssLoad&&window._skOnCssLoad()">
-    <link rel="stylesheet" href="/public/css/dashboard-themes.css" media="print" onload="this.media='all';window._skOnCssLoad&&window._skOnCssLoad()">
+    <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/public/css/dashboard-themes.css">
     <link id="themeFontLink" rel="stylesheet" href="">
     <!-- Google Maps API (carga optimizada con async) -->
     <script>(g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]);for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.googleapis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
@@ -12290,12 +12284,17 @@
             });
         }
 
-        // Carga inicial: CSS es no-bloqueante, _skOnCssLoad llama hideAppLoading al terminar.
-        // Fallback por si onload no dispara (ej: ya estaba en cache sin pasar por onload)
+        // CSS es render-blocking: cuando este script corre, CSS ya está cargado.
+        // hideAppLoading inmediato — skeleton desaparece y muestra dashboard ya estilizado.
         (function() {
             if (checkCssLoaded()) { hideAppLoading(); return; }
-            // Timeout de seguridad: 6s máximo
-            setTimeout(function() { if (!_appLoadingHidden) hideAppLoading(); }, 6000);
+            // Fallback: si por alguna razón CSS no detectado, esperar 500ms y reintentar
+            setTimeout(function() {
+                if (!_appLoadingHidden) {
+                    if (checkCssLoaded()) { hideAppLoading(); }
+                    else { hideAppLoading(); window.location.reload(true); }
+                }
+            }, 500);
         })();
 
         // Cuando la pestaña vuelve del fondo (Android/Chrome)
