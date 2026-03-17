@@ -392,8 +392,8 @@ router.post('/check-overdue-notifications', async (req, res) => {
       return res.json({ notified: 0, message: 'No pending notifications' });
     }
 
-    // Get admin email from settings
-    const adminEmail = await Setting.getSetting(tenantId, 'smtp_from_email', null);
+    // Get admin email from settings (smtp_user = bandeja real, no smtp_from_email que es noreply)
+    const adminEmail = await Setting.getSetting(tenantId, 'smtp_user', null);
     const brandName = await Setting.getSetting(tenantId, 'brand_slogan', 'Licorería');
 
     if (!adminEmail) {
@@ -489,7 +489,8 @@ router.post('/:id/send-reminder', async (req, res) => {
       return res.status(404).json({ error: 'Purchase order not found', code: 'NOT_FOUND' });
     }
 
-    const adminEmail = await Setting.getSetting(tenantId, 'smtp_from_email', null);
+    // smtp_user = bandeja real donde llegan los correos, no smtp_from_email (noreply)
+    const adminEmail = await Setting.getSetting(tenantId, 'smtp_user', null);
     const brandName = await Setting.getSetting(tenantId, 'brand_slogan', 'Licorería');
 
     if (!adminEmail) {

@@ -155,6 +155,18 @@ app.get('/api/public/payphone-commission', async (req, res) => {
   }
 });
 
+// API admin: tasas de interés de créditos por defecto
+app.get('/api/settings/credit_interest_rates', async (req, res) => {
+  try {
+    const tenantId = parseInt(req.query.tenantId, 10) || 1;
+    const normalRate  = await Setting.getSetting(tenantId, 'credit_default_interest_rate',  '0.005');
+    const overdueRate = await Setting.getSetting(tenantId, 'credit_default_overdue_rate',   '0.02');
+    res.json({ normalRate: parseFloat(normalRate), overdueRate: parseFloat(overdueRate) });
+  } catch (err) {
+    res.json({ normalRate: 0.005, overdueRate: 0.02 });
+  }
+});
+
 // API pública: tiempo de reserva del carrito en minutos
 app.get('/api/public/cart-reservation-minutes', async (req, res) => {
   try {
@@ -294,19 +306,23 @@ app.get('/customer/oauth-callback', (req, res) => {
 app.get('/customer/oauth-callback.html', (req, res) => res.redirect(302, '/customer/oauth-callback'));
 
 // Static files (DESPUÉS de las rutas específicas)
-app.use('/js', express.static(path.join(__dirname, 'public', 'js')));
-app.use(express.static(path.join(__dirname, 'views')));
+// Cache largo (7 días) para CSS/JS/imágenes — acelera carga en móvil
+const staticCacheOptions     = { maxAge: '7d', etag: true, lastModified: true };
+const staticNoCacheOptions   = { maxAge: 0,    etag: true, lastModified: true }; // HTML sin cache
 
-// Archivos estáticos públicos (logo, etc.)
-app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/js',     express.static(path.join(__dirname, 'public', 'js'),   staticCacheOptions));
+app.use(express.static(path.join(__dirname, 'views'), staticNoCacheOptions));
+
+// Archivos estáticos públicos (logo, imágenes, CSS)
+app.use('/public', express.static(path.join(__dirname, 'public'), staticCacheOptions));
 
 // Favicon para navegadores que piden /favicon.ico
 app.get('/favicon.ico', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'img', 'pestana-LB.png'));
 });
 
-// Serve local libraries (Bootstrap, jQuery, etc.)
-app.use('/libs', express.static(path.join(__dirname, 'public', 'libs')));
+// Serve local libraries (Bootstrap, jQuery, etc.) — cache largo
+app.use('/libs', express.static(path.join(__dirname, 'public', 'libs'), staticCacheOptions));
 
 // Serve uploaded images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -489,10 +505,140 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
     }
     outflows.grandTotal = outflows.cash.total + outflows.card.total + outflowTransferGrand;
 
+    // Movimientos internos entre cuentas (account_transfers)
+    const [transfersOut] = await sequelize.query(`
+      SELECT from_account, SUM(amount) AS total
+      FROM account_transfers
+      WHERE tenant_id = :tenantId
+      GROUP BY from_account
+    `, { replacements: { tenantId } });
+
+    const [transfersIn] = await sequelize.query(`
+      SELECT to_account, SUM(amount) AS total
+      FROM account_transfers
+      WHERE tenant_id = :tenantId
+      GROUP BY to_account
+    `, { replacements: { tenantId } });
+
+    // Incluir movimientos en el balance por cuenta
+    for (const row of transfersOut) {
+      const key = row.from_account;
+      const amt = parseFloat(row.total) || 0;
+      if (key === 'CASH') {
+        outflows.cash.expensesTotal += amt; // salida de efectivo
+      } else if (key === 'CARD') {
+        outflows.card.expensesTotal += amt;
+      } else {
+        if (!outflows.transfer[key]) outflows.transfer[key] = { purchasesTotal: 0, expensesTotal: 0, total: 0 };
+        outflows.transfer[key].expensesTotal += amt;
+      }
+    }
+
+    for (const row of transfersIn) {
+      const key = row.to_account;
+      const amt = parseFloat(row.total) || 0;
+      if (key === 'CASH') {
+        summary.cash.creditsTotal += amt;
+      } else if (key === 'CARD') {
+        summary.card.creditsTotal += amt;
+      } else {
+        if (!summary.transfer[key]) summary.transfer[key] = { salesTotal: 0, creditsTotal: 0, total: 0 };
+        summary.transfer[key].creditsTotal += amt;
+      }
+    }
+
+    // Recalcular totales después de agregar transferencias
+    summary.cash.total = summary.cash.salesTotal + summary.cash.creditsTotal;
+    summary.card.total = summary.card.salesTotal + summary.card.creditsTotal;
+    transferGrand = 0;
+    for (const key of Object.keys(summary.transfer)) {
+      summary.transfer[key].total = summary.transfer[key].salesTotal + summary.transfer[key].creditsTotal;
+      transferGrand += summary.transfer[key].total;
+    }
+    summary.grandTotal = summary.cash.total + summary.card.total + transferGrand;
+
+    outflows.cash.total = outflows.cash.purchasesTotal + outflows.cash.expensesTotal;
+    outflows.card.total = outflows.card.purchasesTotal + outflows.card.expensesTotal;
+    outflowTransferGrand = 0;
+    for (const key of Object.keys(outflows.transfer)) {
+      outflows.transfer[key].total = outflows.transfer[key].purchasesTotal + outflows.transfer[key].expensesTotal;
+      outflowTransferGrand += outflows.transfer[key].total;
+    }
+    outflows.grandTotal = outflows.cash.total + outflows.card.total + outflowTransferGrand;
+
     res.json({ bankAccounts, summary, outflows });
   } catch (err) {
     console.error('Error en /api/treasury:', err);
     res.status(500).json({ error: 'Error al cargar tesorería' });
+  }
+});
+
+// POST /api/treasury/transfers — registrar movimiento entre cuentas
+app.post('/api/treasury/transfers', authenticateAdmin, async (req, res) => {
+  try {
+    const { tenantId, fromAccount, toAccount, amount, commission, transferDate, notes } = req.body;
+
+    if (!tenantId || !fromAccount || !toAccount || !amount || !transferDate) {
+      return res.status(400).json({ error: 'Campos requeridos: fromAccount, toAccount, amount, transferDate' });
+    }
+    if (fromAccount === toAccount) {
+      return res.status(400).json({ error: 'La cuenta origen y destino no pueden ser la misma' });
+    }
+
+    const amt  = parseFloat(amount)     || 0;
+    const comm = parseFloat(commission) || 0;
+
+    if (amt <= 0) return res.status(400).json({ error: 'El monto debe ser mayor a 0' });
+
+    let expenseId = null;
+
+    // Si hay comisión, crear un gasto automáticamente en la cuenta origen
+    if (comm > 0) {
+      const { Expense } = require('./models'); // models ya inicializados, require es cached
+      const payMethod = fromAccount === 'CASH' ? 'CASH' : fromAccount === 'CARD' ? 'CARD' : 'TRANSFER';
+      const transferInfo = (payMethod === 'TRANSFER') ? fromAccount : null;
+      const expense = await Expense.create({
+        tenantId,
+        description: `Comisión transferencia: ${fromAccount} → ${toAccount}`,
+        amount: comm,
+        expenseDate: transferDate,
+        paymentMethod: payMethod,
+        transferAccountInfo: transferInfo,
+        notes: notes || null
+      });
+      expenseId = expense.id;
+    }
+
+    const [result] = await sequelize.query(`
+      INSERT INTO account_transfers (tenant_id, from_account, to_account, amount, commission, transfer_date, notes, expense_id)
+      VALUES (:tenantId, :fromAccount, :toAccount, :amount, :commission, :transferDate, :notes, :expenseId)
+      RETURNING *
+    `, { replacements: { tenantId, fromAccount, toAccount, amount: amt, commission: comm, transferDate, notes: notes || null, expenseId } });
+
+    res.json({ transfer: result[0], message: 'Movimiento registrado correctamente' });
+  } catch (err) {
+    console.error('Error en POST /api/treasury/transfers:', err);
+    res.status(500).json({ error: 'Error al registrar movimiento' });
+  }
+});
+
+// GET /api/treasury/transfers — listar movimientos recientes
+app.get('/api/treasury/transfers', authenticateAdmin, async (req, res) => {
+  try {
+    const tenantId = parseInt(req.query.tenantId) || 1;
+    const limit    = parseInt(req.query.limit)    || 50;
+
+    const [transfers] = await sequelize.query(`
+      SELECT * FROM account_transfers
+      WHERE tenant_id = :tenantId
+      ORDER BY transfer_date DESC, created_at DESC
+      LIMIT :limit
+    `, { replacements: { tenantId, limit } });
+
+    res.json({ transfers });
+  } catch (err) {
+    console.error('Error en GET /api/treasury/transfers:', err);
+    res.status(500).json({ error: 'Error al cargar movimientos' });
   }
 });
 
@@ -1197,6 +1343,38 @@ async function initializeApp() {
       console.warn('⚠️ Migración customer_credits/customer_payments:', e.message);
     }
 
+    // Migración: account_transfers (movimientos entre cuentas de tesorería)
+    try {
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS account_transfers (
+          id                BIGSERIAL PRIMARY KEY,
+          tenant_id         BIGINT NOT NULL DEFAULT 1,
+          from_account      VARCHAR(255) NOT NULL,
+          to_account        VARCHAR(255) NOT NULL,
+          amount            DECIMAL(12,2) NOT NULL,
+          commission        DECIMAL(12,2) NOT NULL DEFAULT 0,
+          transfer_date     DATE NOT NULL,
+          notes             TEXT,
+          expense_id        BIGINT,
+          created_at        TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_account_transfers_tenant ON account_transfers(tenant_id)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_account_transfers_date   ON account_transfers(transfer_date)`);
+      console.log('✅ Migración account_transfers completada');
+    } catch (e) {
+      console.warn('⚠️ Migración account_transfers:', e.message);
+    }
+
+    // Migración: overdue_interest_rate y last_notified_at en customer_credits
+    try {
+      await sequelize.query(`ALTER TABLE customer_credits ADD COLUMN IF NOT EXISTS overdue_interest_rate DECIMAL(5,4) NOT NULL DEFAULT 0`);
+      await sequelize.query(`ALTER TABLE customer_credits ADD COLUMN IF NOT EXISTS last_notified_at TIMESTAMP WITH TIME ZONE`);
+      console.log('✅ Migración customer_credits mora completada');
+    } catch (e) {
+      console.warn('⚠️ Migración customer_credits mora:', e.message);
+    }
+
     // Migración: dashboard_config en users
     try {
       await sequelize.query(`
@@ -1392,7 +1570,8 @@ async function initializeApp() {
 
     // ─── Scheduler: calcular intereses diariamente a medianoche ─────────────
     const CreditService = require('./services/CreditService');
-    const { CustomerCredit } = require('./models');
+    const EmailService  = require('./services/EmailService');
+    const { CustomerCredit, Customer } = require('./models');
 
     async function runDailyInterestCalculation() {
       try {
@@ -1424,6 +1603,82 @@ async function initializeApp() {
     // Calcular al iniciar (por si el servidor estuvo caído) y luego a medianoche
     await runDailyInterestCalculation();
     scheduleMidnightInterest();
+
+    // ─── Scheduler: recordatorios de créditos a las 7:00 AM hora Guayaquil ──
+    // Guayaquil = UTC-5 (sin horario de verano), 7:00 AM GYE = 12:00 UTC
+    async function runCreditReminders() {
+      try {
+        const tenantId = 1;
+        const now = new Date();
+        // Fecha límite para "próximo a vencer" = hoy + 3 días
+        const in3days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+        const in3Str  = CreditService.localDateStr(in3days);
+        const threshold24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+        // Créditos activos que vencen en ≤ 3 días o ya están vencidos
+        const credits = await CustomerCredit.findAll({
+          where: {
+            tenantId,
+            status: 'ACTIVE',
+            dueDate: { [require('sequelize').Op.not]: null, [require('sequelize').Op.lte]: in3Str },
+            [require('sequelize').Op.or]: [
+              { lastNotifiedAt: null },
+              { lastNotifiedAt: { [require('sequelize').Op.lt]: threshold24h } }
+            ]
+          },
+          include: [{ model: Customer, as: 'customer', attributes: ['id', 'name', 'email'] }]
+        });
+
+        if (credits.length === 0) return;
+
+        let emailConfigured = false;
+        try {
+          await EmailService.initialize(tenantId);
+          emailConfigured = true;
+        } catch (e) { /* SMTP no configurado */ }
+
+        if (!emailConfigured) return;
+
+        const brandName = await Setting.getSetting(tenantId, 'brand_slogan', 'Licorería');
+        const { buildCreditReminderHtml } = require('./routes/customerCredits');
+        let sent = 0;
+
+        for (const credit of credits) {
+          if (!credit.customer || !credit.customer.email) continue;
+          try {
+            const subject = `[${brandName}] Recordatorio de saldo pendiente`;
+            const html = buildCreditReminderHtml(credit, brandName);
+            await EmailService.sendEmail(credit.customer.email, subject, html);
+            await credit.update({ lastNotifiedAt: now });
+            sent++;
+          } catch (err) {
+            console.error(`❌ Recordatorio crédito ${credit.id}:`, err.message);
+          }
+        }
+
+        if (sent > 0) {
+          console.log(`📧 Recordatorios de crédito enviados: ${sent} [${now.toLocaleString('es-EC')}]`);
+        }
+      } catch (err) {
+        console.error('❌ Error en recordatorios de créditos:', err.message);
+      }
+    }
+
+    function schedule7amGuayaquil() {
+      const now = new Date();
+      // 7:00 AM Guayaquil (UTC-5) = 12:00:00 UTC
+      const nextRun = new Date();
+      nextRun.setUTCHours(12, 0, 30, 0);
+      if (now >= nextRun) nextRun.setUTCDate(nextRun.getUTCDate() + 1);
+      const msUntil = nextRun - now;
+      setTimeout(async () => {
+        await runCreditReminders();
+        schedule7amGuayaquil();
+      }, msUntil);
+      console.log(`⏰ Próximos recordatorios de crédito: ${nextRun.toLocaleString('es-EC')} (7:00 AM Guayaquil)`);
+    }
+
+    schedule7amGuayaquil();
     // ─────────────────────────────────────────────────────────────────────────
 
     // Start server

@@ -5,10 +5,74 @@
         <svg style="width:1.2em;height:1.2em;vertical-align:-0.2em;margin-right:8px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
         Tesorería
       </h2>
-      <button class="btn btn-sm btn-outline-secondary" onclick="loadTreasury()">
-        <svg style="width:1em;height:1em;vertical-align:-0.1em;margin-right:4px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        Actualizar
-      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-primary" onclick="openTransferModal()">
+          <svg style="width:1em;height:1em;vertical-align:-0.1em;margin-right:4px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/><line x1="12" y1="8" x2="12" y2="16"/><polyline points="8 12 12 16 16 12"/></svg>
+          Registrar movimiento
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="loadTreasury()">
+          <svg style="width:1em;height:1em;vertical-align:-0.1em;margin-right:4px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Actualizar
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal: Registrar movimiento entre cuentas -->
+    <div class="modal fade" id="transferModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <svg style="width:1.1em;height:1.1em;vertical-align:-0.15em;margin-right:6px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/><line x1="12" y1="8" x2="12" y2="16"/><polyline points="8 12 12 16 16 12"/></svg>
+              Registrar movimiento entre cuentas
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Cuenta origen <span class="text-danger">*</span></label>
+              <select class="form-select" id="transferFrom"></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Cuenta destino <span class="text-danger">*</span></label>
+              <select class="form-select" id="transferTo"></select>
+            </div>
+            <div class="row g-3 mb-3">
+              <div class="col-7">
+                <label class="form-label fw-semibold">Monto a transferir <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" id="transferAmount" step="0.01" min="0.01" placeholder="0.00">
+                </div>
+              </div>
+              <div class="col-5">
+                <label class="form-label fw-semibold">Comisión bancaria</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" id="transferCommission" step="0.01" min="0" value="0" placeholder="0.00">
+                </div>
+                <small class="text-muted">Se registra como gasto si &gt; 0</small>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Fecha <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" id="transferDate">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Notas</label>
+              <input type="text" class="form-control" id="transferNotes" placeholder="Descripción opcional del movimiento">
+            </div>
+            <div id="transferPreview" class="alert alert-info small" style="display:none"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="transferSaveBtn" onclick="saveTransfer()">
+              <svg style="width:1em;height:1em;vertical-align:-0.1em;margin-right:4px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              Registrar movimiento
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Spinner de carga -->
@@ -132,6 +196,36 @@
         </div>
       </div>
 
+      <!-- Tabla de movimientos entre cuentas -->
+      <div class="card mt-4" style="background:var(--th-card);border:1px solid var(--th-border)">
+        <div class="card-header d-flex align-items-center justify-content-between" style="background:transparent;border-bottom:1px solid var(--th-border)">
+          <h6 class="mb-0 fw-semibold">
+            <svg style="width:1em;height:1em;vertical-align:-0.1em;margin-right:6px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+            Movimientos entre cuentas
+          </h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr style="border-bottom:1px solid var(--th-border)">
+                  <th>Fecha</th>
+                  <th>Origen</th>
+                  <th></th>
+                  <th>Destino</th>
+                  <th class="text-end">Monto</th>
+                  <th class="text-end">Comisión</th>
+                  <th>Notas</th>
+                </tr>
+              </thead>
+              <tbody id="transfersTableBody">
+                <tr><td colspan="7" class="text-center py-3 text-muted">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /treasuryContent -->
 
     <!-- Error -->
@@ -142,6 +236,7 @@
   <script>
     window.initTreasuryView = function() {
       loadTreasury();
+      loadTransfers();
     };
 
     function fmtMoney(v) {
@@ -168,6 +263,7 @@
           document.getElementById('treasuryError').style.display = '';
           return;
         }
+        _bankAccountsList = data.bankAccounts || [];
         renderTreasury(data);
         document.getElementById('treasuryContent').style.display = '';
       })
@@ -328,6 +424,129 @@
 
     function escHtml(str) {
       return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Movimientos entre cuentas ─────────────────────────────────────────────
+    var _bankAccountsList = [];
+
+    function buildAccountOptions(excludeVal) {
+      var options = '<option value="">— Seleccionar cuenta —</option>';
+      options += '<option value="CASH"' + (excludeVal === 'CASH' ? ' disabled' : '') + '>💵 Efectivo</option>';
+      options += '<option value="CARD"' + (excludeVal === 'CARD' ? ' disabled' : '') + '>💳 Tarjeta</option>';
+      for (var i = 0; i < _bankAccountsList.length; i++) {
+        var a = _bankAccountsList[i];
+        var bankName = a.bankName || a.bank || '';
+        var accountNumber = a.accountNumber || a.account || '';
+        var key = bankName && accountNumber ? (bankName + ' - ' + accountNumber) : (bankName || accountNumber);
+        var label = '🏦 ' + bankName + (accountNumber ? ' (' + accountNumber + ')' : '');
+        options += '<option value="' + escHtml(key) + '"' + (excludeVal === key ? ' disabled' : '') + '>' + escHtml(label) + '</option>';
+      }
+      return options;
+    }
+
+    function openTransferModal() {
+      var today = new Date().toISOString().split('T')[0];
+      document.getElementById('transferDate').value = today;
+      document.getElementById('transferAmount').value = '';
+      document.getElementById('transferCommission').value = '0';
+      document.getElementById('transferNotes').value = '';
+      document.getElementById('transferPreview').style.display = 'none';
+      document.getElementById('transferFrom').innerHTML = buildAccountOptions(null);
+      document.getElementById('transferTo').innerHTML   = buildAccountOptions(null);
+
+      document.getElementById('transferFrom').onchange = updateTransferPreview;
+      document.getElementById('transferTo').onchange   = updateTransferPreview;
+      document.getElementById('transferAmount').oninput = updateTransferPreview;
+      document.getElementById('transferCommission').oninput = updateTransferPreview;
+
+      new bootstrap.Modal(document.getElementById('transferModal')).show();
+    }
+
+    function updateTransferPreview() {
+      var from  = document.getElementById('transferFrom').value;
+      var to    = document.getElementById('transferTo').value;
+      var amt   = parseFloat(document.getElementById('transferAmount').value) || 0;
+      var comm  = parseFloat(document.getElementById('transferCommission').value) || 0;
+      var prev  = document.getElementById('transferPreview');
+      if (!from || !to || amt <= 0) { prev.style.display = 'none'; return; }
+      var msg = '<strong>' + escHtml(from) + '</strong> pierde <strong>$' + (amt + comm).toFixed(2) + '</strong>';
+      if (comm > 0) msg += ' ($' + amt.toFixed(2) + ' + $' + comm.toFixed(2) + ' comisión → se registra como gasto)';
+      msg += '<br><strong>' + escHtml(to) + '</strong> recibe <strong>$' + amt.toFixed(2) + '</strong>';
+      prev.innerHTML = msg;
+      prev.style.display = '';
+    }
+
+    function saveTransfer() {
+      var from  = document.getElementById('transferFrom').value;
+      var to    = document.getElementById('transferTo').value;
+      var amt   = parseFloat(document.getElementById('transferAmount').value) || 0;
+      var comm  = parseFloat(document.getElementById('transferCommission').value) || 0;
+      var date  = document.getElementById('transferDate').value;
+      var notes = document.getElementById('transferNotes').value.trim();
+
+      if (!from || !to)   { alert('Selecciona cuenta origen y destino'); return; }
+      if (from === to)    { alert('La cuenta origen y destino no pueden ser la misma'); return; }
+      if (amt <= 0)       { alert('El monto debe ser mayor a $0'); return; }
+      if (!date)          { alert('La fecha es requerida'); return; }
+
+      var btn = document.getElementById('transferSaveBtn');
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+
+      fetch('/api/treasury/transfers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '')
+        },
+        body: JSON.stringify({ tenantId: 1, fromAccount: from, toAccount: to, amount: amt, commission: comm, transferDate: date, notes: notes || null })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.error) { alert(data.error); return; }
+        bootstrap.Modal.getInstance(document.getElementById('transferModal')).hide();
+        loadTreasury();
+        loadTransfers();
+      })
+      .catch(function(err) { alert('Error: ' + err.message); })
+      .finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = '<svg style="width:1em;height:1em;vertical-align:-0.1em;margin-right:4px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Registrar movimiento';
+      });
+    }
+
+    function loadTransfers() {
+      fetch('/api/treasury/transfers?tenantId=1', {
+        headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '') }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var tbody = document.getElementById('transfersTableBody');
+        if (!data.transfers || data.transfers.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-3 text-muted">Sin movimientos registrados</td></tr>';
+          return;
+        }
+        var rows = '';
+        data.transfers.forEach(function(t) {
+          var comm = parseFloat(t.commission) || 0;
+          var commCell = comm > 0
+            ? '<span class="text-danger">-$' + comm.toFixed(2) + '</span>'
+            : '<span class="text-muted">—</span>';
+          rows += '<tr>' +
+            '<td><small>' + escHtml(t.transfer_date) + '</small></td>' +
+            '<td><small class="fw-semibold">' + escHtml(t.from_account) + '</small></td>' +
+            '<td class="text-center"><svg style="width:.9em;color:#6c757d" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></td>' +
+            '<td><small class="fw-semibold">' + escHtml(t.to_account) + '</small></td>' +
+            '<td class="text-end"><small class="text-success fw-semibold">$' + parseFloat(t.amount).toFixed(2) + '</small></td>' +
+            '<td class="text-end"><small>' + commCell + '</small></td>' +
+            '<td><small class="text-muted">' + escHtml(t.notes || '—') + '</small></td>' +
+          '</tr>';
+        });
+        tbody.innerHTML = rows;
+      })
+      .catch(function() {
+        document.getElementById('transfersTableBody').innerHTML = '<tr><td colspan="7" class="text-center py-2 text-danger small">Error al cargar movimientos</td></tr>';
+      });
     }
   </script>
 </div>

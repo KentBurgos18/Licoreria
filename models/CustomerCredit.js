@@ -38,6 +38,17 @@ module.exports = (sequelize) => {
       defaultValue: 0,
       field: 'interest_rate'
     },
+    overdueInterestRate: {
+      type: DataTypes.DECIMAL(5, 4),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'overdue_interest_rate'
+    },
+    lastNotifiedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'last_notified_at'
+    },
     dueDate: {
       type: DataTypes.DATEONLY,
       allowNull: true,

@@ -2120,13 +2120,19 @@
                                 <input type="date" class="form-control" id="groupPurchaseParticipantDueDate">
                             </div>
                             <div class="col-md-2">
-                                <label class="form-label">Interés Diario (%)</label>
-                                <input type="number" class="form-control" id="groupPurchaseParticipantInterestRate" step="0.0001" min="0" value="0">
+                                <label class="form-label">Interés Normal (%/día)</label>
+                                <input type="number" class="form-control" id="groupPurchaseParticipantInterestRate" step="0.01" min="0" max="100" value="0.5" placeholder="0.5">
+                                <small class="text-muted" style="font-size:10px">Ej: 0.5 = 0.5%/día</small>
                             </div>
                             <div class="col-md-2">
+                                <label class="form-label">Mora (%/día)</label>
+                                <input type="number" class="form-control" id="groupPurchaseParticipantOverdueRate" step="0.01" min="0" max="100" value="2" placeholder="2">
+                                <small class="text-muted" style="font-size:10px">Ej: 2 = 2%/día extra</small>
+                            </div>
+                            <div class="col-md-1">
                                 <label class="form-label">&nbsp;</label>
                                 <button type="button" class="btn btn-success w-100" onclick="addGroupPurchaseParticipant()">
-                                    <i class="bi bi-plus"></i> Agregar
+                                    <i class="bi bi-plus"></i>
                                 </button>
                             </div>
                         </div>
@@ -2269,10 +2275,16 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Método de Pago <span class="text-danger">*</span></label>
-                            <select class="form-select" id="creditPaymentMethod" required>
+                            <select class="form-select" id="creditPaymentMethod" required onchange="onCreditPaymentMethodChange()">
                                 <option value="CASH">Efectivo</option>
                                 <option value="CARD">Tarjeta</option>
                                 <option value="TRANSFER">Transferencia</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="creditPaymentBankAccountGroup" style="display:none">
+                            <label class="form-label">Cuenta destino <span class="text-danger">*</span></label>
+                            <select class="form-select" id="creditPaymentBankAccount" onchange="$('#btnSaveCreditPayment').prop('disabled', !this.value)">
+                                <option value="">— Seleccionar —</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -2287,7 +2299,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="saveCreditPayment()">Registrar Pago</button>
+                    <button type="button" class="btn btn-primary" id="btnSaveCreditPayment" onclick="saveCreditPayment()">Registrar Pago</button>
                 </div>
             </div>
         </div>
@@ -3021,6 +3033,48 @@
             // Fallback a dashboard
             return 'dashboard';
         }
+
+        // ── Auto-renovación silenciosa del token ─────────────────────────────
+        (function() {
+            var REFRESH_INTERVAL = 30 * 60 * 1000; // cada 30 minutos
+            var lastActivity = Date.now();
+
+            // Registrar actividad del usuario
+            ['click', 'keydown', 'touchstart', 'scroll'].forEach(function(evt) {
+                document.addEventListener(evt, function() { lastActivity = Date.now(); }, { passive: true });
+            });
+
+            function refreshToken() {
+                var token = localStorage.getItem('adminToken');
+                if (!token) return;
+
+                // Solo renovar si el usuario estuvo activo en los últimos 60 minutos
+                if (Date.now() - lastActivity > 60 * 60 * 1000) return;
+
+                fetch('/api/admin/auth/refresh', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.token) {
+                        localStorage.setItem('adminToken', data.token);
+                    }
+                })
+                .catch(function() { /* silencioso — no interrumpir al usuario */ });
+            }
+
+            // Renovar cada 30 minutos
+            setInterval(refreshToken, REFRESH_INTERVAL);
+
+            // También renovar al volver del fondo (móvil)
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible') {
+                    refreshToken();
+                }
+            });
+        })();
+        // ─────────────────────────────────────────────────────────────────────
 
         $(document).ready(function() {
             // Inicializar tooltips de Bootstrap
@@ -3856,8 +3910,8 @@
 
             var html =
                 '<div class="prof-row">' +
-                  '<div class="prof-row-label"><span class="prof-row-name">Ingresos brutos</span><span class="prof-row-val">' + fmtM(d.revenue) + '<span class="prof-row-pct">100%</span></span></div>' +
-                  bar(100, 'var(--th-accent)') +
+                  '<div class="prof-row-label"><span class="prof-row-name">Ingresos brutos</span><span class="prof-row-val">' + fmtM(d.revenue) + (d.revenue > 0 ? '<span class="prof-row-pct">100%</span>' : '') + '</span></div>' +
+                  bar(d.revenue > 0 ? 100 : 0, 'var(--th-accent)') +
                 '</div>' +
                 '<div class="prof-row">' +
                   '<div class="prof-row-label"><span class="prof-row-name">Costo de compras</span><span class="prof-row-val" style="color:#f59e0b;">-' + fmtM(d.cogs) + '<span class="prof-row-pct">' + d.cogsRatio + '%</span></span></div>' +
@@ -5136,6 +5190,17 @@
                 }
             });
             
+            // Pre-fill default interest rates from settings
+            $.ajax({
+                url: '/api/settings/credit_interest_rates',
+                method: 'GET',
+                data: { tenantId: 1 },
+                success: function(resp) {
+                    if (resp.normalRate != null) $('#groupPurchaseParticipantInterestRate').val((resp.normalRate * 100).toFixed(2));
+                    if (resp.overdueRate != null) $('#groupPurchaseParticipantOverdueRate').val((resp.overdueRate * 100).toFixed(2));
+                }
+            });
+
             const modal = new bootstrap.Modal(document.getElementById('groupPurchaseModal'));
             modal.show();
         }
@@ -5145,27 +5210,28 @@
             const amountDue = parseFloat($('#groupPurchaseParticipantAmount').val());
             const dueDate = $('#groupPurchaseParticipantDueDate').val() || null;
             const interestRate = parseFloat($('#groupPurchaseParticipantInterestRate').val()) || 0;
-            
+            const overdueInterestRate = parseFloat($('#groupPurchaseParticipantOverdueRate').val()) || 0;
+
             if (!customerId || !amountDue || amountDue <= 0) {
                 showAlert('Cliente y monto son requeridos', 'warning');
                 return;
             }
-            
+
             const customerName = $('#groupPurchaseParticipantCustomer option:selected').text();
-            
+
             groupPurchaseParticipants.push({
                 customerId: parseInt(customerId),
                 customerName: customerName,
                 amountDue: amountDue,
                 dueDate: dueDate,
-                interestRate: interestRate
+                interestRate: interestRate,
+                overdueInterestRate: overdueInterestRate
             });
-            
+
             updateGroupPurchaseParticipantsList();
             $('#groupPurchaseParticipantCustomer').val('');
             $('#groupPurchaseParticipantAmount').val('');
             $('#groupPurchaseParticipantDueDate').val('');
-            $('#groupPurchaseParticipantInterestRate').val('0');
         }
         
         function updateGroupPurchaseParticipantsList() {
@@ -5248,7 +5314,8 @@
                 customerId: p.customerId,
                 amountDue: p.amountDue,
                 dueDate: p.dueDate || null,
-                interestRate: p.interestRate || 0
+                interestRate: (p.interestRate || 0) / 100,
+                overdueInterestRate: (p.overdueInterestRate || 0) / 100
             }));
             
             $.ajax({
@@ -5572,20 +5639,31 @@
                 const initialAmount = parseFloat(credit.initialAmount).toFixed(2);
                 const currentBalance = parseFloat(credit.currentBalance || 0).toFixed(2);
                 const interestAmount = (parseFloat(credit.currentBalance || 0) - parseFloat(credit.initialAmount || 0)).toFixed(2);
-                const dueDate = credit.dueDate ? new Date(credit.dueDate).toLocaleDateString('es-ES') : 'Sin fecha límite';
+                const dueDate = credit.dueDate ? new Date(credit.dueDate + 'T00:00:00').toLocaleDateString('es-EC') : '<span class="text-muted">Sin fecha</span>';
 
-                const startDate = credit.createdAt ? new Date(credit.createdAt) : null;
-                const startDateStr = startDate ? startDate.toLocaleDateString('es-ES') : '-';
-                const daysElapsed = startDate ? Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24)) : '-';
+                const normalRate  = parseFloat(credit.interestRate || 0);
+                const overdueRate = parseFloat(credit.overdueInterestRate || 0);
+                const normalRateStr  = (normalRate * 100).toFixed(2) + '% diario';
+                const overdueRateStr = overdueRate > 0
+                    ? `<span class="badge bg-warning text-dark">${(overdueRate * 100).toFixed(2)}% mora</span>`
+                    : '<span class="text-muted">—</span>';
 
-                const isOverdue = credit.dueDate && new Date() > new Date(credit.dueDate) && parseFloat(credit.currentBalance) > 0.01;
+                const isOverdue = credit.dueDate && new Date() > new Date(credit.dueDate + 'T00:00:00') && parseFloat(credit.currentBalance) > 0.01;
                 const statusBadge = credit.status === 'PAID' ?
                     '<span class="badge bg-success">Pagado</span>' :
                     isOverdue ?
                     '<span class="badge bg-danger">Vencido</span>' :
-                    '<span class="badge bg-warning">Activo</span>';
+                    '<span class="badge bg-warning text-dark">Activo</span>';
 
                 const customerName = credit.customer ? credit.customer.name : 'N/A';
+                const hasEmail = credit.customer && credit.customer.email;
+                const reminderBtn = hasEmail
+                    ? `<button class="btn btn-sm btn-outline-info btn-sm-custom" onclick="sendCreditReminder(${credit.id})" title="Enviar recordatorio por correo">
+                           <i class="bi bi-envelope"></i>
+                       </button>`
+                    : `<button class="btn btn-sm btn-outline-secondary btn-sm-custom" disabled title="Cliente sin email registrado">
+                           <i class="bi bi-envelope-x"></i>
+                       </button>`;
 
                 const row = `
                     <tr ${isOverdue ? 'class="table-danger"' : ''}>
@@ -5593,8 +5671,8 @@
                         <td>$${initialAmount}</td>
                         <td>$${currentBalance}</td>
                         <td>$${interestAmount}</td>
-                        <td>${startDateStr}</td>
-                        <td>${daysElapsed}</td>
+                        <td><small>${normalRateStr}</small></td>
+                        <td>${overdueRateStr}</td>
                         <td>${dueDate}</td>
                         <td>${statusBadge}</td>
                         <td>
@@ -5602,6 +5680,7 @@
                                 <button class="btn btn-sm btn-outline-success btn-sm-custom" onclick="registerCreditPayment(${credit.id})" title="Registrar Pago">
                                     <i class="bi bi-cash"></i>
                                 </button>
+                                ${reminderBtn}
                             </div>
                         </td>
                     </tr>
@@ -5637,10 +5716,57 @@
             });
         }
         
+        function sendCreditReminder(creditId) {
+            $.ajax({
+                url: `/api/customer-credits/${creditId}/send-reminder`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ tenantId: 1 }),
+                success: function() {
+                    showAlert('Recordatorio enviado correctamente al cliente', 'success');
+                },
+                error: function(xhr) {
+                    const msg = xhr.responseJSON?.error || 'Error al enviar recordatorio';
+                    showAlert(msg, 'danger');
+                }
+            });
+        }
+
+        function onCreditPaymentMethodChange() {
+            if ($('#creditPaymentMethod').val() === 'TRANSFER') {
+                $('#creditPaymentBankAccountGroup').show();
+                $('#btnSaveCreditPayment').prop('disabled', !$('#creditPaymentBankAccount').val());
+                if ($('#creditPaymentBankAccount option').length <= 1) {
+                    $.ajax({
+                        url: '/api/settings/bank_accounts', method: 'GET',
+                        data: { tenantId: 1 },
+                        headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '') },
+                        success: function(r) {
+                            var accounts = [];
+                            try { var raw = r.value || r.accounts; if (typeof raw === 'string') raw = JSON.parse(raw); accounts = Array.isArray(raw) ? raw : []; } catch(e) {}
+                            var opts = '<option value="">— Seleccionar —</option>';
+                            accounts.forEach(function(acc) {
+                                var lbl = (acc.bankName || '') + (acc.accountNumber ? ' - ' + acc.accountNumber : '');
+                                opts += '<option value="' + lbl.replace(/"/g,'&quot;') + '">' + lbl + '</option>';
+                            });
+                            $('#creditPaymentBankAccount').html(opts);
+                        }
+                    });
+                }
+            } else {
+                $('#creditPaymentBankAccountGroup').hide();
+                $('#creditPaymentBankAccount').val('');
+                $('#btnSaveCreditPayment').prop('disabled', false);
+            }
+        }
+
         function registerCreditPayment(creditId) {
             $('#creditPaymentCreditId').val(creditId);
             $('#creditPaymentAmount').val('');
             $('#creditPaymentMethod').val('CASH');
+            $('#creditPaymentBankAccountGroup').hide();
+            $('#creditPaymentBankAccount').val('');
+            $('#btnSaveCreditPayment').prop('disabled', false);
             var _cpd = new Date(); $('#creditPaymentDate').val(_cpd.getFullYear() + '-' + String(_cpd.getMonth()+1).padStart(2,'0') + '-' + String(_cpd.getDate()).padStart(2,'0'));
             $('#creditPaymentNotes').val('');
             
@@ -5662,12 +5788,17 @@
             const paymentMethod = $('#creditPaymentMethod').val();
             const paymentDate = $('#creditPaymentDate').val();
             const notes = $('#creditPaymentNotes').val() || null;
-            
+            const transferAccountInfo = paymentMethod === 'TRANSFER' ? ($('#creditPaymentBankAccount').val() || null) : null;
+
             if (!creditId || !amount || amount <= 0 || !paymentMethod) {
                 showAlert('Complete todos los campos requeridos', 'warning');
                 return;
             }
-            
+            if (paymentMethod === 'TRANSFER' && !transferAccountInfo) {
+                showAlert('Seleccione la cuenta destino para la transferencia', 'warning');
+                return;
+            }
+
             $.ajax({
                 url: `/api/customer-credits/${creditId}`,
                 method: 'GET',
@@ -5684,7 +5815,8 @@
                             amount: amount,
                             paymentMethod: paymentMethod,
                             paymentDate: paymentDate,
-                            notes: notes
+                            notes: notes,
+                            transferAccountInfo: transferAccountInfo
                         }),
                         success: function() {
                             showAlert('Pago registrado exitosamente', 'success');
@@ -10371,6 +10503,18 @@
                 }
             });
 
+            // Load default credit interest rates
+            $.ajax({
+                url: '/api/settings/credit_interest_rates',
+                method: 'GET',
+                data: { tenantId: 1 },
+                success: function(resp) {
+                    // Mostrar en % (la BD guarda decimal: 0.005 → mostrar 0.5)
+                    $('#creditDefaultInterestRate').val(resp.normalRate != null ? (resp.normalRate * 100) : 0.5);
+                    $('#creditDefaultOverdueRate').val(resp.overdueRate != null ? (resp.overdueRate * 100) : 2);
+                }
+            });
+
             // Load SMTP settings
             $.ajax({
                 url: '/api/settings',
@@ -10539,6 +10683,22 @@
                 method: 'PUT',
                 contentType: 'application/json',
                 data: JSON.stringify({ tenantId: 1, value: cartMinutes, type: 'number', description: 'Minutos de reserva del carrito' })
+            });
+
+            // Save default credit interest rates (el usuario ingresa %, guardamos decimal /100)
+            const normalRateVal  = (parseFloat($('#creditDefaultInterestRate').val()) || 0.5) / 100;
+            const overdueRateVal = (parseFloat($('#creditDefaultOverdueRate').val()) || 2) / 100;
+            $.ajax({
+                url: '/api/settings/credit_default_interest_rate',
+                method: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({ tenantId: 1, value: normalRateVal, type: 'number', description: 'Tasa de interés diaria por defecto para créditos' })
+            });
+            $.ajax({
+                url: '/api/settings/credit_default_overdue_rate',
+                method: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({ tenantId: 1, value: overdueRateVal, type: 'number', description: 'Tasa de mora diaria por defecto para créditos vencidos' })
             });
 
             // Save tax_enabled first, then tax_rate
@@ -11837,21 +11997,36 @@
     <script src="/js/dashboard-spa-router.js"></script>
     <script>
         document.body.style.visibility='visible';
-        // Si Bootstrap no cargó (CSS falló silenciosamente al abrir PWA), recargar hasta 2 veces
-        (function() {
+
+        // Verifica si Bootstrap CSS cargó correctamente (d-none debe dar display:none)
+        function checkCssLoaded() {
             var t = document.createElement('div');
             t.className = 'd-none';
             document.body.appendChild(t);
             var loaded = getComputedStyle(t).display === 'none';
             document.body.removeChild(t);
+            return loaded;
+        }
+
+        // Al cargar: recargar hasta 5 veces si el CSS falla
+        (function() {
+            if (checkCssLoaded()) {
+                sessionStorage.removeItem('_cssReloaded');
+                return;
+            }
             var attempts = parseInt(sessionStorage.getItem('_cssReloaded') || '0', 10);
-            if (!loaded && attempts < 2) {
+            if (attempts < 5) {
                 sessionStorage.setItem('_cssReloaded', String(attempts + 1));
                 window.location.reload(true);
-            } else if (loaded) {
-                sessionStorage.removeItem('_cssReloaded');
             }
         })();
+
+        // Cuando la pestaña vuelve del fondo (ej: móvil después de inactividad)
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible' && !checkCssLoaded()) {
+                window.location.reload(true);
+            }
+        });
     </script>
 </body>
 </html>

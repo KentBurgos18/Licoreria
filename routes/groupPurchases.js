@@ -274,6 +274,7 @@ router.post('/from-cart', async (req, res) => {
           initialAmount: amountDue,
           currentBalance: amountDue,
           interestRate: pData.interestRate || 0,
+          overdueInterestRate: pData.overdueInterestRate || 0,
           dueDate: pData.dueDate || null,
           status: 'ACTIVE',
           lastInterestCalculationDate: new Date().toISOString().split('T')[0]

@@ -165,6 +165,43 @@ router.get('/me', async (req, res) => {
   }
 });
 
+// POST /admin/auth/refresh — renovar token silenciosamente (sin re-login)
+router.post('/refresh', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Token no proporcionado', code: 'NO_TOKEN' });
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      return res.status(401).json({ error: 'Token inválido o expirado', code: 'INVALID_TOKEN' });
+    }
+
+    if (decoded.type !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado', code: 'ACCESS_DENIED' });
+    }
+
+    // Verificar que el usuario sigue activo en la BD
+    const user = await User.findOne({ where: { id: decoded.userId, tenantId: decoded.tenantId } });
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: 'Usuario inactivo o no encontrado', code: 'USER_INACTIVE' });
+    }
+
+    // Emitir token nuevo con otros 8 horas
+    const newToken = jwt.sign(
+      { userId: user.id, tenantId: user.tenantId, email: user.email, name: user.name, role: user.role, type: 'admin' },
+      JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+
+    res.json({ token: newToken });
+  } catch (error) {
+    console.error('Error renovando token:', error);
+    res.status(500).json({ error: 'Error interno del servidor', code: 'INTERNAL_ERROR' });
+  }
+});
+
 // POST /admin/auth/change-password - Cambiar contraseña
 router.post('/change-password', async (req, res) => {
   try {

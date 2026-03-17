@@ -20,6 +20,7 @@ const PushSubscription = require('./PushSubscription');
 const PayphonePendingPayment = require('./PayphonePendingPayment');
 const ProductCategory = require('./ProductCategory');
 const ProductPresentation = require('./ProductPresentation');
+const Expense = require('./Expense');
 
 // Initialize models
 const models = {
@@ -43,7 +44,8 @@ const models = {
   PushSubscription: PushSubscription(sequelize),
   PayphonePendingPayment: PayphonePendingPayment(sequelize),
   ProductCategory: ProductCategory(sequelize),
-  ProductPresentation: ProductPresentation(sequelize)
+  ProductPresentation: ProductPresentation(sequelize),
+  Expense: Expense(sequelize)
 };
 
 // Setup associations

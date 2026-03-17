@@ -20,34 +20,50 @@ class CreditService {
       return 0;
     }
 
-    // Interest runs from the last calculation date (or creation date) to asOfDate.
-    // We use local-date strings (YYYY-MM-DD) to avoid UTC-vs-local offset issues:
-    // new Date('2026-02-26') is midnight UTC, but new Date().setHours(0,0,0,0) is
-    // midnight LOCAL → after ~7 PM in UTC-5 they differ by one day, breaking the guard.
     const startStr = credit.lastInterestCalculationDate
-      ? credit.lastInterestCalculationDate          // already 'YYYY-MM-DD'
-      : this.localDateStr(credit.createdAt);        // localise createdAt
+      ? credit.lastInterestCalculationDate
+      : this.localDateStr(credit.createdAt);
 
     const asOfStr = this.localDateStr(asOfDate);
 
-    // Parse both as UTC dates (safe: both are local-tz YYYY-MM-DD strings now)
     const startMs = new Date(startStr + 'T00:00:00Z').getTime();
     const asOfMs  = new Date(asOfStr  + 'T00:00:00Z').getTime();
 
-    const daysDiff = Math.floor((asOfMs - startMs) / (1000 * 60 * 60 * 24));
-    if (daysDiff <= 0) {
-      return 0;
-    }
+    const totalDays = Math.floor((asOfMs - startMs) / (1000 * 60 * 60 * 24));
+    if (totalDays <= 0) return 0;
 
-    // Interés compuesto diario con truncamiento (igual que PayPhone).
-    // Trabajamos en centavos enteros para evitar errores de punto flotante
-    // (ej: 20.80 + 0.20 = 20.999... en JS → arruina el truncamiento del día siguiente)
-    const rate = parseFloat(credit.interestRate);
+    const normalRate  = parseFloat(credit.interestRate);
+    const overdueRate = parseFloat(credit.overdueInterestRate || 0);
+
     let balanceCents = Math.round(parseFloat(credit.currentBalance || credit.initialAmount) * 100);
     const originalCents = balanceCents;
 
-    for (let i = 0; i < daysDiff; i++) {
-      balanceCents += Math.floor(balanceCents * rate); // floor = truncar, nunca cobrar de más
+    // Si hay fecha de vencimiento y tasa de mora, dividimos el período en dos tramos
+    if (credit.dueDate && overdueRate > 0) {
+      const dueDateMs = new Date(credit.dueDate + 'T00:00:00Z').getTime();
+
+      // Días dentro del plazo normal (start → dueDate, si dueDate está dentro del rango)
+      const daysNormal = Math.max(0, Math.min(
+        Math.floor((dueDateMs - startMs) / (1000 * 60 * 60 * 24)),
+        totalDays
+      ));
+      // Días en mora (dueDate → asOf)
+      const daysOverdue = totalDays - daysNormal;
+
+      // Tramo 1: tasa normal
+      for (let i = 0; i < daysNormal; i++) {
+        balanceCents += Math.floor(balanceCents * normalRate);
+      }
+      // Tramo 2: tasa normal + mora
+      const combinedRate = normalRate + overdueRate;
+      for (let i = 0; i < daysOverdue; i++) {
+        balanceCents += Math.floor(balanceCents * combinedRate);
+      }
+    } else {
+      // Sin fecha de vencimiento o sin tasa de mora: solo tasa normal
+      for (let i = 0; i < totalDays; i++) {
+        balanceCents += Math.floor(balanceCents * normalRate);
+      }
     }
 
     return Math.max(0, (balanceCents - originalCents) / 100);
