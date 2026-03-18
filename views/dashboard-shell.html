@@ -12274,16 +12274,26 @@
             }, 500);
         })();
 
-        // Restauración bfcache → mostrar skeleton instantáneo y luego recargar (SW sirve CSS desde caché)
-        window.addEventListener('pageshow', function(e) {
+        // Antes de congelar en bfcache → mostrar skeleton (así al restaurar ya está visible desde el primer frame)
+        window.addEventListener('pagehide', function(e) {
             if (e.persisted) {
                 var al = document.getElementById('_appLoading');
                 if (al) {
-                    al.style.transition = 'none';
-                    al.style.opacity    = '1';
+                    al.style.transition   = 'none';
+                    al.style.opacity      = '1';
                     al.style.pointerEvents = 'auto';
                 }
-                window.location.reload();
+            }
+        });
+
+        // Restauración bfcache → CSS cargado: ocultar skeleton. Si no: recargar (SW lo sirve rápido)
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) {
+                if (checkCssLoaded()) {
+                    hideAppLoading();
+                } else {
+                    window.location.reload();
+                }
             }
         });
     </script>
