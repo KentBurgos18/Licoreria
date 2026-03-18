@@ -651,6 +651,7 @@ function sendDashboardView(req, res, viewFile) {
   if (wantFragment) {
     res.sendFile(path.join(__dirname, 'views', 'dashboard', viewFile));
   } else {
+    res.setHeader('Cache-Control', 'no-store');
     res.sendFile(path.join(__dirname, 'views', 'dashboard-shell.html'));
   }
 }
