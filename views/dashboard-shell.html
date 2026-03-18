@@ -12262,60 +12262,22 @@
             }, 2000);
         }
 
-        // Reinyecta CSS con cache-busting y llama cb cuando todos cargan
-        function reinjectCss(cb) {
-            var ts = Date.now();
-            window._skCssLoaded = 0;
-            var links = Array.prototype.slice.call(document.querySelectorAll('link[rel="stylesheet"]'))
-                .filter(function(l) {
-                    var h = l.getAttribute('href') || '';
-                    return h && h.indexOf('fonts.googleapis') === -1 && h.indexOf('?v=') === -1;
-                });
-            if (!links.length) { if (cb) cb(); return; }
-            var remaining = links.length;
-            function done() { remaining--; if (remaining <= 0 && cb) cb(); }
-            links.forEach(function(link) {
-                var newLink = document.createElement('link');
-                newLink.rel = 'stylesheet';
-                newLink.href = link.getAttribute('href').replace(/[?#].*$/, '') + '?v=' + ts;
-                newLink.onload  = function() { if (link.parentNode) link.parentNode.removeChild(link); done(); };
-                newLink.onerror = function() { done(); };
-                link.parentNode.insertBefore(newLink, link.nextSibling);
-            });
-        }
-
         // CSS es render-blocking: cuando este script corre, CSS ya está cargado.
-        // hideAppLoading inmediato — skeleton desaparece y muestra dashboard ya estilizado.
         (function() {
             if (checkCssLoaded()) { hideAppLoading(); return; }
-            // Fallback: si por alguna razón CSS no detectado, esperar 500ms y reintentar
+            // Fallback: CSS aún no aplicado → esperar 500ms más
             setTimeout(function() {
                 if (!_appLoadingHidden) {
                     if (checkCssLoaded()) { hideAppLoading(); }
-                    else { hideAppLoading(); window.location.reload(true); }
+                    else { window.location.reload(true); } // skeleton sigue visible durante recarga
                 }
             }, 500);
         })();
 
-        // Cuando la pestaña vuelve del fondo (Android/Chrome)
-        document.addEventListener('visibilitychange', function() {
-            if (document.visibilityState === 'visible' && !checkCssLoaded()) {
-                showAppLoading();
-                reinjectCss(function() {
-                    if (checkCssLoaded()) hideAppLoading();
-                    else window.location.reload(true);
-                });
-            }
-        });
-
-        // Restauración bfcache (iOS Safari y Android Chrome PWA)
+        // Restauración bfcache o reapertura PWA → siempre recargar para garantizar CSS fresco del SW
         window.addEventListener('pageshow', function(e) {
-            if (e.persisted && !checkCssLoaded()) {
-                showAppLoading();
-                reinjectCss(function() {
-                    if (checkCssLoaded()) hideAppLoading();
-                    else window.location.reload(true);
-                });
+            if (e.persisted) {
+                window.location.reload();
             }
         });
     </script>
