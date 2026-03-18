@@ -12274,9 +12274,15 @@
             }, 500);
         })();
 
-        // Restauración bfcache o reapertura PWA → siempre recargar para garantizar CSS fresco del SW
+        // Restauración bfcache → mostrar skeleton instantáneo y luego recargar (SW sirve CSS desde caché)
         window.addEventListener('pageshow', function(e) {
             if (e.persisted) {
+                var al = document.getElementById('_appLoading');
+                if (al) {
+                    al.style.transition = 'none';
+                    al.style.opacity    = '1';
+                    al.style.pointerEvents = 'auto';
+                }
                 window.location.reload();
             }
         });
