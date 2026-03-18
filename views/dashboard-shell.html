@@ -12274,15 +12274,14 @@
             }, 500);
         })();
 
-        // Antes de congelar en bfcache → mostrar skeleton (así al restaurar ya está visible desde el primer frame)
-        window.addEventListener('pagehide', function(e) {
-            if (e.persisted) {
-                var al = document.getElementById('_appLoading');
-                if (al) {
-                    al.style.transition   = 'none';
-                    al.style.opacity      = '1';
-                    al.style.pointerEvents = 'auto';
-                }
+        // Al ocultar la página (cierre PWA, back button) → mostrar skeleton sin condición
+        // Así si bfcache restaura la página, el skeleton ya está visible desde el primer frame
+        window.addEventListener('pagehide', function() {
+            var al = document.getElementById('_appLoading');
+            if (al) {
+                al.style.transition    = 'none';
+                al.style.opacity       = '1';
+                al.style.pointerEvents = 'auto';
             }
         });
 
