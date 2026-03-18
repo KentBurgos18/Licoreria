@@ -1258,6 +1258,25 @@
     </style>
 </head>
 <body>
+    <!-- Debug temprano: corre ANTES de cualquier script externo, visible incluso en texto plano -->
+    <script>
+        (function(){
+            var t = new Date().toLocaleTimeString('es',{hour12:true,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+            var el = document.createElement('div');
+            el.id = '_earlyDbg';
+            el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999999;background:#1e1b4b;color:#a5b4fc;font:11px monospace;padding:3px 8px;pointer-events:none';
+            el.textContent = 'EARLY ' + t + ' | CSS-links-queued | scripts-pendientes...';
+            document.body.appendChild(el);
+            // Guardar en localStorage para historial
+            try {
+                var log = JSON.parse(localStorage.getItem('_lb_early') || '[]');
+                log.unshift({t:t, phase:'early'});
+                if(log.length>6) log.length=6;
+                localStorage.setItem('_lb_early', JSON.stringify(log));
+            } catch(e){}
+        })();
+    </script>
+
     <!-- Skeleton loading (CSS inline, sin dependencias externas) -->
     <div id="_appLoading" aria-hidden="true">
         <div class="sk-sb">
@@ -2724,12 +2743,32 @@
     </div>
 
     <!-- Scripts -->
+    <script>
+        (function(){
+            var e=document.getElementById('_earlyDbg');
+            if(e) e.textContent = e.textContent.replace('scripts-pendientes...','PRE-SCRIPTS ✓');
+            try {
+                var log = JSON.parse(localStorage.getItem('_lb_early')||'[]');
+                if(log[0]) { log[0].phase='pre-scripts'; localStorage.setItem('_lb_early',JSON.stringify(log)); }
+            } catch(ex){}
+        })();
+    </script>
     <script src="/libs/js/chart.umd.min.js"></script>
     <script src="/libs/js/zxing-browser.min.js"></script>
     <script src="/libs/js/jquery.min.js"></script>
     <script src="/libs/js/bootstrap.bundle.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/libs/js/google-maps-helper.js"></script>
+    <script>
+        (function(){
+            var e=document.getElementById('_earlyDbg');
+            if(e) e.textContent = e.textContent.replace('PRE-SCRIPTS ✓','POST-SCRIPTS ✓');
+            try {
+                var log = JSON.parse(localStorage.getItem('_lb_early')||'[]');
+                if(log[0]) { log[0].phase='post-scripts'; localStorage.setItem('_lb_early',JSON.stringify(log)); }
+            } catch(ex){}
+        })();
+    </script>
     <script>
         // Global variables
         // Caché por sección: evita recargar datos si se navegó hace menos de 60s
