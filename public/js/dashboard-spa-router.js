@@ -170,7 +170,7 @@
             return;
         }
 
-        var path = '/dashboard' + (viewName === 'dashboard' ? '' : '/' + viewName);
+        var path = '/dashboard' + (viewName === 'dashboard' ? '' : '/' + viewName) + '?_f=1';
         showLoading(true);
 
         fetch(path, {

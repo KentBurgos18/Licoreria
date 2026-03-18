@@ -647,7 +647,7 @@ app.get('/dashboard.html', (req, res) => res.redirect(302, '/dashboard'));
 
 // Dashboard SPA: shell para carga inicial, fragmentos para navegación on-demand (como cliente)
 function sendDashboardView(req, res, viewFile) {
-  const wantFragment = req.get('X-SPA-Fragment') || req.xhr;
+  const wantFragment = req.get('X-SPA-Fragment') || req.xhr || req.query._f === '1';
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Vary', 'X-SPA-Fragment');
   if (wantFragment) {
