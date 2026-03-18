@@ -12262,16 +12262,15 @@
             }, 2000);
         }
 
-        // CSS es render-blocking: cuando este script corre, CSS ya está cargado.
+        // CSS carga async → hacer polling hasta que esté listo
         (function() {
-            if (checkCssLoaded()) { hideAppLoading(); return; }
-            // Fallback: CSS aún no aplicado → esperar 500ms más
-            setTimeout(function() {
-                if (!_appLoadingHidden) {
-                    if (checkCssLoaded()) { hideAppLoading(); }
-                    else { window.location.reload(true); } // skeleton sigue visible durante recarga
-                }
-            }, 500);
+            var attempts = 0;
+            function check() {
+                if (checkCssLoaded()) { hideAppLoading(); return; }
+                if (++attempts < 30) { setTimeout(check, 100); } // cada 100ms hasta 3s
+                else { window.location.reload(); } // si en 3s no cargó, recargar
+            }
+            check();
         })();
 
         // Al ocultar la página (cierre PWA, back button) → mostrar skeleton sin condición
@@ -12288,13 +12287,53 @@
         // Restauración bfcache → CSS cargado: ocultar skeleton. Si no: recargar (SW lo sirve rápido)
         window.addEventListener('pageshow', function(e) {
             if (e.persisted) {
+                _dbg('pageshow-persisted', checkCssLoaded());
                 if (checkCssLoaded()) {
                     hideAppLoading();
                 } else {
                     window.location.reload();
                 }
+            } else {
+                _dbg('pageshow-fresh', checkCssLoaded());
             }
         });
+
+        // ── DEBUG OVERLAY ────────────────────────────────────────────────────
+        var _dbgKey = '_lb_dbg';
+        function _dbg(event, cssOk) {
+            try {
+                var log = JSON.parse(localStorage.getItem(_dbgKey) || '[]');
+                log.unshift({
+                    t: new Date().toLocaleTimeString(),
+                    e: event,
+                    css: cssOk,
+                    sw: !!navigator.serviceWorker.controller
+                });
+                if (log.length > 8) log.length = 8;
+                localStorage.setItem(_dbgKey, JSON.stringify(log));
+                _dbgRender(log);
+            } catch(ex) {}
+        }
+        function _dbgRender(log) {
+            var el = document.getElementById('_dbgBar');
+            if (!el) return;
+            el.innerHTML = log.slice(0,4).map(function(r) {
+                var css = r.css ? '<b style="color:#4ade80">CSS✓</b>' : '<b style="color:#f87171">CSS✗</b>';
+                var sw  = r.sw  ? '<b style="color:#60a5fa">SW✓</b>'  : '<b style="color:#fbbf24">SW✗</b>';
+                return '<span style="margin-right:8px">' + r.t + ' <b>' + r.e + '</b> ' + css + ' ' + sw + '</span>';
+            }).join('<br>');
+        }
+        // Registrar carga inicial
+        _dbg(_appLoadingHidden ? 'init-css-ok' : 'init-css-fail', checkCssLoaded());
+        // Mostrar log previo al abrir
+        try { _dbgRender(JSON.parse(localStorage.getItem(_dbgKey) || '[]')); } catch(ex) {}
     </script>
+
+    <!-- Debug bar (quitar cuando se resuelva el problema) -->
+    <div id="_dbgBar" onclick="this.style.display='none'" style="
+        position:fixed;bottom:0;left:0;right:0;z-index:999999;
+        background:rgba(0,0,0,.85);color:#fff;font-size:11px;font-family:monospace;
+        padding:6px 10px;line-height:1.7;cursor:pointer;
+    ">cargando debug...</div>
 </body>
 </html>
