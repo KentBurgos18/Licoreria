@@ -316,7 +316,7 @@ function buildCreditReminderHtml(credit, brandName) {
   </div></body></html>`;
 }
 
-function buildCreditReminderHtmlMulti(customer, credits, brandName) {
+function buildCreditReminderHtmlMulti(customer, credits, brandName, appUrl) {
   const today = new Date().toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const nowMs = new Date(CreditService.localDateStr() + 'T00:00:00Z').getTime();
 
@@ -397,6 +397,7 @@ function buildCreditReminderHtmlMulti(customer, credits, brandName) {
         </tr></tfoot>
       </table>
       <p>Para realizar su pago o consultar opciones, comuníquese con nosotros.</p>
+      ${appUrl ? `<p style="margin-top:12px">Puede revisar el detalle de sus consumos ingresando a su cuenta en <a href="${appUrl}" style="color:#1a1a2e;font-weight:bold">${appUrl}</a>.</p>` : '<p style="margin-top:12px">Puede revisar el detalle de sus consumos ingresando a su cuenta.</p>'}
       <div class="footer">Correo automático — no responder directamente a este mensaje. Fecha del reporte: ${today}</div>
     </div>
   </div></body></html>`;
