@@ -1645,8 +1645,8 @@ async function initializeApp() {
     await runDailyInterestCalculation();
     scheduleMidnightInterest();
 
-    // ─── Scheduler: recordatorios de créditos a las 7:00 AM hora Guayaquil ──
-    // Guayaquil = UTC-5 (sin horario de verano), 7:00 AM GYE = 12:00 UTC
+    // ─── Scheduler: recordatorios de créditos a las 8:00 AM hora Guayaquil ──
+    // Guayaquil = UTC-5 (sin horario de verano), 8:00 AM GYE = 13:00 UTC
     async function runCreditReminders() {
       try {
         const tenantId = 1;
@@ -1681,19 +1681,29 @@ async function initializeApp() {
         if (!emailConfigured) return;
 
         const brandName = await Setting.getSetting(tenantId, 'brand_slogan', 'Licorería');
-        const { buildCreditReminderHtml } = require('./routes/customerCredits');
+        const { buildCreditReminderHtmlMulti } = require('./routes/customerCredits');
         let sent = 0;
 
+        // Agrupar créditos por cliente para enviar un solo correo por persona
+        const byCustomer = new Map();
         for (const credit of credits) {
           if (!credit.customer || !credit.customer.email) continue;
+          const cid = credit.customer.id;
+          if (!byCustomer.has(cid)) byCustomer.set(cid, { customer: credit.customer, credits: [] });
+          byCustomer.get(cid).credits.push(credit);
+        }
+
+        for (const { customer, credits: customerCredits } of byCustomer.values()) {
           try {
-            const subject = `[${brandName}] Recordatorio de saldo pendiente`;
-            const html = buildCreditReminderHtml(credit, brandName);
-            await EmailService.sendEmail(credit.customer.email, subject, html);
-            await credit.update({ lastNotifiedAt: now });
+            const subject = `[${brandName}] Recordatorio de saldo${customerCredits.length > 1 ? 's pendientes' : ' pendiente'}`;
+            const html = buildCreditReminderHtmlMulti(customer, customerCredits, brandName);
+            await EmailService.sendEmail(customer.email, subject, html);
+            for (const credit of customerCredits) {
+              await credit.update({ lastNotifiedAt: now });
+            }
             sent++;
           } catch (err) {
-            console.error(`❌ Recordatorio crédito ${credit.id}:`, err.message);
+            console.error(`❌ Recordatorio cliente ${customer.id}:`, err.message);
           }
         }
 
@@ -1709,14 +1719,14 @@ async function initializeApp() {
       const now = new Date();
       // 7:00 AM Guayaquil (UTC-5) = 12:00:00 UTC
       const nextRun = new Date();
-      nextRun.setUTCHours(12, 0, 30, 0);
+      nextRun.setUTCHours(13, 0, 30, 0);
       if (now >= nextRun) nextRun.setUTCDate(nextRun.getUTCDate() + 1);
       const msUntil = nextRun - now;
       setTimeout(async () => {
         await runCreditReminders();
         schedule7amGuayaquil();
       }, msUntil);
-      console.log(`⏰ Próximos recordatorios de crédito: ${nextRun.toLocaleString('es-EC')} (7:00 AM Guayaquil)`);
+      console.log(`⏰ Próximos recordatorios de crédito: ${nextRun.toLocaleString('es-EC')} (8:00 AM Guayaquil)`);
     }
 
     schedule7amGuayaquil();

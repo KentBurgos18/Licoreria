@@ -316,5 +316,92 @@ function buildCreditReminderHtml(credit, brandName) {
   </div></body></html>`;
 }
 
+function buildCreditReminderHtmlMulti(customer, credits, brandName) {
+  const today = new Date().toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const nowMs = new Date(CreditService.localDateStr() + 'T00:00:00Z').getTime();
+
+  let totalBalance = 0;
+  let hasOverdue = false;
+  let hasUpcoming = false;
+
+  const rows = credits.map(credit => {
+    const balance = parseFloat(credit.currentBalance || 0);
+    const initial = parseFloat(credit.initialAmount || 0);
+    const normalRate = parseFloat(credit.interestRate || 0);
+    const overdueRate = parseFloat(credit.overdueInterestRate || 0);
+    totalBalance += balance;
+
+    let statusLabel = '<span style="background:#17a2b8;color:white;padding:2px 8px;border-radius:4px;font-size:11px">ACTIVO</span>';
+    let dueDateStr = '—';
+
+    if (credit.dueDate) {
+      dueDateStr = new Date(credit.dueDate + 'T00:00:00').toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const dueMs = new Date(credit.dueDate + 'T00:00:00Z').getTime();
+      const daysOverdue = Math.floor((nowMs - dueMs) / 86400000);
+      if (daysOverdue > 0) {
+        statusLabel = `<span style="background:#dc3545;color:white;padding:2px 8px;border-radius:4px;font-size:11px">VENCIDO ${daysOverdue}d</span>`;
+        hasOverdue = true;
+      } else if (daysOverdue > -4) {
+        statusLabel = `<span style="background:#fd7e14;color:white;padding:2px 8px;border-radius:4px;font-size:11px">PRÓXIMO</span>`;
+        hasUpcoming = true;
+      }
+    }
+
+    const interest = Math.max(0, balance - initial);
+    let rateInfo = `${(normalRate * 100).toFixed(2)}%`;
+    if (overdueRate > 0) rateInfo += ` (+${(overdueRate * 100).toFixed(2)}% mora)`;
+
+    return `<tr>
+      <td style="padding:8px;border-bottom:1px solid #dee2e6">${statusLabel}</td>
+      <td style="padding:8px;border-bottom:1px solid #dee2e6">$${initial.toFixed(2)}</td>
+      <td style="padding:8px;border-bottom:1px solid #dee2e6">${interest > 0 ? '$' + interest.toFixed(2) : '—'}</td>
+      <td style="padding:8px;border-bottom:1px solid #dee2e6">${dueDateStr}</td>
+      <td style="padding:8px;border-bottom:1px solid #dee2e6;font-weight:bold;color:#dc3545">$${balance.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+
+  const overdueAlert = hasOverdue ? `
+    <div style="background:#fff3cd;border-left:4px solid #ffc107;padding:12px 16px;margin:16px 0;border-radius:4px">
+      <strong>⚠️ Tiene uno o más créditos vencidos.</strong> Le recomendamos regularizar su saldo a la brevedad para evitar intereses adicionales.
+    </div>` : (hasUpcoming ? `
+    <div style="background:#d1ecf1;border-left:4px solid #17a2b8;padding:12px 16px;margin:16px 0;border-radius:4px">
+      <strong>📅 Tiene créditos próximos a vencer.</strong> Por favor gestione su pago antes de la fecha de vencimiento.
+    </div>` : '');
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; color: #333; }
+    .container { max-width: 640px; margin: 0 auto; padding: 20px; }
+    .header { background: #1a1a2e; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0; }
+    .content { background: #f8f9fa; padding: 24px; border-radius: 0 0 8px 8px; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+    th { background: #e9ecef; padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6; }
+    .footer { margin-top: 16px; color: #888; font-size: 12px; }
+    .total-row { background:#fff3cd; font-weight:bold; font-size:15px; }
+    .total-row td { padding:10px; }
+  </style></head>
+  <body><div class="container">
+    <div class="header"><h2 style="margin:0">${brandName} — Resumen de Saldos Pendientes</h2></div>
+    <div class="content">
+      <p>Estimado/a <strong>${customer.name}</strong>,</p>
+      <p>Le recordamos que tiene los siguientes saldos pendientes:</p>
+      ${overdueAlert}
+      <table>
+        <thead><tr>
+          <th>Estado</th><th>Monto original</th><th>Intereses</th><th>Vencimiento</th><th>Total a pagar</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr class="total-row">
+          <td colspan="4" style="padding:10px;text-align:right">TOTAL A PAGAR:</td>
+          <td style="padding:10px;color:#dc3545">$${totalBalance.toFixed(2)}</td>
+        </tr></tfoot>
+      </table>
+      <p>Para realizar su pago o consultar opciones, comuníquese con nosotros.</p>
+      <div class="footer">Correo automático — no responder directamente a este mensaje. Fecha del reporte: ${today}</div>
+    </div>
+  </div></body></html>`;
+}
+
 module.exports = router;
 module.exports.buildCreditReminderHtml = buildCreditReminderHtml;
+module.exports.buildCreditReminderHtmlMulti = buildCreditReminderHtmlMulti;
