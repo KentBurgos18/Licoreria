@@ -398,13 +398,13 @@ router.get('/stats/monthly-chart', async (req, res) => {
     const n = Math.min(Math.max(parseInt(months) || 12, 1), 24);
     const rows = await sequelize.query(`
       SELECT
-        TO_CHAR(DATE_TRUNC('month', created_at AT TIME ZONE 'UTC'), 'YYYY-MM') AS month_key,
-        TO_CHAR(DATE_TRUNC('month', created_at AT TIME ZONE 'UTC'), 'Mon YYYY') AS label,
+        TO_CHAR(DATE_TRUNC('month', created_at AT TIME ZONE 'America/Guayaquil'), 'YYYY-MM') AS month_key,
+        TO_CHAR(DATE_TRUNC('month', created_at AT TIME ZONE 'America/Guayaquil'), 'Mon YYYY') AS label,
         COALESCE(SUM(total_amount), 0)::float AS total
       FROM sales
       WHERE tenant_id = :tenantId
         AND status = 'COMPLETED'
-        AND created_at >= DATE_TRUNC('month', NOW() - INTERVAL '1 month' * (:n - 1))
+        AND (created_at AT TIME ZONE 'America/Guayaquil') >= DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Guayaquil') - INTERVAL '1 month' * (:n - 1))
       GROUP BY month_key, label
       ORDER BY month_key ASC
     `, { replacements: { tenantId: parseInt(tenantId), n }, type: sequelize.QueryTypes.SELECT });
@@ -436,12 +436,12 @@ router.get('/stats/daily-chart', async (req, res) => {
     const n = Math.min(Math.max(parseInt(days) || 30, 7), 90);
     const rows = await sequelize.query(`
       SELECT
-        TO_CHAR(DATE_TRUNC('day', created_at AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS day_key,
+        TO_CHAR(DATE_TRUNC('day', created_at AT TIME ZONE 'America/Guayaquil'), 'YYYY-MM-DD') AS day_key,
         COALESCE(SUM(total_amount), 0)::float AS total
       FROM sales
       WHERE tenant_id = :tenantId
         AND status = 'COMPLETED'
-        AND created_at >= CURRENT_DATE - INTERVAL '1 day' * (:n - 1)
+        AND (created_at AT TIME ZONE 'America/Guayaquil') >= (CURRENT_TIMESTAMP AT TIME ZONE 'America/Guayaquil')::date - INTERVAL '1 day' * (:n - 1)
       GROUP BY day_key
       ORDER BY day_key ASC
     `, { replacements: { tenantId: parseInt(tenantId), n }, type: sequelize.QueryTypes.SELECT });
