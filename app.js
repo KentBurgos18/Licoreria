@@ -1682,7 +1682,6 @@ async function initializeApp() {
 
         const brandName = await Setting.getSetting(tenantId, 'brand_slogan', 'Licorería');
         const { buildCreditReminderHtmlMulti } = require('./routes/customerCredits');
-        const appUrl = process.env.APP_URL || null;
         let sent = 0;
 
         // Agrupar créditos por cliente para enviar un solo correo por persona
@@ -1697,7 +1696,7 @@ async function initializeApp() {
         for (const { customer, credits: customerCredits } of byCustomer.values()) {
           try {
             const subject = `[${brandName}] Recordatorio de saldo${customerCredits.length > 1 ? 's pendientes' : ' pendiente'}`;
-            const html = buildCreditReminderHtmlMulti(customer, customerCredits, brandName, appUrl);
+            const html = buildCreditReminderHtmlMulti(customer, customerCredits, brandName);
             await EmailService.sendEmail(customer.email, subject, html);
             for (const credit of customerCredits) {
               await credit.update({ lastNotifiedAt: now });
