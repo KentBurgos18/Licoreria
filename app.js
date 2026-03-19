@@ -1493,6 +1493,45 @@ async function initializeApp() {
       console.warn('⚠️ Migración is_returnable:', e.message);
     }
 
+    // Migración: sale_id en customer_credits (para vincular crédito con venta)
+    try {
+      await sequelize.query(`ALTER TABLE customer_credits ADD COLUMN IF NOT EXISTS sale_id BIGINT REFERENCES sales(id) ON DELETE SET NULL`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_customer_credits_sale ON customer_credits(sale_id)`);
+      console.log('✅ Migración customer_credits.sale_id completada');
+    } catch (e) {
+      console.warn('⚠️ Migración customer_credits.sale_id:', e.message);
+    }
+
+    // Migración de datos: ventas a crédito existentes → status PENDING si el crédito está ACTIVE
+    try {
+      await sequelize.query(`
+        UPDATE sales s
+        SET status = 'PENDING'
+        FROM customer_credits cc
+        WHERE cc.sale_id = s.id
+          AND s.payment_method = 'CREDIT'
+          AND s.status = 'COMPLETED'
+          AND cc.status = 'ACTIVE'
+      `);
+      // Para registros existentes sin sale_id: actualizar por customer_id + fecha (heurístico)
+      await sequelize.query(`
+        UPDATE sales s
+        SET status = 'PENDING'
+        WHERE s.payment_method = 'CREDIT'
+          AND s.status = 'COMPLETED'
+          AND EXISTS (
+            SELECT 1 FROM customer_credits cc
+            WHERE cc.customer_id = s.customer_id
+              AND cc.status = 'ACTIVE'
+              AND cc.sale_id IS NULL
+              AND DATE(cc.created_at) = DATE(s.created_at)
+          )
+      `);
+      console.log('✅ Migración datos: ventas a crédito ACTIVE → PENDING completada');
+    } catch (e) {
+      console.warn('⚠️ Migración datos ventas crédito:', e.message);
+    }
+
     // Sync models (create tables if they don't exist)
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: true });

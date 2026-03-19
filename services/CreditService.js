@@ -1,4 +1,4 @@
-const { CustomerCredit } = require('../models');
+const { CustomerCredit, Sale } = require('../models');
 const { Op } = require('sequelize');
 
 class CreditService {
@@ -132,6 +132,14 @@ class CreditService {
       credit.currentBalance = 0;
       credit.status = 'PAID';
       credit.paidAt = new Date();
+
+      // Marcar la venta asociada como COMPLETED (el dinero fue recibido)
+      if (credit.saleId) {
+        await Sale.update(
+          { status: 'COMPLETED' },
+          { where: { id: credit.saleId, status: 'PENDING' }, transaction }
+        );
+      }
 
       // Update participant status
       if (credit.groupPurchaseParticipant) {

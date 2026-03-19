@@ -127,8 +127,8 @@ router.post('/', async (req, res) => {
     // Use provided totalAmount or calculated total
     const finalTotal = totalAmount || calculatedTotal;
 
-    // Dashboard sales: siempre COMPLETED (el empleado en caja verifica la transferencia al seleccionarla)
-    const saleStatus = 'COMPLETED';
+    // Ventas a crédito quedan PENDING hasta que el crédito se pague; el resto COMPLETED
+    const saleStatus = paymentMethod === 'CREDIT' ? 'PENDING' : 'COMPLETED';
     
     // For credit sales, customerId is required
     let finalCustomerId = customerId;
@@ -214,8 +214,8 @@ router.post('/', async (req, res) => {
 
     const saleItems = await Promise.all(saleItemsPromises);
 
-    // Only create inventory movements if sale is COMPLETED (not PENDING transfer)
-    if (saleStatus === 'COMPLETED') {
+    // Crear movimientos de inventario si la venta es COMPLETED, o si es CREDIT (producto entregado aunque pago pendiente)
+    if (saleStatus === 'COMPLETED' || paymentMethod === 'CREDIT') {
       const inventoryMovementsPromises = items.map(async (item) => {
         const product = productMap[item.productId];
         
@@ -277,6 +277,7 @@ router.post('/', async (req, res) => {
       await CustomerCredit.create({
         tenantId,
         customerId: finalCustomerId,
+        saleId: sale.id,
         groupPurchaseParticipantId: null,
         initialAmount: finalTotal,
         currentBalance: finalTotal,

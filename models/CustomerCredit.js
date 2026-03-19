@@ -17,6 +17,11 @@ module.exports = (sequelize) => {
       allowNull: false,
       field: 'customer_id'
     },
+    saleId: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      field: 'sale_id'
+    },
     groupPurchaseParticipantId: {
       type: DataTypes.BIGINT,
       allowNull: true,
