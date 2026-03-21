@@ -1,5 +1,5 @@
 const express = require('express');
-const { Sale, SaleItem, Product, InventoryMovement, Setting, CustomerCredit, Customer, Notification } = require('../models');
+const { Sale, SaleItem, Product, InventoryMovement, Setting, CustomerCredit, Customer, Notification, GroupPurchase, GroupPurchaseParticipant } = require('../models');
 const ComboService = require('../services/ComboService');
 const AuditService = require('../services/AuditService');
 const { resolveMovement, validateSimpleSaleQuantity } = require('../services/InventoryPoolHelper');
@@ -970,11 +970,27 @@ router.post('/:id/void', async (req, res) => {
       }, { transaction });
     }
 
-    // Cancelar crédito asociado si existe y está activo
+    // Cancelar créditos directos (ventas individuales)
     await CustomerCredit.update(
       { status: 'CANCELLED' },
       { where: { saleId, status: 'ACTIVE', tenantId }, transaction }
     );
+
+    // Cancelar créditos de venta grupal (vinculados por groupPurchaseParticipantId)
+    const groupPurchase = await GroupPurchase.findOne({ where: { saleId }, transaction });
+    if (groupPurchase) {
+      const participants = await GroupPurchaseParticipant.findAll({
+        where: { groupPurchaseId: groupPurchase.id },
+        transaction
+      });
+      const participantIds = participants.map(p => p.id);
+      if (participantIds.length > 0) {
+        await CustomerCredit.update(
+          { status: 'CANCELLED' },
+          { where: { groupPurchaseParticipantId: { [Op.in]: participantIds }, status: 'ACTIVE' }, transaction }
+        );
+      }
+    }
 
     // Anular la venta
     sale.status = 'VOIDED';
