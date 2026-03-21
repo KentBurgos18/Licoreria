@@ -187,11 +187,12 @@ router.post('/from-cart', async (req, res) => {
     const allTransfer = methods.every(m => m === 'TRANSFER');
     const salePaymentMethod = allCash ? 'CASH' : allTransfer ? 'TRANSFER' : 'CREDIT';
 
-    // Create Sale
+    // Create Sale — PENDING si algún participante paga con crédito
+    const saleStatus = salePaymentMethod === 'CREDIT' ? 'PENDING' : 'COMPLETED';
     const sale = await Sale.create({
       tenantId,
       customerId: null,
-      status: 'COMPLETED',
+      status: saleStatus,
       totalAmount,
       taxRate,
       taxAmount,
