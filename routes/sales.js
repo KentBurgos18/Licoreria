@@ -1115,6 +1115,26 @@ router.delete('/:id', async (req, res) => {
     await SaleItem.destroy({ where: { saleId }, transaction });
     await InventoryMovement.destroy({ where: { refId: saleId, refType: { [Op.in]: ['SALE', 'SALE_VOID'] } }, transaction });
     await Notification.destroy({ where: { saleId }, transaction });
+
+    // Eliminar créditos directos
+    await CustomerCredit.destroy({ where: { saleId }, transaction });
+
+    // Eliminar créditos de venta grupal
+    const groupPurchase = await GroupPurchase.findOne({ where: { saleId }, transaction });
+    if (groupPurchase) {
+      const participants = await GroupPurchaseParticipant.findAll({
+        where: { groupPurchaseId: groupPurchase.id }, transaction
+      });
+      const participantIds = participants.map(p => p.id);
+      if (participantIds.length > 0) {
+        await CustomerCredit.destroy({
+          where: { groupPurchaseParticipantId: { [Op.in]: participantIds } }, transaction
+        });
+      }
+      await GroupPurchaseParticipant.destroy({ where: { groupPurchaseId: groupPurchase.id }, transaction });
+      await groupPurchase.destroy({ transaction });
+    }
+
     await sale.destroy({ transaction });
 
     await transaction.commit();
