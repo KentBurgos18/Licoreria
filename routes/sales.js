@@ -962,7 +962,7 @@ router.post('/:id/void', async (req, res) => {
         tenantId,
         productId: mv.productId,
         movementType: 'IN',
-        reason: 'SALE_VOID',
+        reason: 'VOID',
         qty: mv.qty,
         unitCost: mv.unitCost,
         refType: 'SALE_VOID',
