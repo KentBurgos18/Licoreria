@@ -1091,4 +1091,46 @@ router.patch('/:id/reject-pending', async (req, res) => {
   }
 });
 
+// DELETE /sales/:id - Eliminar venta anulada permanentemente
+router.delete('/:id', async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { tenantId } = req.query;
+    const saleId = parseInt(req.params.id, 10);
+    if (isNaN(saleId)) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'ID inválido', code: 'INVALID_ID' });
+    }
+
+    const sale = await Sale.findOne({
+      where: { id: saleId, tenantId, status: 'VOIDED' },
+      transaction
+    });
+
+    if (!sale) {
+      await transaction.rollback();
+      return res.status(404).json({ error: 'Solo se pueden eliminar ventas anuladas', code: 'NOT_FOUND' });
+    }
+
+    await SaleItem.destroy({ where: { saleId }, transaction });
+    await InventoryMovement.destroy({ where: { refId: saleId, refType: { [Op.in]: ['SALE', 'SALE_VOID'] } }, transaction });
+    await Notification.destroy({ where: { saleId }, transaction });
+    await sale.destroy({ transaction });
+
+    await transaction.commit();
+
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'DELETE', entity: 'sale', entityId: saleId,
+      description: `Eliminó venta anulada #${saleId}`
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error eliminando venta:', error);
+    res.status(500).json({ error: 'Error interno al eliminar la venta', code: 'INTERNAL_ERROR' });
+  }
+});
+
 module.exports = router;

@@ -4722,7 +4722,7 @@
                             <button class="btn btn-sm btn-outline-primary btn-sm-custom" onclick="viewSaleDetails(${sale.id})" title="Ver Detalles">
                                 <i class="bi bi-eye"></i>
                             </button>
-                            ${sale.status !== 'VOIDED' ? `<button class="btn btn-sm btn-outline-danger btn-sm-custom ms-1" onclick="voidSale(${sale.id})" title="Anular venta"><i class="bi bi-x-circle"></i></button>` : ''}
+                            ${sale.status !== 'VOIDED' ? `<button class="btn btn-sm btn-outline-danger btn-sm-custom ms-1" onclick="voidSale(${sale.id})" title="Anular venta"><i class="bi bi-x-circle"></i></button>` : `<button class="btn btn-sm btn-danger btn-sm-custom ms-1" onclick="deleteSale(${sale.id})" title="Eliminar venta anulada"><i class="bi bi-trash"></i></button>`}
                         </td>
                     </tr>
                 `;
@@ -4883,6 +4883,21 @@
                 error: function(xhr) {
                     const error = xhr.responseJSON?.error || 'Error al rechazar la orden';
                     showAlert(error, 'danger');
+                }
+            });
+        }
+
+        function deleteSale(saleId) {
+            if (!confirm('¿Eliminar esta venta anulada permanentemente? No se puede deshacer.')) return;
+            $.ajax({
+                url: `/api/sales/${saleId}?tenantId=1`,
+                method: 'DELETE',
+                success: function() {
+                    showAlert('Venta eliminada', 'success');
+                    loadSales();
+                },
+                error: function(xhr) {
+                    showAlert(xhr.responseJSON?.error || 'Error al eliminar', 'danger');
                 }
             });
         }
