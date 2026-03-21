@@ -929,6 +929,86 @@ router.post('/:id/confirm-cash', async (req, res) => {
   }
 });
 
+// POST /sales/:id/void - Anular una venta (restaura inventario, cancela crédito asociado)
+router.post('/:id/void', async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { id } = req.params;
+    const { tenantId, reason } = req.body;
+    const saleId = parseInt(id, 10);
+    if (isNaN(saleId)) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'ID de venta inválido', code: 'INVALID_ID' });
+    }
+
+    const sale = await Sale.findOne({
+      where: { id: saleId, tenantId, status: { [Op.ne]: 'VOIDED' } },
+      transaction
+    });
+
+    if (!sale) {
+      await transaction.rollback();
+      return res.status(404).json({ error: 'Venta no encontrada o ya está anulada', code: 'SALE_NOT_FOUND' });
+    }
+
+    // Restaurar inventario: revertir los movimientos OUT de esta venta
+    const movements = await InventoryMovement.findAll({
+      where: { refType: 'SALE', refId: saleId, movementType: 'OUT' },
+      transaction
+    });
+
+    for (const mv of movements) {
+      await InventoryMovement.create({
+        tenantId,
+        productId: mv.productId,
+        movementType: 'IN',
+        reason: 'SALE_VOID',
+        qty: mv.qty,
+        unitCost: mv.unitCost,
+        refType: 'SALE_VOID',
+        refId: saleId
+      }, { transaction });
+    }
+
+    // Cancelar crédito asociado si existe y está activo
+    await CustomerCredit.update(
+      { status: 'CANCELLED' },
+      { where: { saleId, status: 'ACTIVE', tenantId }, transaction }
+    );
+
+    // Anular la venta
+    sale.status = 'VOIDED';
+    sale.voidReason = reason || 'Venta anulada';
+    sale.voidedAt = new Date();
+    await sale.save({ transaction });
+
+    await Notification.destroy({ where: { saleId: sale.id }, transaction });
+
+    await transaction.commit();
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`sale:${sale.id}`).emit('sale-voided', { saleId: sale.id });
+      if (sale.customerId) {
+        io.to(`customer:${sale.customerId}`).emit('sale-voided', { saleId: sale.id });
+      }
+    }
+
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'UPDATE', entity: 'sale', entityId: sale.id,
+      description: `Anuló venta #${sale.id} — Motivo: ${reason || 'No especificado'}`,
+      metadata: { reason, movimientosRevertidos: movements.length }
+    });
+
+    res.json({ success: true, saleId });
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error al anular venta:', error);
+    res.status(500).json({ error: 'Error interno al anular la venta', code: 'INTERNAL_ERROR' });
+  }
+});
+
 // PATCH /sales/:id/reject-pending - Reject a pending order (cash or transfer) when client never showed / never paid
 router.patch('/:id/reject-pending', async (req, res) => {
   const transaction = await sequelize.transaction();

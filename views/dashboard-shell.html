@@ -4722,6 +4722,7 @@
                             <button class="btn btn-sm btn-outline-primary btn-sm-custom" onclick="viewSaleDetails(${sale.id})" title="Ver Detalles">
                                 <i class="bi bi-eye"></i>
                             </button>
+                            ${sale.status !== 'VOIDED' ? `<button class="btn btn-sm btn-outline-danger btn-sm-custom ms-1" onclick="voidSale(${sale.id})" title="Anular venta"><i class="bi bi-x-circle"></i></button>` : ''}
                         </td>
                     </tr>
                 `;
@@ -8119,7 +8120,7 @@
             // Check if already in cart
             const existingItem = sellCart.find(item => parseInt(item.productId) === parseInt(productId));
             if (existingItem) {
-                if (existingItem.quantity >= stockInfo) {
+                if (stockInfo <= 0) {
                     showAlert('No hay suficiente stock disponible', 'warning');
                     return;
                 }
