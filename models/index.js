@@ -21,6 +21,7 @@ const PayphonePendingPayment = require('./PayphonePendingPayment');
 const ProductCategory = require('./ProductCategory');
 const ProductPresentation = require('./ProductPresentation');
 const Expense = require('./Expense');
+const CreditPaymentRequest = require('./CreditPaymentRequest');
 
 // Initialize models
 const models = {
@@ -45,7 +46,8 @@ const models = {
   PayphonePendingPayment: PayphonePendingPayment(sequelize),
   ProductCategory: ProductCategory(sequelize),
   ProductPresentation: ProductPresentation(sequelize),
-  Expense: Expense(sequelize)
+  Expense: Expense(sequelize),
+  CreditPaymentRequest: CreditPaymentRequest(sequelize)
 };
 
 // Setup associations

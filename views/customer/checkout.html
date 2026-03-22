@@ -1717,29 +1717,30 @@
         }
 
         function processCreditPayment(paymentMethod) {
-            var creditId    = creditPaymentCtx.creditId;
-            var amount      = parseFloat(creditPaymentCtx.amount);
-            var paymentDate = new Date().toISOString().split('T')[0];
-            var btn         = document.getElementById('processBtn');
+            var creditId = creditPaymentCtx.creditId;
+            var amount   = parseFloat(creditPaymentCtx.amount);
+            var btn      = document.getElementById('processBtn');
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Procesando...';
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando solicitud...';
 
+            // CASH y TRANSFER: crear solicitud pendiente (requiere confirmación admin)
+            var notes = $('#checkoutNotes').val() || '';
             $.ajax({
-                url: '/api/customer/credits/' + creditId + '/payment',
+                url: '/api/customer/credits/' + creditId + '/payment-request',
                 method: 'POST',
                 headers: { 'Authorization': 'Bearer ' + localStorage.getItem('customerToken'), 'Content-Type': 'application/json' },
-                data: JSON.stringify({ amount: amount, paymentMethod: paymentMethod, paymentDate: paymentDate }),
+                data: JSON.stringify({ amount: amount, paymentMethod: paymentMethod, notes: notes }),
                 success: function() {
                     sessionStorage.removeItem('creditPayment');
-                    showAlert('¡Pago registrado exitosamente!', 'success');
+                    showAlert('✅ Solicitud enviada. El administrador confirmará tu pago pronto.', 'success');
                     setTimeout(function() {
                         if (window.spaNavigate) window.spaNavigate('/customer/credits');
                         else window.location.href = '/customer/credits';
-                    }, 1800);
+                    }, 2500);
                 },
                 error: function(xhr) {
                     if (xhr.status === 401) { window.location.href = '/customer/login'; return; }
-                    var msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Error al registrar el pago';
+                    var msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Error al enviar la solicitud';
                     showAlert(msg, 'danger');
                     btn.disabled = false;
                     btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Confirmar Pago';
@@ -1751,7 +1752,7 @@
         function processOrder() {
             const paymentMethod = $('#paymentMethod').val();
 
-            if (taxEnabled && currentTaxRate == null) {
+            if (!isCreditMode && taxEnabled && currentTaxRate == null) {
                 showAlert('El IVA no está configurado. No es posible completar la compra. Contacte al administrador.', 'warning');
                 return;
             }

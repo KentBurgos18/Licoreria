@@ -1,5 +1,5 @@
 const express = require('express');
-const { Product, ProductCategory, ProductPresentation, InventoryMovement, Sale, SaleItem, Customer, GroupPurchase, GroupPurchaseParticipant, Setting, User, Notification, PayphonePendingPayment, CustomerCredit, CustomerPayment } = require('../models');
+const { Product, ProductCategory, ProductPresentation, InventoryMovement, Sale, SaleItem, Customer, GroupPurchase, GroupPurchaseParticipant, Setting, User, Notification, PayphonePendingPayment, CustomerCredit, CustomerPayment, CreditPaymentRequest } = require('../models');
 const CreditService = require('../services/CreditService');
 const ComboService = require('../services/ComboService');
 const WebPushService = require('../services/WebPushService');
@@ -1202,14 +1202,33 @@ router.get('/credits', authenticateCustomer, async (req, res) => {
         {
           association: 'groupPurchaseParticipant',
           include: [
-            { association: 'groupPurchase', include: [{ association: 'product' }] }
+            {
+              association: 'groupPurchase',
+              include: [
+                { association: 'product' },
+                { association: 'sale', include: [{ association: 'items', include: [{ association: 'product' }] }] }
+              ]
+            }
           ]
         }
       ],
       order: [['dueDate', 'ASC'], ['createdAt', 'DESC']]
     });
 
-    res.json({ credits });
+    // Para créditos individuales (saleId sin participante grupal), obtener artículos de la venta
+    const creditsJson = credits.map(c => c.toJSON());
+    for (var i = 0; i < creditsJson.length; i++) {
+      var cr = creditsJson[i];
+      if (cr.saleId && !cr.groupPurchaseParticipantId) {
+        const saleData = await Sale.findOne({
+          where: { id: cr.saleId },
+          include: [{ association: 'items', include: [{ association: 'product' }] }]
+        });
+        if (saleData) cr.saleData = saleData.toJSON();
+      }
+    }
+
+    res.json({ credits: creditsJson });
   } catch (error) {
     console.error('Error listing customer credits:', error);
     res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
@@ -1472,6 +1491,52 @@ router.post('/credits/:id/payment', authenticateCustomer, async (req, res) => {
   } catch (error) {
     await transaction.rollback();
     console.error('Error registering credit payment:', error);
+    res.status(500).json({ error: error.message || 'Internal server error', code: 'INTERNAL_ERROR' });
+  }
+});
+
+// POST /customer/credits/:id/payment-request — solicitar pago (efectivo/transferencia, requiere confirmación admin)
+router.post('/credits/:id/payment-request', authenticateCustomer, async (req, res) => {
+  try {
+    const { customerId, tenantId } = req;
+    const { id } = req.params;
+    const { amount, paymentMethod, notes } = req.body;
+
+    if (!amount || amount <= 0 || !paymentMethod) {
+      return res.status(400).json({ error: 'amount y paymentMethod son requeridos', code: 'MISSING_FIELDS' });
+    }
+    if (!['CASH', 'TRANSFER'].includes(paymentMethod)) {
+      return res.status(400).json({ error: 'Método de pago inválido para solicitud', code: 'INVALID_PAYMENT_METHOD' });
+    }
+
+    const credit = await CustomerCredit.findOne({ where: { id, customerId, tenantId } });
+    if (!credit) return res.status(404).json({ error: 'Crédito no encontrado', code: 'NOT_FOUND' });
+    if (credit.status !== 'ACTIVE') return res.status(400).json({ error: 'Este crédito ya está pagado o cancelado', code: 'CREDIT_NOT_ACTIVE' });
+
+    const payAmt = parseFloat(amount);
+    if (payAmt > parseFloat(credit.currentBalance) + 0.01) {
+      return res.status(400).json({ error: 'El monto supera el saldo actual del crédito', code: 'AMOUNT_EXCEEDS_BALANCE' });
+    }
+
+    // Verificar que no haya una solicitud pendiente ya existente para este crédito
+    const existing = await CreditPaymentRequest.findOne({ where: { creditId: id, customerId, tenantId, status: 'PENDING' } });
+    if (existing) {
+      return res.status(409).json({ error: 'Ya tienes una solicitud de pago pendiente para este crédito', code: 'REQUEST_ALREADY_PENDING' });
+    }
+
+    const request = await CreditPaymentRequest.create({
+      tenantId,
+      customerId,
+      creditId: parseInt(id),
+      amount: payAmt,
+      paymentMethod,
+      notes: notes || null,
+      status: 'PENDING'
+    });
+
+    res.status(201).json({ ok: true, requestId: request.id });
+  } catch (error) {
+    console.error('Error creating credit payment request:', error);
     res.status(500).json({ error: error.message || 'Internal server error', code: 'INTERNAL_ERROR' });
   }
 });

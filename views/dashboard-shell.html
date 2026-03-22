@@ -5887,8 +5887,107 @@
             });
         }
 
+        // ── Solicitudes de pago pendientes ────────────────────────────
+        function loadCreditPaymentRequests() {
+            var token = localStorage.getItem('adminToken');
+            $.ajax({
+                url: '/api/customer-credits/payment-requests',
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + token },
+                data: { status: 'PENDING' },
+                success: function(resp) {
+                    displayCreditPaymentRequests(resp.requests || []);
+                },
+                error: function() { /* silencioso */ }
+            });
+        }
+
+        function displayCreditPaymentRequests(requests) {
+            var card  = document.getElementById('paymentRequestsCard');
+            var badge = document.getElementById('paymentRequestsBadge');
+            var tbody = document.getElementById('paymentRequestsTbody');
+            if (!card || !tbody) return;
+
+            if (!requests || requests.length === 0) {
+                card.style.display = 'none';
+                return;
+            }
+
+            card.style.display = '';
+            if (badge) badge.textContent = requests.length;
+
+            var methodLabel = { CASH: '💵 Efectivo', TRANSFER: '🏦 Transferencia' };
+            var rows = requests.map(function(r) {
+                var customerName = r.customer ? r.customer.name : 'N/A';
+                var method = methodLabel[r.paymentMethod] || r.paymentMethod;
+                var date = new Date(r.createdAt).toLocaleString('es-EC', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+                var notes = r.notes ? `<small class="text-muted">${r.notes}</small>` : '<span class="text-muted">—</span>';
+                return `<tr>
+                    <td><strong>${customerName}</strong></td>
+                    <td class="text-success fw-bold">$${parseFloat(r.amount).toFixed(2)}</td>
+                    <td>${method}</td>
+                    <td>${notes}</td>
+                    <td><small class="text-muted">${date}</small></td>
+                    <td>
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-success btn-sm-custom" onclick="approveCreditRequest(${r.id})" title="Aprobar — el pago se aplica al crédito">
+                                <i class="bi bi-check-lg"></i> Aprobar
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger btn-sm-custom" onclick="rejectCreditRequest(${r.id})" title="Rechazar">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            tbody.innerHTML = rows;
+        }
+
+        function approveCreditRequest(requestId) {
+            if (!confirm('¿Confirmar que se recibió el pago? El crédito se actualizará al aprobarlo.')) return;
+            var token = localStorage.getItem('adminToken');
+            $.ajax({
+                url: `/api/customer-credits/payment-requests/${requestId}/approve`,
+                method: 'POST',
+                contentType: 'application/json',
+                headers: { 'Authorization': 'Bearer ' + token },
+                data: JSON.stringify({}),
+                success: function() {
+                    showAlert('✅ Pago aprobado y aplicado al crédito', 'success');
+                    loadCreditPaymentRequests();
+                    loadCredits();
+                },
+                error: function(xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Error al aprobar';
+                    showAlert(msg, 'danger');
+                }
+            });
+        }
+
+        function rejectCreditRequest(requestId) {
+            if (!confirm('¿Rechazar esta solicitud de pago? El crédito no se modificará.')) return;
+            var token = localStorage.getItem('adminToken');
+            $.ajax({
+                url: `/api/customer-credits/payment-requests/${requestId}/reject`,
+                method: 'POST',
+                contentType: 'application/json',
+                headers: { 'Authorization': 'Bearer ' + token },
+                data: JSON.stringify({}),
+                success: function() {
+                    showAlert('Solicitud rechazada', 'warning');
+                    loadCreditPaymentRequests();
+                },
+                error: function(xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Error al rechazar';
+                    showAlert(msg, 'danger');
+                }
+            });
+        }
+
         // Credits Functions
         function loadCredits() {
+            loadCreditPaymentRequests();
             $.ajax({
                 url: '/api/customer-credits',
                 method: 'GET',
@@ -5951,7 +6050,7 @@
                 const customerName = credit.customer ? credit.customer.name : 'N/A';
                 const hasEmail = credit.customer && credit.customer.email;
                 const reminderBtn = hasEmail
-                    ? `<button class="btn btn-sm btn-outline-info btn-sm-custom" onclick="sendCreditReminder(${credit.id})" title="Enviar recordatorio por correo">
+                    ? `<button class="btn btn-sm btn-outline-info btn-sm-custom" onclick="sendCustomerCreditSummary(${credit.customer.id})" title="Enviar resumen detallado al cliente">
                            <i class="bi bi-envelope"></i>
                        </button>`
                     : `<button class="btn btn-sm btn-outline-secondary btn-sm-custom" disabled title="Cliente sin email registrado">
@@ -6009,6 +6108,24 @@
             });
         }
         
+        function sendCustomerCreditSummary(customerId) {
+            var token = localStorage.getItem('adminToken');
+            $.ajax({
+                url: `/api/customer-credits/send-summary/${customerId}`,
+                method: 'POST',
+                contentType: 'application/json',
+                headers: { 'Authorization': 'Bearer ' + token },
+                data: JSON.stringify({ tenantId: 1 }),
+                success: function() {
+                    showAlert('Resumen detallado enviado correctamente', 'success');
+                },
+                error: function(xhr) {
+                    const msg = xhr.responseJSON?.error || 'Error al enviar el correo';
+                    showAlert(msg, 'danger');
+                }
+            });
+        }
+
         function sendCreditReminder(creditId) {
             $.ajax({
                 url: `/api/customer-credits/${creditId}/send-reminder`,
@@ -6082,6 +6199,7 @@
             const paymentDate = $('#creditPaymentDate').val();
             const notes = $('#creditPaymentNotes').val() || null;
             const transferAccountInfo = paymentMethod === 'TRANSFER' ? ($('#creditPaymentBankAccount').val() || null) : null;
+            const token = localStorage.getItem('adminToken');
 
             if (!creditId || !amount || amount <= 0 || !paymentMethod) {
                 showAlert('Complete todos los campos requeridos', 'warning');
@@ -6097,20 +6215,31 @@
                 method: 'GET',
                 data: { tenantId: 1 },
                 success: function(credit) {
-                    $.ajax({
-                        url: '/api/customer-payments/apply-to-credit',
-                        method: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({
+                    // Si tiene participante grupal → usar apply-to-credit; si no → endpoint directo por crédito
+                    var isGroup = !!credit.groupPurchaseParticipantId;
+                    var url, payload;
+                    if (isGroup) {
+                        url = '/api/customer-payments/apply-to-credit';
+                        payload = {
                             tenantId: 1,
-                            creditId: creditId,
                             customerId: credit.customerId,
+                            groupPurchaseParticipantId: credit.groupPurchaseParticipantId,
                             amount: amount,
                             paymentMethod: paymentMethod,
                             paymentDate: paymentDate,
                             notes: notes,
                             transferAccountInfo: transferAccountInfo
-                        }),
+                        };
+                    } else {
+                        url = `/api/customer-credits/${creditId}/payment`;
+                        payload = { amount: amount, paymentMethod: paymentMethod, paymentDate: paymentDate, notes: notes };
+                    }
+                    $.ajax({
+                        url: url,
+                        method: 'POST',
+                        contentType: 'application/json',
+                        headers: { 'Authorization': 'Bearer ' + token },
+                        data: JSON.stringify(payload),
                         success: function() {
                             showAlert('Pago registrado exitosamente', 'success');
                             bootstrap.Modal.getInstance(document.getElementById('creditPaymentModal')).hide();

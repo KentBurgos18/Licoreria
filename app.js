@@ -1130,6 +1130,38 @@ async function initializeApp() {
       console.warn('⚠️ Migración 027 (unit_cost en products):', e.message);
     }
 
+    // Migración 028: credit_payment_requests
+    try {
+      const [cprTbl] = await sequelize.query(`
+        SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'credit_payment_requests'
+      `);
+      if (!cprTbl || cprTbl.length === 0) {
+        console.log('🔄 Aplicando migración 028 (credit_payment_requests)...');
+        await sequelize.query(`
+          CREATE TABLE IF NOT EXISTS credit_payment_requests (
+            id BIGSERIAL PRIMARY KEY,
+            tenant_id BIGINT NOT NULL,
+            customer_id BIGINT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+            credit_id BIGINT NOT NULL REFERENCES customer_credits(id) ON DELETE CASCADE,
+            amount NUMERIC(12,2) NOT NULL,
+            payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('CASH', 'TRANSFER')),
+            notes TEXT,
+            status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            reviewed_at TIMESTAMPTZ,
+            review_notes TEXT
+          )
+        `);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_cpr_tenant   ON credit_payment_requests(tenant_id)`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_cpr_customer ON credit_payment_requests(customer_id)`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_cpr_credit   ON credit_payment_requests(credit_id)`);
+        await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_cpr_status   ON credit_payment_requests(status)`);
+        console.log('✅ Migración 028 aplicada');
+      }
+    } catch (e) {
+      console.warn('⚠️ Migración 028 (credit_payment_requests):', e.message);
+    }
+
     // ── Seed primer despliegue ────────────────────────────────────────────────
     // Se ejecuta automáticamente solo cuando no existe ningún usuario admin
     // (indica BD recién creada). Crea admin por defecto + datos iniciales.
@@ -1667,7 +1699,19 @@ async function initializeApp() {
               { lastNotifiedAt: { [require('sequelize').Op.lt]: threshold24h } }
             ]
           },
-          include: [{ model: Customer, as: 'customer', attributes: ['id', 'name', 'email'] }]
+          include: [
+            { model: Customer, as: 'customer', attributes: ['id', 'name', 'email'] },
+            {
+              association: 'groupPurchaseParticipant',
+              include: [{
+                association: 'groupPurchase',
+                include: [{
+                  association: 'sale',
+                  include: [{ association: 'items', include: [{ association: 'product', attributes: ['id', 'name'] }] }]
+                }]
+              }]
+            }
+          ]
         });
 
         if (credits.length === 0) return;
@@ -1681,8 +1725,19 @@ async function initializeApp() {
         if (!emailConfigured) return;
 
         const brandName = await Setting.getSetting(tenantId, 'brand_slogan', 'Licorería');
-        const { buildCreditReminderHtmlMulti } = require('./routes/customerCredits');
+        const { buildCustomerDetailedSummaryHtml } = require('./routes/customerCredits');
         let sent = 0;
+
+        // Cargar items de ventas individuales
+        for (const credit of credits) {
+          if (credit.saleId && !credit.groupPurchaseParticipantId) {
+            const sale = await Sale.findOne({
+              where: { id: credit.saleId },
+              include: [{ association: 'items', include: [{ association: 'product', attributes: ['id', 'name'] }] }]
+            });
+            credit._saleData = sale;
+          }
+        }
 
         // Agrupar créditos por cliente para enviar un solo correo por persona
         const byCustomer = new Map();
@@ -1695,8 +1750,9 @@ async function initializeApp() {
 
         for (const { customer, credits: customerCredits } of byCustomer.values()) {
           try {
-            const subject = `[${brandName}] Recordatorio de saldo${customerCredits.length > 1 ? 's pendientes' : ' pendiente'}`;
-            const html = buildCreditReminderHtmlMulti(customer, customerCredits, brandName);
+            const totalDebt = customerCredits.reduce((s, c) => s + parseFloat(c.currentBalance || 0), 0);
+            const subject = `[${brandName}] Detalle de tus créditos pendientes — $${totalDebt.toFixed(2)}`;
+            const html = buildCustomerDetailedSummaryHtml(customer, customerCredits, brandName);
             await EmailService.sendEmail(customer.email, subject, html);
             for (const credit of customerCredits) {
               await credit.update({ lastNotifiedAt: now });

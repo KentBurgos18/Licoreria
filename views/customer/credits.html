@@ -247,6 +247,67 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* ── Items expandable panel ── */
+        .cr-items-toggle {
+            padding: 7px 14px;
+            border-top: 1px dashed var(--border);
+            display: flex; align-items: center; gap: 6px;
+            cursor: pointer;
+            font-size: 10.5px; font-weight: 700; color: var(--text3);
+            letter-spacing: .03em;
+            transition: color .15s, background .15s;
+            user-select: none;
+        }
+        .cr-items-toggle:hover { color: var(--accent); background: var(--accentbg); }
+        .cr-items-toggle .toggle-chevron {
+            transition: transform .25s;
+            font-size: 12px; margin-left: auto;
+        }
+        .cr-items-toggle.open { color: var(--accent); }
+        .cr-items-toggle.open .toggle-chevron { transform: rotate(180deg); }
+
+        .cr-items-panel {
+            padding: 0 14px 12px;
+            display: none;
+            border-top: 1px solid var(--border);
+            background: var(--surf2);
+        }
+        .cr-items-panel.open { display: block; }
+
+        .cr-items-type-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 8px; border-radius: 4px;
+            font-size: 9px; font-weight: 800;
+            margin: 10px 0 6px;
+        }
+        .cr-items-type-ind { background: rgba(13,110,253,.12); color: #0d6efd; }
+        .cr-items-type-grp { background: rgba(102,16,242,.12); color: #6610f2; }
+
+        .cr-items-note {
+            font-size: 10px; color: var(--text3); margin-bottom: 7px;
+        }
+        .cr-items-note strong { color: var(--accent); }
+
+        .cr-items-table {
+            width: 100%; border-collapse: collapse;
+            font-size: 11.5px;
+            border-radius: 8px; overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .cr-items-table th {
+            background: var(--accentbg);
+            padding: 5px 10px;
+            font-size: 9px; font-weight: 700; color: var(--text3);
+            letter-spacing: .06em; text-transform: uppercase;
+        }
+        .cr-items-table td {
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text2);
+        }
+        .cr-items-table tr:last-child td { border-bottom: none; }
+        .cr-items-table .td-name { color: var(--text); font-weight: 600; }
+
         /* Mobile adjustments */
         @media (max-width: 520px) {
             .cr-hero-body { grid-template-columns: 1fr 1fr; }
@@ -460,6 +521,12 @@
                 var gp = credit.groupPurchaseParticipant.groupPurchase;
                 if (gp.product) productName = gp.product.name;
                 else productName = 'Compra Grupal #' + gp.id;
+            } else if (credit.saleData && credit.saleData.items && credit.saleData.items.length > 0) {
+                var fi = credit.saleData.items[0];
+                if (fi.product && fi.product.name) {
+                    productName = fi.product.name;
+                    if (credit.saleData.items.length > 1) productName += ' + ' + (credit.saleData.items.length - 1) + ' más';
+                }
             }
 
             // Interest rate
@@ -496,6 +563,17 @@
 
             var balanceClass = isOverdue ? 'red' : 'accent';
 
+            // Items expandable panel
+            var itemsHtml = buildCrItemsPanel(credit);
+            var itemsToggle = itemsHtml
+                ? '<div class="cr-items-toggle" onclick="toggleCrItems(this)">' +
+                    '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>' +
+                    'Ver artículos consumidos' +
+                    '<svg class="toggle-chevron" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>' +
+                  '</div>' +
+                  '<div class="cr-items-panel">' + itemsHtml + '</div>'
+                : '';
+
             var card = '<div class="cr-card ' + statusCls + '" style="animation-delay:' + (idx * 0.07) + 's">' +
                 '<div class="cr-head">' +
                     '<div class="cr-head-left">' +
@@ -529,6 +607,7 @@
                     '</div>' +
                 '</div>' +
                 alertHtml +
+                itemsToggle +
                 '<div class="cr-footer">' +
                     (rateHtml || '<span></span>') +
                     actionHtml +
@@ -537,6 +616,67 @@
 
             container.append(card);
         });
+    }
+
+    // ── Toggle artículos expandibles ─────────────────────────
+    function toggleCrItems(toggleEl) {
+        var isOpen = toggleEl.classList.contains('open');
+        var panel = toggleEl.nextElementSibling;
+        if (isOpen) {
+            toggleEl.classList.remove('open');
+            panel.classList.remove('open');
+        } else {
+            toggleEl.classList.add('open');
+            panel.classList.add('open');
+        }
+    }
+
+    // ── Construir HTML de artículos para panel expandible ────
+    function buildCrItemsPanel(credit) {
+        var items = [];
+        var isGroup = false;
+
+        if (credit.groupPurchaseParticipant && credit.groupPurchaseParticipant.groupPurchase) {
+            var gp = credit.groupPurchaseParticipant.groupPurchase;
+            isGroup = true;
+            if (gp.sale && gp.sale.items) items = gp.sale.items;
+        } else if (credit.saleData && credit.saleData.items) {
+            items = credit.saleData.items;
+        }
+
+        if (!items || items.length === 0) return '';
+
+        var typeBadge = isGroup
+            ? '<div class="cr-items-type-badge cr-items-type-grp">👥 Compra Grupal</div>'
+            : '<div class="cr-items-type-badge cr-items-type-ind">🛍️ Venta Individual</div>';
+
+        var groupNote = '';
+        if (isGroup) {
+            var myPart = parseFloat(credit.initialAmount || 0).toFixed(2);
+            groupNote = '<div class="cr-items-note">Tu parte del total: <strong>$' + myPart + '</strong></div>';
+        }
+
+        var rows = items.map(function(item) {
+            var qty = parseFloat(item.quantity || 0);
+            var qtyStr = Number.isInteger(qty) ? qty : qty.toFixed(3).replace(/\.?0+$/, '');
+            var name = (item.product && item.product.name) ? item.product.name : 'Producto';
+            var total = parseFloat(item.totalPrice || (parseFloat(item.unitPrice || 0) * qty) || 0).toFixed(2);
+            return '<tr>' +
+                '<td class="td-name">' + name + '</td>' +
+                '<td style="text-align:center;color:var(--text3)">' + qtyStr + '</td>' +
+                '<td style="text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700">$' + total + '</td>' +
+                '</tr>';
+        }).join('');
+
+        return typeBadge + groupNote +
+            '<table class="cr-items-table">' +
+            '<thead><tr>' +
+            '<th style="text-align:left">Producto</th>' +
+            '<th style="text-align:center">Cant.</th>' +
+            '<th style="text-align:right">Total</th>' +
+            '</tr></thead>' +
+            '<tbody>' + rows + '</tbody>' +
+            '</table>';
     }
 
     // ── Ir al checkout para pagar crédito ────────────────────

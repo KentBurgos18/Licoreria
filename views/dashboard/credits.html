@@ -9,6 +9,36 @@
                 </button>
             </div>
 
+            <!-- Solicitudes de Pago Pendientes -->
+            <div class="card border-warning mb-4" id="paymentRequestsCard" style="display:none">
+                <div class="card-header bg-warning bg-opacity-10 d-flex align-items-center justify-content-between">
+                    <span class="fw-bold">
+                        <i class="bi bi-hourglass-split text-warning me-2"></i>
+                        Solicitudes de Pago Pendientes
+                        <span class="badge bg-warning text-dark ms-2" id="paymentRequestsBadge">0</span>
+                    </span>
+                    <small class="text-muted">El cliente reportó un pago en efectivo o transferencia</small>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="paymentRequestsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Monto</th>
+                                    <th>Método</th>
+                                    <th>Notas</th>
+                                    <th>Fecha Solicitud</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentRequestsTbody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- Credits Table -->
             <div class="card">
                 <div class="card-body">
@@ -40,6 +70,9 @@
             </div>
         </div>
   <script>
-    window.initCreditsView = function() { if (typeof loadCredits === 'function') loadCredits(); };
+    window.initCreditsView = function() {
+      if (typeof loadCredits === 'function') loadCredits();
+      if (typeof loadCreditPaymentRequests === 'function') loadCreditPaymentRequests();
+    };
   </script>
 </div>
