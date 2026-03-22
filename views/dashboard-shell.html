@@ -2269,6 +2269,11 @@
                             <strong>Estado:</strong> <span id="groupPurchaseDetailsStatus"></span>
                         </div>
                     </div>
+                    <div id="groupPurchaseDetailsItems" style="display:none" class="mb-3">
+                        <hr>
+                        <h6>Artículos consumidos:</h6>
+                        <div id="groupPurchaseDetailsItemsList" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+                    </div>
                     <hr>
                     <h6>Participantes:</h6>
                     <div class="table-responsive">
@@ -2280,7 +2285,6 @@
                                     <th>Monto a Pagar</th>
                                     <th>Pagado</th>
                                     <th>Pendiente</th>
-                                    <th>Intereses</th>
                                     <th>Vence</th>
                                     <th>Estado</th>
                                     <th>Acción</th>
@@ -2392,6 +2396,34 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-primary" id="btnSaveCreditPayment" onclick="saveCreditPayment()">Registrar Pago</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Profile Modal -->
+    <div class="modal fade" id="customerProfileModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-person-lines-fill me-2"></i><span id="cpModalName"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <!-- Resumen deuda -->
+                    <div id="cpDebtSummary" class="p-3 border-bottom" style="background:var(--th-surf2)">
+                        <div class="text-center text-muted py-2"><div class="spinner-border spinner-border-sm"></div></div>
+                    </div>
+                    <!-- Créditos activos -->
+                    <div class="p-3 border-bottom">
+                        <h6 class="fw-bold mb-2"><i class="bi bi-credit-card me-1"></i>Créditos activos</h6>
+                        <div id="cpCreditsBody"><div class="text-center text-muted py-2"><div class="spinner-border spinner-border-sm"></div></div></div>
+                    </div>
+                    <!-- Historial consumos -->
+                    <div class="p-3">
+                        <h6 class="fw-bold mb-2"><i class="bi bi-bag me-1"></i>Historial de consumos</h6>
+                        <div id="cpSalesBody"><div class="text-center text-muted py-2"><div class="spinner-border spinner-border-sm"></div></div></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -4984,6 +5016,9 @@
                         <td>${date}</td>
                         <td>
                             <div class="table-actions">
+                                <button class="btn btn-sm btn-outline-info btn-sm-custom" onclick="showCustomerProfile(${customer.id}, '${customer.name.replace(/'/g, "\\'")}')" title="Ver ficha">
+                                    <i class="bi bi-person-lines-fill"></i>
+                                </button>
                                 <button class="btn btn-sm btn-outline-primary btn-sm-custom" onclick="editCustomer(${customer.id})" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </button>
@@ -5606,7 +5641,20 @@
                         statusBadge = '<span class="badge bg-danger">Cancelada</span>';
                     }
                     $('#groupPurchaseDetailsStatus').html(statusBadge);
-                    
+
+                    // Artículos consumidos
+                    const saleItems = groupPurchase.sale && groupPurchase.sale.items ? groupPurchase.sale.items : [];
+                    if (saleItems.length > 0) {
+                        const itemsHtml = saleItems.map(function(it) {
+                            const name = it.product ? it.product.name : 'Producto';
+                            return `<span style="background:var(--th-surf2);border:1px solid var(--th-border);border-radius:8px;padding:4px 12px;font-size:13px;">${name} &times; ${it.quantity}</span>`;
+                        }).join('');
+                        $('#groupPurchaseDetailsItemsList').html(itemsHtml);
+                        $('#groupPurchaseDetailsItems').show();
+                    } else {
+                        $('#groupPurchaseDetailsItems').hide();
+                    }
+
                     const tbody = $('#groupPurchaseDetailsParticipants');
                     tbody.empty();
                     
@@ -5643,14 +5691,17 @@
                             const accountInfo = participant.paymentMethod === 'TRANSFER' && participant.transferAccountInfo
                                 ? `<br><small class="text-muted">${participant.transferAccountInfo}</small>` : '';
 
+                            const totalWithInterest = amountDue + interestAmount;
+                            const pendingWithInterest = remaining + interestAmount;
+                            const interestLabel = interestAmount > 0 ? ` <small class="text-warning">(+$${interestAmount.toFixed(2)} int.)</small>` : '';
+
                             const row = `
                                 <tr>
                                     <td>${participant.customer ? participant.customer.name : 'N/A'}</td>
                                     <td>${pmLabel}${accountInfo}</td>
-                                    <td>$${amountDue.toFixed(2)}</td>
+                                    <td>$${totalWithInterest.toFixed(2)}${interestLabel}</td>
                                     <td>$${amountPaid.toFixed(2)}</td>
-                                    <td>$${remaining.toFixed(2)}</td>
-                                    <td>$${interestAmount.toFixed(2)}</td>
+                                    <td class="fw-bold">$${pendingWithInterest.toFixed(2)}</td>
                                     <td>${dueDateText}</td>
                                     <td>${statusBadge}</td>
                                     <td>
@@ -9677,6 +9728,9 @@
                         <td>${date}</td>
                         <td>
                             <div class="table-actions">
+                                <button class="btn btn-sm btn-outline-info btn-sm-custom" onclick="showCustomerProfile(${customer.id}, '${customer.name.replace(/'/g, "\\'")}')" title="Ver ficha">
+                                    <i class="bi bi-person-lines-fill"></i>
+                                </button>
                                 <button class="btn btn-sm btn-outline-primary btn-sm-custom" onclick="editCustomer(${customer.id})" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </button>
@@ -9693,6 +9747,119 @@
 
         function filterCustomers() {
             loadCustomers();
+        }
+
+        function showCustomerProfile(customerId, customerName) {
+            $('#cpModalName').text(customerName);
+            $('#cpDebtSummary').html('<div class="text-center text-muted py-2"><div class="spinner-border spinner-border-sm"></div></div>');
+            $('#cpCreditsBody').html('<div class="text-center text-muted py-2"><div class="spinner-border spinner-border-sm"></div></div>');
+            $('#cpSalesBody').html('<div class="text-center text-muted py-2"><div class="spinner-border spinner-border-sm"></div></div>');
+            var modal = new bootstrap.Modal(document.getElementById('customerProfileModal'));
+            modal.show();
+
+            var token = localStorage.getItem('adminToken');
+            var headers = { 'Authorization': 'Bearer ' + token };
+
+            // Cargar créditos
+            $.ajax({
+                url: '/api/customer-credits',
+                method: 'GET',
+                headers: headers,
+                data: { tenantId: 1, customerId: customerId, limit: 100 },
+                success: function(res) {
+                    var credits = res.credits || [];
+                    var active = credits.filter(function(c) { return c.status === 'ACTIVE'; });
+                    var totalDebt = active.reduce(function(s, c) { return s + parseFloat(c.currentBalance || 0); }, 0);
+
+                    // Resumen
+                    var debtColor = totalDebt > 0 ? '#dc3545' : '#198754';
+                    $('#cpDebtSummary').html(
+                        '<div class="d-flex gap-3 flex-wrap">' +
+                        '<div style="flex:1;min-width:120px;background:var(--th-surf);border-radius:10px;padding:12px 16px;text-align:center;">' +
+                            '<div style="font-size:11px;color:var(--th-text3);text-transform:uppercase;letter-spacing:.5px">Total adeudado</div>' +
+                            '<div style="font-size:1.4rem;font-weight:700;color:' + debtColor + '">$' + totalDebt.toFixed(2) + '</div>' +
+                        '</div>' +
+                        '<div style="flex:1;min-width:120px;background:var(--th-surf);border-radius:10px;padding:12px 16px;text-align:center;">' +
+                            '<div style="font-size:11px;color:var(--th-text3);text-transform:uppercase;letter-spacing:.5px">Créditos activos</div>' +
+                            '<div style="font-size:1.4rem;font-weight:700;">' + active.length + '</div>' +
+                        '</div>' +
+                        '<div style="flex:1;min-width:120px;background:var(--th-surf);border-radius:10px;padding:12px 16px;text-align:center;">' +
+                            '<div style="font-size:11px;color:var(--th-text3);text-transform:uppercase;letter-spacing:.5px">Total créditos</div>' +
+                            '<div style="font-size:1.4rem;font-weight:700;">' + credits.length + '</div>' +
+                        '</div>' +
+                        '</div>'
+                    );
+
+                    // Tabla créditos
+                    if (credits.length === 0) {
+                        $('#cpCreditsBody').html('<p class="text-muted text-center py-2 mb-0">Sin créditos registrados</p>');
+                    } else {
+                        var rows = credits.map(function(c) {
+                            var statusBadge = c.status === 'ACTIVE'
+                                ? '<span class="badge bg-warning text-dark">Activo</span>'
+                                : c.status === 'PAID'
+                                    ? '<span class="badge bg-success">Pagado</span>'
+                                    : '<span class="badge bg-secondary">' + c.status + '</span>';
+                            var due = c.dueDate ? new Date(c.dueDate + 'T00:00:00').toLocaleDateString('es-EC', {day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+                            var isOverdue = c.status === 'ACTIVE' && c.dueDate && new Date(c.dueDate) < new Date();
+                            var dueCell = isOverdue ? '<span class="text-danger fw-bold">' + due + ' ⚠</span>' : due;
+                            var fecha = new Date(c.createdAt).toLocaleDateString('es-EC', {day:'2-digit',month:'2-digit',year:'numeric'});
+                            return '<tr>' +
+                                '<td>' + fecha + '</td>' +
+                                '<td>$' + parseFloat(c.initialAmount||0).toFixed(2) + '</td>' +
+                                '<td class="fw-bold">$' + parseFloat(c.currentBalance||0).toFixed(2) + '</td>' +
+                                '<td>' + dueCell + '</td>' +
+                                '<td>' + statusBadge + '</td>' +
+                            '</tr>';
+                        }).join('');
+                        $('#cpCreditsBody').html(
+                            '<div class="table-responsive"><table class="table table-sm mb-0" style="font-size:13px">' +
+                            '<thead><tr><th>Fecha</th><th>Monto inicial</th><th>Saldo actual</th><th>Vencimiento</th><th>Estado</th></tr></thead>' +
+                            '<tbody>' + rows + '</tbody></table></div>'
+                        );
+                    }
+                },
+                error: function() {
+                    $('#cpDebtSummary').html('<p class="text-danger text-center py-2 mb-0">Error al cargar deuda</p>');
+                    $('#cpCreditsBody').html('<p class="text-danger text-center py-2 mb-0">Error al cargar créditos</p>');
+                }
+            });
+
+            // Cargar ventas (consumos)
+            $.ajax({
+                url: '/api/sales',
+                method: 'GET',
+                headers: headers,
+                data: { tenantId: 1, customerId: customerId, limit: 100 },
+                success: function(res) {
+                    var sales = res.sales || [];
+                    if (sales.length === 0) {
+                        $('#cpSalesBody').html('<p class="text-muted text-center py-2 mb-0">Sin consumos registrados</p>');
+                        return;
+                    }
+                    var html = sales.map(function(s) {
+                        var fecha = new Date(s.createdAt).toLocaleDateString('es-EC', {day:'2-digit',month:'2-digit',year:'numeric'});
+                        var pmLabel = s.paymentMethod === 'CASH' ? 'Efectivo' : s.paymentMethod === 'TRANSFER' ? 'Transferencia' : s.paymentMethod === 'CREDIT' ? 'Crédito' : s.paymentMethod;
+                        var statusColor = s.status === 'COMPLETED' ? '#198754' : s.status === 'PENDING' ? '#f59e0b' : '#6c757d';
+                        var items = (s.items || []).map(function(it) {
+                            return '<span style="display:inline-block;background:var(--th-surf2);border-radius:6px;padding:2px 8px;font-size:12px;margin:2px">' +
+                                (it.product ? it.product.name : 'Producto') + ' × ' + it.quantity +
+                            '</span>';
+                        }).join('');
+                        return '<div style="border:1px solid var(--th-border);border-radius:8px;padding:10px 12px;margin-bottom:8px;">' +
+                            '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                                '<span style="font-size:12px;color:var(--th-text3)">' + fecha + ' · ' + pmLabel + '</span>' +
+                                '<span style="font-weight:700;color:' + statusColor + '">$' + parseFloat(s.totalAmount||0).toFixed(2) + '</span>' +
+                            '</div>' +
+                            '<div>' + (items || '<span class="text-muted" style="font-size:12px">Sin detalle</span>') + '</div>' +
+                        '</div>';
+                    }).join('');
+                    $('#cpSalesBody').html(html);
+                },
+                error: function() {
+                    $('#cpSalesBody').html('<p class="text-danger text-center py-2 mb-0">Error al cargar consumos</p>');
+                }
+            });
         }
 
         // Las funciones showCreateCustomerModal, editCustomer, deleteCustomer y saveCustomer

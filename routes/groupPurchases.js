@@ -359,7 +359,7 @@ router.get('/', async (req, res) => {
     const { count, rows } = await GroupPurchase.findAndCountAll({
       where: whereClause,
       include: [
-        { association: 'sale', include: [{ association: 'items' }] },
+        { association: 'sale', include: [{ association: 'items', include: [{ association: 'product' }] }] },
         { association: 'product' },
         includeParticipants
       ],
@@ -402,7 +402,7 @@ router.get('/:id', async (req, res) => {
     const groupPurchase = await GroupPurchase.findOne({
       where: { id, tenantId },
       include: [
-        { association: 'sale', include: [{ association: 'items' }] },
+        { association: 'sale', include: [{ association: 'items', include: [{ association: 'product' }] }] },
         { association: 'product' },
         {
           association: 'participants',
