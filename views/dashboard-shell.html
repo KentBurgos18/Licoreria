@@ -8645,7 +8645,7 @@
                     // Preparar la lista pero no mostrarla automáticamente
                     filterCustomersForCredit('');
                     // Solo mostrar si se solicita explícitamente
-                    if (showDropdown && $('#sellCartModalPaymentMethod').val() === 'CREDIT') {
+                    if (showDropdown) {
                         setTimeout(() => {
                             showCustomersDropdown();
                         }, 50);
@@ -8704,7 +8704,7 @@
         
         function showCustomersDropdown() {
             const list = $('#sellCartModalCustomersList');
-            if ($('#sellCartModalPaymentMethod').val() !== 'CREDIT' || list.children().length === 0) return;
+            if (list.children().length === 0) return;
             // Posicionar fixed debajo del input para evitar problemas de z-index/overflow en mobile
             const input = document.getElementById('sellCartModalCustomerSearch');
             const rect = input.getBoundingClientRect();
