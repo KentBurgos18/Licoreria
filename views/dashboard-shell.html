@@ -3875,7 +3875,7 @@
                     const sel = $('#purchaseFilterSupplier');
                     sel.find('option:not(:first)').remove();
                     response.suppliers.forEach(function(s) {
-                        sel.append(`<option value="${s.id}">${s.supplierCode ? s.supplierCode + ' — ' : ''}${s.name}</option>`);
+                        sel.append(`<option value="${s.id}">${s.name}${s.supplierCode ? ' — ' + s.supplierCode : ''}</option>`);
                     });
                 }
             });
@@ -7469,7 +7469,7 @@
                     const sel = $('#purchaseSupplierId');
                     sel.find('option:not(:first)').remove();
                     response.suppliers.forEach(function(s) {
-                        sel.append(`<option value="${s.id}" data-credit="${s.creditDays}">${s.supplierCode ? s.supplierCode + ' — ' : ''}${s.name}</option>`);
+                        sel.append(`<option value="${s.id}" data-credit="${s.creditDays}">${s.name}${s.supplierCode ? ' — ' + s.supplierCode : ''}</option>`);
                     });
                 }
             });
