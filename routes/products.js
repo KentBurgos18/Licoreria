@@ -484,8 +484,8 @@ router.put('/:id', requireRole('ADMIN'), uploadSingle('image'), async (req, res)
       const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
       await processProductImage(filePath);
       imageUrl = '/uploads/' + req.file.filename;
-    } else if (req.body && req.body.imageUrl) {
-      imageUrl = req.body.imageUrl;
+    } else if (req.body && 'imageUrl' in req.body) {
+      imageUrl = req.body.imageUrl || null;
     }
 
     // Snapshot before update for audit
