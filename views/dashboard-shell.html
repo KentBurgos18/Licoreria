@@ -8566,11 +8566,16 @@
                 $('#sellCartModalCreditFields').hide();
                 $('#sellCartModalCreditDueDate').prop('required', false);
                 // Cliente opcional
-                $('#sellCartModalCustomerTextContainer').show();
-                $('#sellCartModalCustomerSelectContainer').hide();
+                $('#sellCartModalCustomerTextContainer').hide();
+                $('#sellCartModalCustomerSelectContainer').show();
                 $('#sellCartModalCustomerLabel').html('Cliente (Opcional)');
-                $('#sellCartModalCustomer').prop('required', false);
-                $('#sellCartModalCustomerId').val('');
+                $('#sellCartModalCustomerId').prop('required', false);
+                $('#sellCartModalCustomersList').hide();
+                if (!allCustomersList || allCustomersList.length === 0) {
+                    loadCustomersForCredit(false);
+                } else {
+                    filterCustomersForCredit($('#sellCartModalCustomerSearch').val() || '');
+                }
             } else if (paymentMethod === 'CREDIT') {
                 $('#sellCartModalTransferReferenceField').hide();
                 $('#sellCartModalTransferReference').prop('required', false);
@@ -8602,11 +8607,16 @@
                 $('#sellCartModalCreditFields').hide();
                 $('#sellCartModalCreditDueDate').prop('required', false);
                 // Cliente opcional
-                $('#sellCartModalCustomerTextContainer').show();
-                $('#sellCartModalCustomerSelectContainer').hide();
+                $('#sellCartModalCustomerTextContainer').hide();
+                $('#sellCartModalCustomerSelectContainer').show();
                 $('#sellCartModalCustomerLabel').html('Cliente (Opcional)');
-                $('#sellCartModalCustomer').prop('required', false);
-                $('#sellCartModalCustomerId').val('');
+                $('#sellCartModalCustomerId').prop('required', false);
+                $('#sellCartModalCustomersList').hide();
+                if (!allCustomersList || allCustomersList.length === 0) {
+                    loadCustomersForCredit(false);
+                } else {
+                    filterCustomersForCredit($('#sellCartModalCustomerSearch').val() || '');
+                }
             }
             validateNormalSaleModal();
         }
@@ -9104,7 +9114,7 @@
             const isPosView = document.getElementById('posCartPanel') !== null;
             const isModalVisible = isPosView || $('#sellCartModal').hasClass('show') || $('#sellCartModal').is(':visible');
             const paymentMethod = isModalVisible ? $('#sellCartModalPaymentMethod').val() : $('#sellPaymentMethod').val();
-            const customerName = isModalVisible ? $('#sellCartModalCustomer').val() : $('#sellCustomer').val();
+            const customerName = isModalVisible ? ($('#sellCartModalCustomerSearch').val() || $('#sellCartModalCustomer').val()) : $('#sellCustomer').val();
             const transferRef = isModalVisible ? $('#sellCartModalTransferReference').val().trim() : $('#sellTransferReference').val().trim();
             const creditDueDate = isModalVisible ? $('#sellCartModalCreditDueDate').val() : null;
             const creditInterestRate = isModalVisible ? parseFloat($('#sellCartModalCreditInterestRate').val() || '1') : 1;
@@ -9162,10 +9172,8 @@
                     showAlert('Debe seleccionar un cliente para ventas a crédito', 'danger');
                     return;
                 }
-            } else if (customerName && customerName.trim() !== '') {
-                // Para otros métodos, buscar cliente por nombre si se proporciona
-                // El backend lo manejará
-                finalCustomerId = null; // Se buscará por nombre en el backend
+            } else {
+                finalCustomerId = (isModalVisible ? $('#sellCartModalCustomerId').val() : null) || null;
             }
             
             const saleData = {
@@ -11692,11 +11700,8 @@
         
         // Ocultar dropdown cuando se hace clic fuera
         $(document).on('click', function(e) {
-            // Solo ocultar si el método de pago es CREDIT y el clic fue fuera del contenedor
-            if ($('#sellCartModalPaymentMethod').val() === 'CREDIT') {
-                if (!$(e.target).closest('#sellCartModalCustomerSelectContainer').length) {
-                    hideCustomersDropdown();
-                }
+            if (!$(e.target).closest('#sellCartModalCustomerSelectContainer').length) {
+                hideCustomersDropdown();
             }
         });
         
@@ -12056,8 +12061,8 @@
                                             <span class="scm-customer-icon"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
                                             <input type="text" class="scm-customer-inp" id="sellCartModalCustomerSearch"
                                                    placeholder="Buscar cliente..."
-                                                   onkeyup="filterCustomersForCredit(this.value); if($('#sellCartModalPaymentMethod').val()==='CREDIT') showCustomersDropdown();"
-                                                   onfocus="if($('#sellCartModalPaymentMethod').val()==='CREDIT') showCustomersDropdown();"
+                                                   onkeyup="filterCustomersForCredit(this.value); showCustomersDropdown();"
+                                                   onfocus="showCustomersDropdown();"
                                                    autocomplete="off">
                                         </div>
                                         <button class="scm-qty-del" type="button" onclick="clearCustomerSelection()" id="clearCustomerBtn" style="display:none;" title="Limpiar">
