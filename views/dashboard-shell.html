@@ -8003,6 +8003,7 @@
                     <div class="col-12 col-sm-6 col-lg-3 mb-3">
                         <div class="${cardClass} position-relative">
                             ${isCombo ? '<span class="sell-catalog-combo-badge">COMBO</span>' : ''}
+                            ${product.isReturnable ? '<span style="position:absolute;bottom:0;left:0;width:88px;background:#0d6efd;color:#fff;font-size:9px;font-weight:700;letter-spacing:.4px;text-align:center;padding:3px 0;border-radius:0 0 0 10px;z-index:2">&#x21BA; RETORNABLE</span>' : ''}
                             ${cartQty > 0 ? `<span class="badge bg-primary position-absolute" style="top: 8px; left: 8px; z-index: 1; font-size: 0.8em;">${cartQty}</span>` : ''}
                             <div class="sell-catalog-card-image-wrap">
                                 ${product.imageUrl ? `<img src="${product.imageUrl}" alt="${nameEscaped}">` : '<div class="sell-catalog-card-image-placeholder"><i class="bi bi-image"></i></div>'}
