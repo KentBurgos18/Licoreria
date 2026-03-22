@@ -5647,7 +5647,9 @@
                     if (saleItems.length > 0) {
                         const itemsHtml = saleItems.map(function(it) {
                             const name = it.product ? it.product.name : 'Producto';
-                            return `<span style="background:var(--th-surf2);border:1px solid var(--th-border);border-radius:8px;padding:4px 12px;font-size:13px;">${name} &times; ${it.quantity}</span>`;
+                            const qty = parseFloat(it.quantity);
+                            const qtyStr = Number.isInteger(qty) ? qty : qty.toFixed(3).replace(/\.?0+$/, '');
+                            return `<span style="background:var(--th-surf2);border:1px solid var(--th-border);border-radius:8px;padding:4px 12px;font-size:13px;">${name} &times; ${qtyStr}</span>`;
                         }).join('');
                         $('#groupPurchaseDetailsItemsList').html(itemsHtml);
                         $('#groupPurchaseDetailsItems').show();
