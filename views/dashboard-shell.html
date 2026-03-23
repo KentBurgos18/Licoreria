@@ -8757,7 +8757,7 @@
             var current = sel.value;
             sel.innerHTML = '<option value="">— Seleccionar cuenta —</option>';
             (_modalBankAccounts || []).forEach(function(acc) {
-                var label = acc.bankName + ' · ' + acc.accountType + ' · ' + acc.accountNumber;
+                var label = (acc.bankName || '') + (acc.accountNumber ? ' - ' + acc.accountNumber : '');
                 var opt = document.createElement('option');
                 opt.value = label;
                 opt.textContent = label;
@@ -9230,7 +9230,7 @@
                 if (p.paymentMethod === 'TRANSFER') {
                     var bankOpts = '<option value="">— Cuenta bancaria —</option>';
                     (_modalBankAccounts || []).forEach(function(acc) {
-                        var lbl = acc.bankName + ' · ' + acc.accountType + ' · ' + acc.accountNumber;
+                        var lbl = (acc.bankName || '') + (acc.accountNumber ? ' - ' + acc.accountNumber : '');
                         bankOpts += '<option value="' + lbl + '"' + (p.bankAccount === lbl ? ' selected' : '') + '>' + lbl + '</option>';
                     });
                     extraFields = '<select class="form-select form-select-sm flex-shrink-0" style="width:195px;font-size:11px" onchange="gsSetBankAccount(' + i + ',this.value)">' + bankOpts + '</select>';
