@@ -34,7 +34,7 @@ const router = express.Router();
 
 // Función para encriptar/desencriptar (simple, para producción usar algo más robusto)
 // Genera una clave consistente usando SHA-256
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.createHash('sha256').update('licoreria-secret-key').digest('hex');
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.createHash('sha256').update(process.env.JWT_SECRET || 'change-me').digest('hex');
 const ALGORITHM = 'aes-256-cbc';
 
 function encrypt(text) {
@@ -73,19 +73,27 @@ function decrypt(text) {
 // GET /settings - Get all settings
 router.get('/', async (req, res) => {
   try {
-    const { tenantId = 1 } = req.query;
+    const tenantId = req.tenantId || 1;
 
     const settings = await Setting.findAll({
       where: { tenantId },
       order: [['settingKey', 'ASC']]
     });
 
-    // Desencriptar valores sensibles
+    // Claves sensibles que se enmascaran en la respuesta del listado general
+    const SENSITIVE_KEYS = ['smtp_password', 'payphone_token', 'vapid_private_key'];
+
     const decryptedSettings = settings.map(setting => {
       const settingData = setting.toJSON();
-      // Desencriptar solo campos sensibles como SMTP password
-      if (settingData.settingKey.includes('smtp_password') || settingData.settingKey.includes('password')) {
-        settingData.settingValue = decrypt(settingData.settingValue);
+      const key = settingData.settingKey || '';
+      // Enmascarar valores sensibles (mostrar solo últimos 4 caracteres)
+      if (SENSITIVE_KEYS.some(sk => key.includes(sk))) {
+        const raw = decrypt(settingData.settingValue) || settingData.settingValue || '';
+        settingData.settingValue = raw.length > 4 ? '••••' + raw.slice(-4) : '••••';
+        settingData._masked = true;
+      } else if (key.includes('password')) {
+        settingData.settingValue = '••••';
+        settingData._masked = true;
       }
       return settingData;
     });
@@ -104,7 +112,7 @@ router.get('/', async (req, res) => {
 router.get('/:key', async (req, res) => {
   try {
     const { key } = req.params;
-    const { tenantId = 1 } = req.query;
+    const tenantId = req.tenantId || 1;
 
     const value = await Setting.getSetting(tenantId, key);
 

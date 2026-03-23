@@ -392,8 +392,8 @@ router.get('/', async (req, res) => {
 // GET /sales/stats/monthly-chart - Ventas por mes (últimos N meses) para gráfico
 router.get('/stats/monthly-chart', async (req, res) => {
   try {
-    const { tenantId, months = 12 } = req.query;
-    if (!tenantId) return res.status(400).json({ error: 'tenantId is required' });
+    const tenantId = req.tenantId || 1;
+    const { months = 12 } = req.query;
 
     const n = Math.min(Math.max(parseInt(months) || 12, 1), 24);
     const rows = await sequelize.query(`
@@ -430,8 +430,8 @@ router.get('/stats/monthly-chart', async (req, res) => {
 // GET /sales/stats/daily-chart - Ventas por día (últimos N días) para gráfico
 router.get('/stats/daily-chart', async (req, res) => {
   try {
-    const { tenantId, days = 30 } = req.query;
-    if (!tenantId) return res.status(400).json({ error: 'tenantId is required' });
+    const tenantId = req.tenantId || 1;
+    const { days = 30 } = req.query;
 
     const n = Math.min(Math.max(parseInt(days) || 30, 7), 90);
     const rows = await sequelize.query(`
@@ -466,7 +466,7 @@ router.get('/stats/daily-chart', async (req, res) => {
 // GET /sales/stats/monthly-total - Total ventas del mes actual (dashboard)
 router.get('/stats/monthly-total', async (req, res) => {
   try {
-    const { tenantId } = req.query;
+    const tenantId = req.tenantId || 1;
     if (!tenantId) {
       return res.status(400).json({
         error: 'tenantId is required',
@@ -503,8 +503,8 @@ router.get('/stats/monthly-total', async (req, res) => {
 // GET /sales/stats/profitability - Rentabilidad (ingresos, COGS, gastos, ganancia neta)
 router.get('/stats/profitability', async (req, res) => {
   try {
-    const { tenantId, localDate } = req.query;
-    if (!tenantId) return res.status(400).json({ error: 'tenantId is required' });
+    const { localDate } = req.query;
+    const tenantId = req.tenantId || 1;
     const tid = parseInt(tenantId);
     const today = localDate || new Date().toISOString().slice(0, 10);
 
@@ -569,8 +569,8 @@ router.get('/stats/profitability', async (req, res) => {
 // GET /sales/stats/profitability/products - Rentabilidad por producto
 router.get('/stats/profitability/products', async (req, res) => {
   try {
-    const { tenantId, dateFrom, dateTo, search, limit = 50, page = 1 } = req.query;
-    if (!tenantId) return res.status(400).json({ error: 'tenantId is required' });
+    const { dateFrom, dateTo, search, limit = 50, page = 1 } = req.query;
+    const tenantId = req.tenantId || 1;
     const tid = parseInt(tenantId);
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -662,7 +662,7 @@ router.get('/stats/profitability/products', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { tenantId } = req.query;
+    const tenantId = req.tenantId || 1;
 
     const sale = await Sale.findOne({
       where: { id, tenantId },
@@ -1095,7 +1095,7 @@ router.patch('/:id/reject-pending', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
-    const { tenantId } = req.query;
+    const tenantId = req.tenantId || 1;
     const saleId = parseInt(req.params.id, 10);
     if (isNaN(saleId)) {
       await transaction.rollback();

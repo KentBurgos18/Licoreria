@@ -9,9 +9,13 @@ const { requireRole } = require('./adminAuth');
 
 const DB_HOST = process.env.DB_HOST || 'postgres';
 const DB_PORT = process.env.DB_PORT || '5432';
-const DB_USER = process.env.DB_USER || 'licoreria_user';
-const DB_NAME = process.env.DB_NAME || 'licoreria';
-const DB_PASSWORD = process.env.DB_PASSWORD || 'licoreria_password';
+const DB_USER = process.env.DB_USER;
+const DB_NAME = process.env.DB_NAME;
+const DB_PASSWORD = process.env.DB_PASSWORD;
+if (!DB_USER || !DB_NAME || !DB_PASSWORD) {
+  console.error('⛔ FATAL: DB_USER, DB_NAME y DB_PASSWORD son requeridos en .env');
+  process.exit(1);
+}
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
 
 const pgEnv = () => ({ ...process.env, PGPASSWORD: DB_PASSWORD });
@@ -113,7 +117,17 @@ router.post('/restore', requireRole('ADMIN'), upload.single('backup'), async (re
 
     if (isTarGz) {
       fs.mkdirSync(extractDir, { recursive: true });
-      await spawnPromise('tar', ['-xzf', filePath, '-C', extractDir]);
+      // Extraer con --no-absolute-names para prevenir path traversal
+      await spawnPromise('tar', ['--no-absolute-names', '-xzf', filePath, '-C', extractDir]);
+
+      // Verificar que no haya path traversal en archivos extraídos
+      const extractedFiles = fs.readdirSync(extractDir);
+      for (const f of extractedFiles) {
+        const resolved = path.resolve(extractDir, f);
+        if (!resolved.startsWith(path.resolve(extractDir))) {
+          throw new Error('Archivo de backup contiene rutas no permitidas');
+        }
+      }
 
       // Restaurar imágenes si vienen en el backup
       const extractedUploads = path.join(extractDir, 'uploads');

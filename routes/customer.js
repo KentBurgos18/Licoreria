@@ -17,9 +17,8 @@ if (!JWT_SECRET) {
 
 // Middleware to verify JWT token
 const authenticateCustomer = (req, res, next) => {
-  const token = req.headers.authorization?.replace('Bearer ', '') || 
-                req.body.token || 
-                req.query.token;
+  const token = req.headers.authorization?.replace('Bearer ', '') ||
+                req.body.token;
 
   if (!token) {
     return res.status(401).json({
@@ -72,7 +71,8 @@ function parseCartItems(cartItemsParam) {
 // GET /customer/products - Get available products for customers
 router.get('/products', async (req, res) => {
   try {
-    const { tenantId = 1, search, productType, categoryId, presentationId, cartItems } = req.query;
+    const { search, productType, categoryId, presentationId, cartItems } = req.query;
+    const tenantId = req.tenantId || 1;
 
     const whereClause = {
       tenantId,
@@ -197,7 +197,7 @@ router.get('/products', async (req, res) => {
 router.get('/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { tenantId = 1 } = req.query;
+    const tenantId = req.tenantId || 1;
 
     const product = await Product.findOne({
       where: { id, tenantId, isActive: true },

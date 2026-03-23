@@ -60,7 +60,7 @@ router.get('/', async (req, res) => {
 router.get('/current/:supplierId/:productId', async (req, res) => {
   try {
     const { supplierId, productId } = req.params;
-    const { tenantId = 1 } = req.query;
+    const tenantId = req.tenantId || 1;
 
     const currentPrice = await SupplierPrice.findOne({
       where: {
@@ -240,7 +240,7 @@ router.put('/:id', requireRole('ADMIN'), async (req, res) => {
 router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { tenantId = 1 } = req.query;
+    const tenantId = req.tenantId || 1;
 
     const supplierPrice = await SupplierPrice.findOne({
       where: { id, tenantId }

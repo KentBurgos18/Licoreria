@@ -64,7 +64,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { tenantId = 1 } = req.query;
+    const tenantId = req.tenantId || 1;
 
     const supplier = await Supplier.findOne({
       where: { id, tenantId },
@@ -232,7 +232,7 @@ router.put('/:id', requireRole('ADMIN'), async (req, res) => {
 router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { tenantId = 1 } = req.query;
+    const tenantId = req.tenantId || 1;
 
     const supplier = await Supplier.findOne({
       where: { id, tenantId }

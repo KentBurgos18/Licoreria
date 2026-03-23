@@ -82,7 +82,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { tenantId = 1 } = req.query;
+    const tenantId = req.tenantId || 1;
 
     // Try with cedula, fallback if column doesn't exist
     let attributes = ['id', 'name', 'cedula', 'email', 'phone', 'address', 'isActive', 'createdAt'];
@@ -366,7 +366,8 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { tenantId = 1, permanent = 'false' } = req.query;
+    const tenantId = req.tenantId || 1;
+    const { permanent = 'false' } = req.query;
 
     const customer = await Customer.findOne({
       where: { id, tenantId }
@@ -525,33 +526,36 @@ router.post('/cleanup', requireRole('ADMIN'), async (req, res) => {
     if (customerIdsToDelete.length > 0) {
       try {
         await sequelize.query(
-          `DELETE FROM customer_payments WHERE customer_id IN (${customerIdsToDelete.join(',')})`
+          `DELETE FROM customer_payments WHERE customer_id IN (:ids)`,
+          { replacements: { ids: customerIdsToDelete } }
         );
-        deletedPayments = paymentsCount; // Usar el conteo previo
+        deletedPayments = paymentsCount;
       } catch (e) {
         console.log('Tabla customer_payments no existe o error:', e.message);
       }
     }
-    
+
     // PASO 4: Eliminar créditos relacionados usando SQL directo (SIN transacción)
     if (customerIdsToDelete.length > 0) {
       try {
         await sequelize.query(
-          `DELETE FROM customer_credits WHERE customer_id IN (${customerIdsToDelete.join(',')})`
+          `DELETE FROM customer_credits WHERE customer_id IN (:ids)`,
+          { replacements: { ids: customerIdsToDelete } }
         );
-        deletedCredits = creditsCount; // Usar el conteo previo
+        deletedCredits = creditsCount;
       } catch (e) {
         console.log('Tabla customer_credits no existe o error:', e.message);
       }
     }
-    
+
     // PASO 5: Eliminar participantes de compras grupales usando SQL directo (SIN transacción)
     if (customerIdsToDelete.length > 0) {
       try {
         await sequelize.query(
-          `DELETE FROM group_purchase_participants WHERE customer_id IN (${customerIdsToDelete.join(',')})`
+          `DELETE FROM group_purchase_participants WHERE customer_id IN (:ids)`,
+          { replacements: { ids: customerIdsToDelete } }
         );
-        deletedParticipants = participantsCount; // Usar el conteo previo
+        deletedParticipants = participantsCount;
       } catch (e) {
         console.log('Tabla group_purchase_participants no existe o error:', e.message);
       }

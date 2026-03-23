@@ -28,7 +28,8 @@ function toResponse(user) {
 // GET /users - List users (desde base de datos)
 router.get('/', async (req, res) => {
   try {
-    const { tenantId = 1, search, isActive, page = 1, limit = 50 } = req.query;
+    const { search, isActive, page = 1, limit = 50 } = req.query;
+    const tenantId = req.tenantId || 1;
 
     const whereClause = { tenantId: Number(tenantId) };
     if (isActive !== undefined) {
@@ -75,7 +76,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { tenantId = 1 } = req.query;
+    const tenantId = req.tenantId || 1;
 
     const user = await User.findOne({
       where: { id: Number(id), tenantId: Number(tenantId) },
@@ -223,7 +224,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { tenantId = 1 } = req.query;
+    const tenantId = req.tenantId || 1;
 
     const user = await User.findOne({
       where: { id: Number(id), tenantId: Number(tenantId) }

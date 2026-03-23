@@ -51,11 +51,18 @@ const storage = multer.diskStorage({
   }
 });
 
+// Extensiones de imagen permitidas
+const ALLOWED_IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+
 const upload = multer({
   storage: storage,
   fileFilter: function (req, file, cb) {
     if (!file.mimetype.startsWith('image/')) {
       return cb(new Error('Solo se permiten imágenes'), false);
+    }
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!ALLOWED_IMAGE_EXTS.includes(ext)) {
+      return cb(new Error('Extensión de archivo no permitida'), false);
     }
     cb(null, true);
   },

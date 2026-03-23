@@ -14,9 +14,7 @@ try {
     const keys = webpush.generateVAPIDKeys();
     process.env.VAPID_PUBLIC_KEY = keys.publicKey;
     process.env.VAPID_PRIVATE_KEY = keys.privateKey;
-    console.log('📌 VAPID keys generadas. Para producción añade a .env:');
-    console.log('   VAPID_PUBLIC_KEY=' + keys.publicKey);
-    console.log('   VAPID_PRIVATE_KEY=' + keys.privateKey);
+    console.log('📌 VAPID keys generadas automáticamente (para producción definir en .env)');
   }
 } catch (e) {
   console.warn('⚠️ Web Push no disponible:', e.message);

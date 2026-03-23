@@ -4,7 +4,7 @@ const crypto = require('crypto');
 
 // Función para desencriptar (debe coincidir con routes/settings.js)
 // Genera una clave consistente usando SHA-256
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.createHash('sha256').update('licoreria-secret-key').digest('hex');
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.createHash('sha256').update(process.env.JWT_SECRET || 'change-me').digest('hex');
 const ALGORITHM = 'aes-256-cbc';
 
 function decrypt(text) {

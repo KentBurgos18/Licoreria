@@ -97,13 +97,14 @@ router.delete('/categories/:id', async (req, res) => {
 router.get('/summary', async (req, res) => {
   try {
     const tenantId = req.tenantId || 1;
-    const period = req.query.period || 'year'; // 'month' | 'year' | 'all'
-
-    let periodFilter = '';
-    if (period === 'day')   periodFilter = `AND e.expense_date = CURRENT_DATE`;
-    else if (period === 'week')  periodFilter = `AND DATE_TRUNC('week', e.expense_date) = DATE_TRUNC('week', CURRENT_DATE)`;
-    else if (period === 'month') periodFilter = `AND DATE_TRUNC('month', e.expense_date) = DATE_TRUNC('month', CURRENT_DATE)`;
-    else if (period === 'year')  periodFilter = `AND DATE_PART('year', e.expense_date) = DATE_PART('year', CURRENT_DATE)`;
+    const VALID_PERIODS = {
+      day:   `AND e.expense_date = CURRENT_DATE`,
+      week:  `AND DATE_TRUNC('week', e.expense_date) = DATE_TRUNC('week', CURRENT_DATE)`,
+      month: `AND DATE_TRUNC('month', e.expense_date) = DATE_TRUNC('month', CURRENT_DATE)`,
+      year:  `AND DATE_PART('year', e.expense_date) = DATE_PART('year', CURRENT_DATE)`
+    };
+    const period = req.query.period || 'year';
+    const periodFilter = VALID_PERIODS[period] || '';
 
     const [rows] = await sequelize.query(`
       SELECT
