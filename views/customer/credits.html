@@ -458,8 +458,8 @@
             headers: { 'Authorization': 'Bearer ' + token },
             data: { includeInterest: 'true' },
             success: function(summary) {
-                $('#totalBalance').text('$' + parseFloat(summary.totalBalance || 0).toFixed(2));
-                $('#totalInterest').text('$' + parseFloat(summary.totalInterest || 0).toFixed(2));
+                $('#totalBalance').text('$' + floorBal(summary.totalBalance).toFixed(2));
+                $('#totalInterest').text('$' + floorBal(summary.totalInterest).toFixed(2));
                 $('#totalCredits').text(summary.activeCredits || 0);
             },
             error: function(xhr) {
@@ -467,6 +467,11 @@
                 console.error('Error loading credit summary:', xhr);
             }
         });
+    }
+
+    // ── Floor a 2 decimales (muestra valor truncado, no redondeado) ─────────
+    function floorBal(x) {
+        return Math.floor(parseFloat(x || 0) * 100) / 100;
     }
 
     // ── Formato fecha con hora ────────────────────────────────
@@ -495,8 +500,8 @@
 
         credits.forEach(function(credit, idx) {
             var initialAmount  = parseFloat(credit.initialAmount || 0).toFixed(2);
-            var currentBalance = parseFloat(credit.currentBalance || 0).toFixed(2);
-            var interestAmount = parseFloat(credit.interestAmount || 0).toFixed(2);
+            var currentBalance = floorBal(credit.currentBalance).toFixed(2);
+            var interestAmount = Math.max(0, floorBal(credit.currentBalance) - parseFloat(credit.initialAmount || 0)).toFixed(2);
             var dueDate = credit.dueDate
                 ? new Date(credit.dueDate).toLocaleDateString('es-ES')
                 : null;

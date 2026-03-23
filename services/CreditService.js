@@ -35,38 +35,28 @@ class CreditService {
     const normalRate  = parseFloat(credit.interestRate);
     const overdueRate = parseFloat(credit.overdueInterestRate || 0);
 
-    let balanceCents = Math.round(parseFloat(credit.currentBalance || credit.initialAmount) * 100);
-    const originalCents = balanceCents;
+    const originalBalance = parseFloat(credit.currentBalance || credit.initialAmount);
+    let balance = originalBalance;
 
-    // Si hay fecha de vencimiento y tasa de mora, dividimos el período en dos tramos
+    // Fórmula compuesta directa: evita truncamiento acumulado por Math.floor por día
     if (credit.dueDate && overdueRate > 0) {
       const dueDateMs = new Date(credit.dueDate + 'T00:00:00Z').getTime();
 
-      // Días dentro del plazo normal (start → dueDate, si dueDate está dentro del rango)
       const daysNormal = Math.max(0, Math.min(
         Math.floor((dueDateMs - startMs) / (1000 * 60 * 60 * 24)),
         totalDays
       ));
-      // Días en mora (dueDate → asOf)
       const daysOverdue = totalDays - daysNormal;
 
       // Tramo 1: tasa normal
-      for (let i = 0; i < daysNormal; i++) {
-        balanceCents += Math.floor(balanceCents * normalRate);
-      }
+      if (daysNormal > 0) balance = balance * Math.pow(1 + normalRate, daysNormal);
       // Tramo 2: tasa normal + mora
-      const combinedRate = normalRate + overdueRate;
-      for (let i = 0; i < daysOverdue; i++) {
-        balanceCents += Math.floor(balanceCents * combinedRate);
-      }
+      if (daysOverdue > 0) balance = balance * Math.pow(1 + normalRate + overdueRate, daysOverdue);
     } else {
-      // Sin fecha de vencimiento o sin tasa de mora: solo tasa normal
-      for (let i = 0; i < totalDays; i++) {
-        balanceCents += Math.floor(balanceCents * normalRate);
-      }
+      balance = balance * Math.pow(1 + normalRate, totalDays);
     }
 
-    return Math.max(0, (balanceCents - originalCents) / 100);
+    return Math.max(0, balance - originalBalance);
   }
 
   /**
@@ -92,10 +82,9 @@ class CreditService {
     // Calculate new interest for this period
     const newInterest = this.calculateInterest(credit, asOfDate);
 
-    // Sumar en centavos para evitar 22.49+0.22=22.70999... (float) → truncado erróneo a 22.70
-    const balanceCents = Math.round(parseFloat(credit.currentBalance) * 100);
-    const interestCents = Math.round(newInterest * 100);
-    credit.currentBalance = (balanceCents + interestCents) / 100;
+    // Guardar con 4 decimales de precisión para evitar truncamiento acumulado
+    const newBalance = parseFloat(credit.currentBalance) + newInterest;
+    credit.currentBalance = Math.round(newBalance * 10000) / 10000;
     credit.lastInterestCalculationDate = asOfStr;
 
     // No due-date based overdue logic — interest accumulates from day 1

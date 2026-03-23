@@ -618,6 +618,9 @@ function ordToggle(id) {
   if (lbl) lbl.textContent = open ? 'Cerrar' : 'Ver detalles';
 }
 
+// Floor a 2 decimales para display de saldos con precisión interna de 4 decimales
+function floorBal(x) { return Math.floor(parseFloat(x || 0) * 100) / 100; }
+
 // ── COMPRA GRUPAL TICKET ────────────────────────────────────────
 var GP_STATUS_MAP   = { PENDING:'pendiente', PARTIAL:'parcial', PAID:'pagado', OVERDUE:'vencido' };
 var GP_STATUS_LABEL = { PENDING:'PENDIENTE', PARTIAL:'PARCIAL', PAID:'PAGADO', OVERDUE:'VENCIDO' };
@@ -639,15 +642,15 @@ function ordRenderGroupTicket(p, idx) {
 
   // Crédito asociado
   var credit    = p.credit;
-  var hasCred   = credit && credit.status === 'ACTIVE' && parseFloat(credit.currentBalance || 0) > 0.01;
-  var credBal   = hasCred ? parseFloat(credit.currentBalance).toFixed(2) : '0.00';
+  var hasCred   = credit && credit.status === 'ACTIVE' && floorBal(credit.currentBalance) > 0.01;
+  var credBal   = hasCred ? floorBal(credit.currentBalance).toFixed(2) : '0.00';
 
   var creditRow = hasCred
     ? '<div class="tk-credit-row"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> En crédito — saldo pendiente: <strong>$' + credBal + '</strong></div>'
     : '';
 
   if (hasCred && st !== 'PAID') {
-    _ordCreditPayData[credit.id] = { creditId: credit.id, amount: parseFloat(credit.currentBalance), productName: prodName };
+    _ordCreditPayData[credit.id] = { creditId: credit.id, amount: floorBal(credit.currentBalance), productName: prodName };
   }
   var payBtn = (st !== 'PAID' && hasCred)
     ? '<button class="tk-pay-btn" onclick="event.stopPropagation();ordGoToCheckoutCredit(' + credit.id + ')"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Pagar Ahora</button>'

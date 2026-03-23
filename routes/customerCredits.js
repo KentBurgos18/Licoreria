@@ -8,6 +8,9 @@ const { requireRole } = require('./adminAuth');
 
 const router = express.Router();
 
+// Floor a 2 decimales para display de saldos con precisión interna de 4 decimales
+const floorBal = (x) => Math.floor(parseFloat(x || 0) * 100) / 100;
+
 // Todas las rutas de créditos requieren rol ADMIN
 router.use(requireRole('ADMIN'));
 
@@ -189,6 +192,64 @@ router.post('/:id/payment', async (req, res) => {
   }
 });
 
+// POST /customer-credits/bulk-payment — pagar todos los créditos activos de un cliente de una vez
+router.post('/bulk-payment', async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { customerId, creditIds, paymentMethod, paymentDate, notes, transferAccountInfo } = req.body;
+    const tenantId = 1;
+
+    if (!customerId || !creditIds || !creditIds.length || !paymentMethod) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'customerId, creditIds y paymentMethod son requeridos', code: 'MISSING_FIELDS' });
+    }
+    if (paymentMethod === 'TRANSFER' && !transferAccountInfo) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Selecciona la cuenta destino para la transferencia', code: 'MISSING_ACCOUNT' });
+    }
+
+    // Obtener créditos activos del cliente (solo los del listado recibido, para seguridad)
+    const credits = await CustomerCredit.findAll({
+      where: { id: creditIds, customerId, tenantId, status: 'ACTIVE' },
+      transaction
+    });
+
+    if (!credits.length) {
+      await transaction.rollback();
+      return res.status(404).json({ error: 'No se encontraron créditos activos para este cliente' });
+    }
+
+    // Ordenar: vencidos primero, luego por fecha de vencimiento ascendente
+    credits.sort((a, b) => {
+      const now = new Date();
+      const aOverdue = a.dueDate && new Date(a.dueDate + 'T00:00:00') < now;
+      const bOverdue = b.dueDate && new Date(b.dueDate + 'T00:00:00') < now;
+      if (aOverdue && !bOverdue) return -1;
+      if (!aOverdue && bOverdue) return 1;
+      if (a.dueDate && b.dueDate) return new Date(a.dueDate) - new Date(b.dueDate);
+      return 0;
+    });
+
+    let paidCount = 0;
+    for (const credit of credits) {
+      // Actualizar intereses al día de hoy antes de cobrar (incluye tasa de mora si aplica)
+      await CreditService.updateCreditBalance(credit.id, new Date(), transaction);
+      const updated = await CustomerCredit.findByPk(credit.id, { transaction });
+      const balance = parseFloat(updated.currentBalance);
+      if (balance <= 0.01) continue;
+      await CreditService.applyPayment(updated.id, balance, transaction);
+      paidCount++;
+    }
+
+    await transaction.commit();
+    res.json({ ok: true, paidCount });
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error en bulk-payment:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
 // GET /customer-credits/:id - Get credit by ID
 router.get('/:id', async (req, res) => {
   try {
@@ -350,7 +411,7 @@ router.post('/:id/send-reminder', async (req, res) => {
 
 function buildCreditReminderHtml(credit, brandName) {
   const today = new Date().toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const balance = parseFloat(credit.currentBalance || 0);
+  const balance = floorBal(credit.currentBalance);
   const initial = parseFloat(credit.initialAmount || 0);
   const interest = Math.max(0, balance - initial);
   const normalRate = parseFloat(credit.interestRate || 0);
@@ -432,7 +493,7 @@ function buildCreditReminderHtmlMulti(customer, credits, brandName) {
   let hasUpcoming = false;
 
   const rows = credits.map(credit => {
-    const balance = parseFloat(credit.currentBalance || 0);
+    const balance = floorBal(credit.currentBalance);
     const initial = parseFloat(credit.initialAmount || 0);
     const normalRate = parseFloat(credit.interestRate || 0);
     const overdueRate = parseFloat(credit.overdueInterestRate || 0);
@@ -566,7 +627,7 @@ router.post('/send-summary/:customerId', async (req, res) => {
 
     const brandName = await Setting.getSetting(tenantId, 'brand_slogan', 'Licorería');
     const html = buildCustomerDetailedSummaryHtml(customer, credits, brandName);
-    const totalDebt = credits.reduce((s, c) => s + parseFloat(c.currentBalance || 0), 0);
+    const totalDebt = credits.reduce((s, c) => s + floorBal(c.currentBalance), 0);
     const subject = `[${brandName}] Detalle de tus créditos pendientes — $${totalDebt.toFixed(2)}`;
 
     await EmailService.sendEmail(customer.email, subject, html);
@@ -591,7 +652,7 @@ function buildCustomerDetailedSummaryHtml(customer, credits, brandName) {
   let hasUpcoming = false;
 
   const creditBlocks = credits.map(credit => {
-    const balance = parseFloat(credit.currentBalance || 0);
+    const balance = floorBal(credit.currentBalance);
     const initial = parseFloat(credit.initialAmount || 0);
     const interest = Math.max(0, balance - initial);
     const normalRate = parseFloat(credit.interestRate || 0);

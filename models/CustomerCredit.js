@@ -33,7 +33,7 @@ module.exports = (sequelize) => {
       field: 'initial_amount'
     },
     currentBalance: {
-      type: DataTypes.DECIMAL(12, 2),
+      type: DataTypes.DECIMAL(12, 4),
       allowNull: false,
       field: 'current_balance'
     },

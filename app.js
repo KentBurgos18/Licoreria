@@ -1162,6 +1162,19 @@ async function initializeApp() {
       console.warn('⚠️ Migración 028 (credit_payment_requests):', e.message);
     }
 
+    // Migración 029: currentBalance DECIMAL(12,4) para precisión de interés
+    try {
+      await sequelize.query(`
+        ALTER TABLE customer_credits
+          ALTER COLUMN current_balance TYPE NUMERIC(12,4)
+      `);
+      console.log('✅ Migración 029 aplicada (current_balance NUMERIC 12,4)');
+    } catch (e) {
+      if (!e.message.includes('numeric(12,4)') && !e.message.includes('no change')) {
+        console.warn('⚠️ Migración 029 (current_balance precision):', e.message);
+      }
+    }
+
     // ── Seed primer despliegue ────────────────────────────────────────────────
     // Se ejecuta automáticamente solo cuando no existe ningún usuario admin
     // (indica BD recién creada). Crea admin por defecto + datos iniciales.

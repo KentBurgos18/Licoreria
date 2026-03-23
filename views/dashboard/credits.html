@@ -4,9 +4,6 @@
                 <h2 class="mb-0">
                     <i class="bi bi-credit-card"></i> Créditos
                 </h2>
-                <button class="btn btn-info" onclick="calculateAllInterests()">
-                    <i class="bi bi-calculator"></i> Calcular Intereses
-                </button>
             </div>
 
             <!-- Solicitudes de Pago Pendientes -->
@@ -69,6 +66,62 @@
                 </div>
             </div>
         </div>
+  <!-- Modal: Cobro masivo por cliente -->
+  <div class="modal fade" id="bulkPaymentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-cash-stack me-2"></i>Cobrar a <span id="bulkPayCustomerName"></span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Lista de créditos incluidos -->
+          <div class="mb-3">
+            <div class="fw-semibold mb-2" style="font-size:13px">Créditos a cobrar:</div>
+            <div id="bulkPayCreditsList"></div>
+          </div>
+          <!-- Total -->
+          <div class="d-flex justify-content-between align-items-center p-3 rounded mb-3" style="background:var(--th-surf2)">
+            <span class="fw-bold">Total a cobrar</span>
+            <span class="fw-bold fs-5 text-danger" id="bulkPayTotal">$0.00</span>
+          </div>
+          <!-- Método de pago -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Método de Pago <span class="text-danger">*</span></label>
+            <select class="form-select" id="bulkPayMethod" onchange="onBulkPayMethodChange()">
+              <option value="CASH">Efectivo</option>
+              <option value="TRANSFER">Transferencia</option>
+              <option value="CARD">Tarjeta</option>
+            </select>
+          </div>
+          <!-- Cuenta destino (solo transferencia) -->
+          <div class="mb-3" id="bulkPayBankAccountGroup" style="display:none">
+            <label class="form-label fw-semibold">Cuenta destino <span class="text-danger">*</span></label>
+            <select class="form-select" id="bulkPayBankAccount" onchange="onBulkPayAccountChange()">
+              <option value="">— Seleccionar cuenta —</option>
+            </select>
+          </div>
+          <!-- Fecha -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Fecha de Pago <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="bulkPayDate">
+          </div>
+          <!-- Notas -->
+          <div class="mb-1">
+            <label class="form-label fw-semibold">Notas</label>
+            <textarea class="form-control" id="bulkPayNotes" rows="2" placeholder="Opcional..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-success" id="btnConfirmBulkPay" onclick="saveBulkPayment()">
+            <i class="bi bi-check-circle me-1"></i> Confirmar Cobro
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     window.initCreditsView = function() {
       if (typeof loadCredits === 'function') loadCredits();

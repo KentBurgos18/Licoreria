@@ -5667,9 +5667,8 @@
                             // Leer interés acumulado real desde el crédito asociado
                             var interestAmount = 0;
                             if (participant.credit) {
-                                const bal = parseFloat(participant.credit.currentBalance || 0);
                                 const ini = parseFloat(participant.credit.initialAmount || 0);
-                                interestAmount = Math.max(0, bal - ini);
+                                interestAmount = Math.max(0, floorBal(participant.credit.currentBalance) - ini);
                             } else {
                                 interestAmount = parseFloat(participant.interestAmount || 0);
                             }
@@ -5985,6 +5984,9 @@
             });
         }
 
+        // Floor a 2 decimales para display de saldos con precisión interna de 4 decimales
+        var floorBal = function(x) { return Math.floor(parseFloat(x || 0) * 100) / 100; };
+
         // Credits Functions
         function loadCredits() {
             loadCreditPaymentRequests();
@@ -6015,69 +6017,229 @@
         function displayCredits(credits) {
             const tbody = $('#creditsTable tbody');
             tbody.empty();
-            
+
             if (credits.length === 0) {
-                tbody.html(`
-                    <tr>
-                        <td colspan="9" class="text-center text-muted">
-                            No hay créditos activos
-                        </td>
-                    </tr>
-                `);
+                tbody.html(`<tr><td colspan="9" class="text-center text-muted">No hay créditos activos</td></tr>`);
                 return;
             }
 
+            // Agrupar por cliente
+            const groups = {};
             credits.forEach(credit => {
-                const initialAmount = parseFloat(credit.initialAmount).toFixed(2);
-                const currentBalance = parseFloat(credit.currentBalance || 0).toFixed(2);
-                const interestAmount = (parseFloat(credit.currentBalance || 0) - parseFloat(credit.initialAmount || 0)).toFixed(2);
-                const dueDate = credit.dueDate ? new Date(credit.dueDate + 'T00:00:00').toLocaleDateString('es-EC') : '<span class="text-muted">Sin fecha</span>';
+                const cid = credit.customerId || 0;
+                if (!groups[cid]) groups[cid] = { customer: credit.customer, credits: [] };
+                groups[cid].credits.push(credit);
+            });
 
-                const normalRate  = parseFloat(credit.interestRate || 0);
-                const overdueRate = parseFloat(credit.overdueInterestRate || 0);
-                const normalRateStr  = (normalRate * 100).toFixed(2) + '% diario';
-                const overdueRateStr = overdueRate > 0
-                    ? `<span class="badge bg-warning text-dark">${(overdueRate * 100).toFixed(2)}% mora</span>`
-                    : '<span class="text-muted">—</span>';
+            Object.values(groups).forEach(group => {
+                const cust = group.customer || {};
+                const custName = cust.name || 'N/A';
+                const custId = cust.id || 0;
+                const groupTotal = group.credits.reduce((s, c) => s + floorBal(c.currentBalance), 0);
+                const hasOverdue = group.credits.some(c => c.dueDate && new Date() > new Date(c.dueDate + 'T00:00:00') && floorBal(c.currentBalance) > 0.01);
+                const hasEmail = cust.email;
 
-                const isOverdue = credit.dueDate && new Date() > new Date(credit.dueDate + 'T00:00:00') && parseFloat(credit.currentBalance) > 0.01;
-                const statusBadge = credit.status === 'PAID' ?
-                    '<span class="badge bg-success">Pagado</span>' :
-                    isOverdue ?
-                    '<span class="badge bg-danger">Vencido</span>' :
-                    '<span class="badge bg-warning text-dark">Activo</span>';
-
-                const customerName = credit.customer ? credit.customer.name : 'N/A';
-                const hasEmail = credit.customer && credit.customer.email;
                 const reminderBtn = hasEmail
-                    ? `<button class="btn btn-sm btn-outline-info btn-sm-custom" onclick="sendCustomerCreditSummary(${credit.customer.id})" title="Enviar resumen detallado al cliente">
-                           <i class="bi bi-envelope"></i>
-                       </button>`
-                    : `<button class="btn btn-sm btn-outline-secondary btn-sm-custom" disabled title="Cliente sin email registrado">
-                           <i class="bi bi-envelope-x"></i>
-                       </button>`;
+                    ? `<button class="btn btn-sm btn-outline-info btn-sm-custom" onclick="sendCustomerCreditSummary(${custId})" title="Enviar resumen al cliente"><i class="bi bi-envelope"></i></button>`
+                    : `<button class="btn btn-sm btn-outline-secondary btn-sm-custom" disabled title="Sin email"><i class="bi bi-envelope-x"></i></button>`;
 
-                const row = `
-                    <tr ${isOverdue ? 'class="table-danger"' : ''}>
-                        <td>${customerName}</td>
-                        <td>$${initialAmount}</td>
-                        <td>$${currentBalance}</td>
-                        <td>$${interestAmount}</td>
-                        <td><small>${normalRateStr}</small></td>
-                        <td>${overdueRateStr}</td>
-                        <td>${dueDate}</td>
-                        <td>${statusBadge}</td>
-                        <td>
-                            <div class="table-actions">
-                                <button class="btn btn-sm btn-outline-success btn-sm-custom" onclick="registerCreditPayment(${credit.id})" title="Registrar Pago">
-                                    <i class="bi bi-cash"></i>
+                // Fila encabezado del grupo
+                const groupRow = `
+                    <tr class="${hasOverdue ? 'table-danger' : 'table-warning bg-opacity-10'}" style="cursor:pointer" onclick="toggleCreditGroup(${custId})">
+                        <td colspan="6">
+                            <span id="chevron-${custId}" style="display:inline-block;transition:transform .2s;margin-right:6px">▶</span>
+                            <strong>${custName}</strong>
+                            <span class="badge ${hasOverdue ? 'bg-danger' : 'bg-warning text-dark'} ms-2">${group.credits.length} crédito${group.credits.length > 1 ? 's' : ''}</span>
+                            ${hasOverdue ? '<span class="badge bg-danger ms-1">⚠ Vencidos</span>' : ''}
+                        </td>
+                        <td colspan="2" class="text-end fw-bold ${hasOverdue ? 'text-danger' : ''}">
+                            Total: $${groupTotal.toFixed(2)}
+                        </td>
+                        <td class="text-end" onclick="event.stopPropagation()">
+                            <div class="table-actions justify-content-end">
+                                <button class="btn btn-sm btn-success btn-sm-custom" onclick="registerBulkPayment(${custId})" title="Cobrar todos los créditos de este cliente">
+                                    <i class="bi bi-cash-stack"></i> Cobrar Todo
                                 </button>
                                 ${reminderBtn}
                             </div>
                         </td>
-                    </tr>
-                `;
-                tbody.append(row);
+                    </tr>`;
+                tbody.append(groupRow);
+
+                // Filas de créditos individuales (colapsadas por defecto)
+                group.credits.forEach(credit => {
+                    const initialAmount  = parseFloat(credit.initialAmount).toFixed(2);
+                    const currentBalance = floorBal(credit.currentBalance).toFixed(2);
+                    const interestAmount = Math.max(0, floorBal(credit.currentBalance) - parseFloat(credit.initialAmount || 0)).toFixed(2);
+                    const dueDate = credit.dueDate ? new Date(credit.dueDate + 'T00:00:00').toLocaleDateString('es-EC') : '<span class="text-muted">Sin fecha</span>';
+                    const normalRate = parseFloat(credit.interestRate || 0);
+                    const overdueRate = parseFloat(credit.overdueInterestRate || 0);
+                    const normalRateStr = (normalRate * 100).toFixed(2) + '% diario';
+                    const overdueRateStr = overdueRate > 0
+                        ? `<span class="badge bg-warning text-dark">${(overdueRate * 100).toFixed(2)}% mora</span>`
+                        : '<span class="text-muted">—</span>';
+                    const isOverdue = credit.dueDate && new Date() > new Date(credit.dueDate + 'T00:00:00') && floorBal(credit.currentBalance) > 0.01;
+                    const statusBadge = isOverdue
+                        ? '<span class="badge bg-danger">Vencido</span>'
+                        : '<span class="badge bg-warning text-dark">Activo</span>';
+
+                    const row = `
+                        <tr class="credit-detail-row-${custId}" style="display:none;background:var(--th-surf)">
+                            <td style="padding-left:28px"><small class="text-muted">${credit.groupPurchaseParticipantId ? '👥 Grupal' : '🛍️ Individual'}</small><br>${credit.id ? 'CR-' + String(credit.id).padStart(4,'0') : ''}</td>
+                            <td>$${initialAmount}</td>
+                            <td class="fw-bold ${isOverdue ? 'text-danger' : ''}">$${currentBalance}</td>
+                            <td class="text-warning">+$${interestAmount}</td>
+                            <td><small>${normalRateStr}</small></td>
+                            <td>${overdueRateStr}</td>
+                            <td ${isOverdue ? 'class="text-danger fw-bold"' : ''}>${dueDate}</td>
+                            <td>${statusBadge}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-success btn-sm-custom" onclick="registerCreditPayment(${credit.id})" title="Pagar solo este">
+                                    <i class="bi bi-cash"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                    tbody.append(row);
+                });
+            });
+        }
+
+        function toggleCreditGroup(custId) {
+            var rows = $('.credit-detail-row-' + custId);
+            var chevron = $('#chevron-' + custId);
+            if (rows.first().is(':visible')) {
+                rows.hide();
+                chevron.css('transform', 'rotate(0deg)');
+            } else {
+                rows.show();
+                chevron.css('transform', 'rotate(90deg)');
+            }
+        }
+
+        // ── Cobro masivo por cliente ──────────────────────────────────────────
+        var _bulkPayCustomerId = null;
+        var _bulkPayCreditIds  = [];
+
+        function registerBulkPayment(customerId) {
+            _bulkPayCustomerId = customerId;
+            _bulkPayCreditIds  = [];
+
+            // Buscar créditos activos de ese cliente
+            $.ajax({
+                url: '/api/customer-credits',
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '') },
+                data: { tenantId: 1, customerId: customerId },
+                success: function(res) {
+                    var credits = (res.credits || []).filter(c => c.status === 'ACTIVE' && floorBal(c.currentBalance) > 0.01);
+                    if (!credits.length) { showAlert('Este cliente no tiene créditos activos', 'info'); return; }
+
+                    var custName = (credits[0].customer && credits[0].customer.name) || 'Cliente';
+                    var total = credits.reduce((s, c) => s + floorBal(c.currentBalance), 0);
+                    _bulkPayCreditIds = credits.map(c => c.id);
+
+                    $('#bulkPayCustomerName').text(custName);
+                    $('#bulkPayTotal').text('$' + total.toFixed(2));
+                    $('#bulkPayMethod').val('CASH');
+                    $('#bulkPayBankAccountGroup').hide();
+                    $('#bulkPayBankAccount').val('');
+                    $('#bulkPayNotes').val('');
+                    $('#btnConfirmBulkPay').prop('disabled', false);
+                    var today = new Date().toISOString().split('T')[0];
+                    $('#bulkPayDate').val(today);
+
+                    // Construir lista de créditos
+                    var listHtml = credits.map(c => {
+                        var isOverdue = c.dueDate && new Date() > new Date(c.dueDate + 'T00:00:00');
+                        var badge = isOverdue
+                            ? '<span class="badge bg-danger ms-1">Vencido</span>'
+                            : '<span class="badge bg-warning text-dark ms-1">Activo</span>';
+                        var due = c.dueDate ? new Date(c.dueDate + 'T00:00:00').toLocaleDateString('es-EC') : 'Sin fecha';
+                        return `<div class="d-flex justify-content-between align-items-center py-1 border-bottom" style="font-size:13px">
+                            <div>
+                                <span class="text-muted">${c.groupPurchaseParticipantId ? '👥' : '🛍️'} CR-${String(c.id).padStart(4,'0')}</span>
+                                ${badge}
+                                <small class="text-muted ms-1">Vence: ${due}</small>
+                            </div>
+                            <span class="fw-bold text-danger">$${floorBal(c.currentBalance).toFixed(2)}</span>
+                        </div>`;
+                    }).join('');
+                    $('#bulkPayCreditsList').html(listHtml);
+
+                    new bootstrap.Modal(document.getElementById('bulkPaymentModal')).show();
+                },
+                error: function() { showAlert('Error al cargar créditos del cliente', 'danger'); }
+            });
+        }
+
+        function onBulkPayMethodChange() {
+            var method = $('#bulkPayMethod').val();
+            if (method === 'TRANSFER') {
+                $('#bulkPayBankAccountGroup').show();
+                $('#btnConfirmBulkPay').prop('disabled', true);
+                if ($('#bulkPayBankAccount option').length <= 1) {
+                    $.ajax({
+                        url: '/api/settings/bank_accounts', method: 'GET',
+                        data: { tenantId: 1 },
+                        headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '') },
+                        success: function(r) {
+                            var accounts = [];
+                            try { var raw = r.value || r.accounts; if (typeof raw === 'string') raw = JSON.parse(raw); accounts = Array.isArray(raw) ? raw : []; } catch(e) {}
+                            var opts = '<option value="">— Seleccionar cuenta —</option>';
+                            accounts.forEach(function(acc) {
+                                var lbl = (acc.bankName || '') + (acc.accountNumber ? ' - ' + acc.accountNumber : '');
+                                opts += `<option value="${lbl.replace(/"/g,'&quot;')}">${lbl}</option>`;
+                            });
+                            $('#bulkPayBankAccount').html(opts);
+                        }
+                    });
+                }
+            } else {
+                $('#bulkPayBankAccountGroup').hide();
+                $('#bulkPayBankAccount').val('');
+                $('#btnConfirmBulkPay').prop('disabled', false);
+            }
+        }
+
+        function onBulkPayAccountChange() {
+            $('#btnConfirmBulkPay').prop('disabled', !$('#bulkPayBankAccount').val());
+        }
+
+        function saveBulkPayment() {
+            var method = $('#bulkPayMethod').val();
+            var date   = $('#bulkPayDate').val();
+            var notes  = $('#bulkPayNotes').val() || null;
+            var transferAccountInfo = method === 'TRANSFER' ? ($('#bulkPayBankAccount').val() || null) : null;
+
+            if (!date) { showAlert('Selecciona la fecha de pago', 'warning'); return; }
+            if (method === 'TRANSFER' && !transferAccountInfo) { showAlert('Selecciona la cuenta destino', 'warning'); return; }
+
+            $('#btnConfirmBulkPay').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Procesando...');
+
+            $.ajax({
+                url: '/api/customer-credits/bulk-payment',
+                method: 'POST',
+                contentType: 'application/json',
+                headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '') },
+                data: JSON.stringify({
+                    customerId: _bulkPayCustomerId,
+                    creditIds: _bulkPayCreditIds,
+                    paymentMethod: method,
+                    paymentDate: date,
+                    notes: notes,
+                    transferAccountInfo: transferAccountInfo
+                }),
+                success: function(res) {
+                    showAlert(`✅ ${res.paidCount} crédito(s) pagado(s) exitosamente`, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('bulkPaymentModal')).hide();
+                    loadCredits();
+                    loadGroupPurchases();
+                },
+                error: function(xhr) {
+                    var msg = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : 'Error al procesar el cobro';
+                    showAlert(msg, 'danger');
+                    $('#btnConfirmBulkPay').prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i> Confirmar Cobro');
+                }
             });
         }
         
@@ -6185,7 +6347,7 @@
                 method: 'GET',
                 data: { tenantId: 1 },
                 success: function(credit) {
-                    $('#creditPaymentBalance').val('$' + parseFloat(credit.currentBalance).toFixed(2));
+                    $('#creditPaymentBalance').val('$' + floorBal(credit.currentBalance).toFixed(2));
                     const modal = new bootstrap.Modal(document.getElementById('creditPaymentModal'));
                     modal.show();
                 }
@@ -9900,7 +10062,7 @@
                 success: function(res) {
                     var credits = res.credits || [];
                     var active = credits.filter(function(c) { return c.status === 'ACTIVE'; });
-                    var totalDebt = active.reduce(function(s, c) { return s + parseFloat(c.currentBalance || 0); }, 0);
+                    var totalDebt = active.reduce(function(s, c) { return s + floorBal(c.currentBalance); }, 0);
 
                     // Resumen
                     var debtColor = totalDebt > 0 ? '#dc3545' : '#198754';
@@ -9938,7 +10100,7 @@
                             return '<tr>' +
                                 '<td>' + fecha + '</td>' +
                                 '<td>$' + parseFloat(c.initialAmount||0).toFixed(2) + '</td>' +
-                                '<td class="fw-bold">$' + parseFloat(c.currentBalance||0).toFixed(2) + '</td>' +
+                                '<td class="fw-bold">$' + floorBal(c.currentBalance).toFixed(2) + '</td>' +
                                 '<td>' + dueCell + '</td>' +
                                 '<td>' + statusBadge + '</td>' +
                             '</tr>';
@@ -9956,40 +10118,79 @@
                 }
             });
 
-            // Cargar ventas (consumos)
-            $.ajax({
-                url: '/api/sales',
-                method: 'GET',
-                headers: headers,
-                data: { tenantId: 1, customerId: customerId, limit: 100 },
-                success: function(res) {
-                    var sales = res.sales || [];
-                    if (sales.length === 0) {
-                        $('#cpSalesBody').html('<p class="text-muted text-center py-2 mb-0">Sin consumos registrados</p>');
-                        return;
+            // Cargar ventas y compras grupales (consumos) en paralelo
+            var salesPromise = $.ajax({ url: '/api/sales', method: 'GET', headers: headers, data: { tenantId: 1, customerId: customerId, limit: 100 } });
+            var gpPromise    = $.ajax({ url: '/api/group-purchases', method: 'GET', headers: headers, data: { tenantId: 1, customerId: customerId, limit: 100 } });
+
+            $.when(salesPromise, gpPromise).then(function(salesRes, gpRes) {
+                var sales = (salesRes[0] && salesRes[0].sales) || [];
+                var gps   = (gpRes[0]   && gpRes[0].groupPurchases) || [];
+
+                // Construir lista unificada con tipo + fecha para ordenar
+                var entries = [];
+
+                sales.forEach(function(s) {
+                    entries.push({ type: 'sale', date: new Date(s.createdAt), data: s });
+                });
+                gps.forEach(function(gp) {
+                    // Solo incluir si este cliente es participante
+                    if (gp.participants && gp.participants.length > 0) {
+                        entries.push({ type: 'group', date: new Date(gp.createdAt), data: gp });
                     }
-                    var html = sales.map(function(s) {
-                        var fecha = new Date(s.createdAt).toLocaleDateString('es-EC', {day:'2-digit',month:'2-digit',year:'numeric'});
-                        var pmLabel = s.paymentMethod === 'CASH' ? 'Efectivo' : s.paymentMethod === 'TRANSFER' ? 'Transferencia' : s.paymentMethod === 'CREDIT' ? 'Crédito' : s.paymentMethod;
-                        var statusColor = s.status === 'COMPLETED' ? '#198754' : s.status === 'PENDING' ? '#f59e0b' : '#6c757d';
+                });
+
+                // Ordenar por fecha descendente
+                entries.sort(function(a, b) { return b.date - a.date; });
+
+                if (entries.length === 0) {
+                    $('#cpSalesBody').html('<p class="text-muted text-center py-2 mb-0">Sin consumos registrados</p>');
+                    return;
+                }
+
+                var html = entries.map(function(entry) {
+                    if (entry.type === 'sale') {
+                        var s = entry.data;
+                        var fecha = entry.date.toLocaleDateString('es-EC', {day:'2-digit',month:'2-digit',year:'numeric'});
+                        var pmLabel = { CASH:'Efectivo', TRANSFER:'Transferencia', CREDIT:'Crédito', CARD:'Tarjeta' }[s.paymentMethod] || s.paymentMethod;
                         var items = (s.items || []).map(function(it) {
+                            var qty = parseFloat(it.quantity||0);
+                            var qtyStr = Number.isInteger(qty) ? qty : qty.toFixed(3).replace(/\.?0+$/,'');
                             return '<span style="display:inline-block;background:var(--th-surf2);border-radius:6px;padding:2px 8px;font-size:12px;margin:2px">' +
-                                (it.product ? it.product.name : 'Producto') + ' × ' + it.quantity +
-                            '</span>';
+                                (it.product ? it.product.name : 'Producto') + ' × ' + qtyStr + '</span>';
                         }).join('');
                         return '<div style="border:1px solid var(--th-border);border-radius:8px;padding:10px 12px;margin-bottom:8px;">' +
                             '<div class="d-flex justify-content-between align-items-center mb-1">' +
                                 '<span style="font-size:12px;color:var(--th-text3)">' + fecha + ' · ' + pmLabel + '</span>' +
-                                '<span style="font-weight:700;color:' + statusColor + '">$' + parseFloat(s.totalAmount||0).toFixed(2) + '</span>' +
+                                '<span style="font-weight:700;color:#198754">$' + parseFloat(s.totalAmount||0).toFixed(2) + '</span>' +
                             '</div>' +
                             '<div>' + (items || '<span class="text-muted" style="font-size:12px">Sin detalle</span>') + '</div>' +
                         '</div>';
-                    }).join('');
-                    $('#cpSalesBody').html(html);
-                },
-                error: function() {
-                    $('#cpSalesBody').html('<p class="text-danger text-center py-2 mb-0">Error al cargar consumos</p>');
-                }
+                    } else {
+                        var gp = entry.data;
+                        var participant = gp.participants[0];
+                        var fecha = entry.date.toLocaleDateString('es-EC', {day:'2-digit',month:'2-digit',year:'numeric'});
+                        var amountDue = parseFloat(participant.amountDue || 0).toFixed(2);
+                        var pStatus = participant.status === 'PAID' ? '<span class="badge bg-success ms-1">Pagado</span>' : '<span class="badge bg-warning text-dark ms-1">Pendiente</span>';
+                        var items = (gp.sale && gp.sale.items || []).map(function(it) {
+                            var qty = parseFloat(it.quantity||0);
+                            var qtyStr = Number.isInteger(qty) ? qty : qty.toFixed(3).replace(/\.?0+$/,'');
+                            return '<span style="display:inline-block;background:var(--th-surf2);border-radius:6px;padding:2px 8px;font-size:12px;margin:2px">' +
+                                (it.product ? it.product.name : 'Producto') + ' × ' + qtyStr + '</span>';
+                        }).join('');
+                        return '<div style="border:1px solid #6610f222;border-radius:8px;padding:10px 12px;margin-bottom:8px;background:rgba(102,16,242,.04)">' +
+                            '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                                '<span style="font-size:12px;color:var(--th-text3)">' + fecha + ' · <span style="color:#6610f2;font-weight:700">👥 Compra Grupal #' + gp.id + '</span>' + pStatus + '</span>' +
+                                '<span style="font-weight:700;color:#6610f2">$' + amountDue + ' <small style="font-weight:400;color:var(--th-text3)">tu parte</small></span>' +
+                            '</div>' +
+                            '<div>' + (items || '<span class="text-muted" style="font-size:12px">Sin detalle de artículos</span>') + '</div>' +
+                        '</div>';
+                    }
+                }).join('');
+
+                $('#cpSalesBody').html(html);
+
+            }).fail(function() {
+                $('#cpSalesBody').html('<p class="text-danger text-center py-2 mb-0">Error al cargar consumos</p>');
             });
         }
 
