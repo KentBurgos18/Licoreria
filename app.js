@@ -73,7 +73,7 @@ app.use((req, res, next) => {
 // CORS
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Session for Passport OAuth
 app.use(session({
@@ -162,7 +162,7 @@ app.get('/api/public/brand-slogan', async (req, res) => {
 // API pública: comisión PayPhone (%) para pago con tarjeta
 app.get('/api/public/payphone-commission', async (req, res) => {
   try {
-    const tenantId = parseInt(req.query.tenantId, 10) || 1;
+    const tenantId = 1;
     const value = await Setting.getSetting(tenantId, 'payphone_commission_rate');
     const num = value != null ? parseFloat(value) : NaN;
     const rate = (!isNaN(num) && num >= 0 && num <= 100) ? num : 5.75;
@@ -176,7 +176,7 @@ app.get('/api/public/payphone-commission', async (req, res) => {
 // API admin: tasas de interés de créditos por defecto
 app.get('/api/settings/credit_interest_rates', async (req, res) => {
   try {
-    const tenantId = parseInt(req.query.tenantId, 10) || 1;
+    const tenantId = 1;
     const normalRate  = await Setting.getSetting(tenantId, 'credit_default_interest_rate',  '0.005');
     const overdueRate = await Setting.getSetting(tenantId, 'credit_default_overdue_rate',   '0.02');
     res.json({ normalRate: parseFloat(normalRate), overdueRate: parseFloat(overdueRate) });
@@ -188,7 +188,7 @@ app.get('/api/settings/credit_interest_rates', async (req, res) => {
 // API pública: tiempo de reserva del carrito en minutos
 app.get('/api/public/cart-reservation-minutes', async (req, res) => {
   try {
-    const tenantId = parseInt(req.query.tenantId, 10) || 1;
+    const tenantId = 1;
     const value = await Setting.getSetting(tenantId, 'cart_reservation_minutes');
     const num = value != null ? parseInt(value, 10) : NaN;
     const minutes = (!isNaN(num) && num >= 1 && num <= 120) ? num : 15;
@@ -202,7 +202,7 @@ app.get('/api/public/cart-reservation-minutes', async (req, res) => {
 // API pública: IVA (tax_rate) desde Configuración; sin valor por defecto
 app.get('/api/public/tax-rate', async (req, res) => {
   try {
-    const tenantId = parseInt(req.query.tenantId, 10) || 1;
+    const tenantId = 1;
     const value = await Setting.getSetting(tenantId, 'tax_rate');
     const num = value != null ? parseFloat(value) : NaN;
     const configured = !isNaN(num) && num >= 0 && num <= 100;
@@ -227,7 +227,7 @@ app.get('/api/public/vapid-public-key', (req, res) => {
 // API pública: categorías de producto (sin auth, para catálogo de clientes)
 app.get('/api/public/product-categories', async (req, res) => {
   try {
-    const tenantId = parseInt(req.query.tenantId, 10) || 1;
+    const tenantId = 1;
     const { ProductCategory } = require('./models');
     const categories = await ProductCategory.findAll({
       where: { tenantId },
@@ -243,7 +243,7 @@ app.get('/api/public/product-categories', async (req, res) => {
 // API pública: presentaciones de producto (sin auth, para catálogo de clientes)
 app.get('/api/public/product-presentations', async (req, res) => {
   try {
-    const tenantId = parseInt(req.query.tenantId, 10) || 1;
+    const tenantId = 1;
     const { ProductPresentation } = require('./models');
     const presentations = await ProductPresentation.findAll({
       where: { tenantId },
@@ -395,13 +395,13 @@ app.use('/api/supplier-prices', authenticateAdmin, require('./routes/supplierPri
 app.use('/api/settings', authenticateAdmin, require('./routes/settings'));
 app.use('/api/audit',   authenticateAdmin, require('./routes/audit'));
 app.use('/api/notifications', authenticateAdmin, require('./routes/notifications'));
-app.use('/api/email', require('./routes/email'));
+app.use('/api/email', authenticateAdmin, require('./routes/email'));
 app.use('/api/backup', authenticateAdmin, require('./routes/backup'));
 
 // API: Tesorería — resumen de ingresos por método de pago y cuenta bancaria
 app.get('/api/treasury', authenticateAdmin, async (req, res) => {
   try {
-    const tenantId = parseInt(req.query.tenantId) || 1;
+    const tenantId = req.tenantId || 1;
 
     // Obtener cuentas bancarias registradas en settings
     const raw = await Setting.getSetting(tenantId, 'bank_accounts', '[]');
@@ -668,7 +668,7 @@ app.post('/api/treasury/transfers', authenticateAdmin, async (req, res) => {
 // GET /api/treasury/transfers — listar movimientos recientes
 app.get('/api/treasury/transfers', authenticateAdmin, async (req, res) => {
   try {
-    const tenantId = parseInt(req.query.tenantId) || 1;
+    const tenantId = req.tenantId || 1;
     const limit    = parseInt(req.query.limit)    || 50;
 
     const [transfers] = await sequelize.query(`

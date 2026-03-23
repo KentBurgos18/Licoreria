@@ -6,9 +6,9 @@ const router = express.Router();
 // POST /email/test - Test SMTP connection
 router.post('/test', async (req, res) => {
   try {
-    const { tenantId = 1 } = req.body;
+    const tenantId = req.tenantId || 1;
     const result = await EmailService.testConnection(tenantId);
-    
+
     if (result.success) {
       res.json(result);
     } else {
@@ -17,9 +17,8 @@ router.post('/test', async (req, res) => {
   } catch (error) {
     console.error('Error testing email connection:', error);
     res.status(500).json({
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: error.message
+      error: 'Error interno del servidor',
+      code: 'INTERNAL_ERROR'
     });
   }
 });
@@ -27,7 +26,8 @@ router.post('/test', async (req, res) => {
 // POST /email/send - Send custom email
 router.post('/send', async (req, res) => {
   try {
-    const { tenantId = 1, to, subject, html, text } = req.body;
+    const tenantId = req.tenantId || 1;
+    const { to, subject, html, text } = req.body;
 
     if (!to || !subject || !html) {
       return res.status(400).json({
@@ -43,9 +43,8 @@ router.post('/send', async (req, res) => {
   } catch (error) {
     console.error('Error sending email:', error);
     res.status(500).json({
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: error.message
+      error: 'Error interno del servidor',
+      code: 'INTERNAL_ERROR'
     });
   }
 });
@@ -53,7 +52,8 @@ router.post('/send', async (req, res) => {
 // POST /email/verification-code - Send verification code
 router.post('/verification-code', async (req, res) => {
   try {
-    const { tenantId = 1, email, code } = req.body;
+    const tenantId = req.tenantId || 1;
+    const { email, code } = req.body;
 
     if (!email || !code) {
       return res.status(400).json({
@@ -69,9 +69,8 @@ router.post('/verification-code', async (req, res) => {
   } catch (error) {
     console.error('Error sending verification code:', error);
     res.status(500).json({
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: error.message
+      error: 'Error interno del servidor',
+      code: 'INTERNAL_ERROR'
     });
   }
 });
@@ -79,7 +78,8 @@ router.post('/verification-code', async (req, res) => {
 // POST /email/welcome - Send welcome email
 router.post('/welcome', async (req, res) => {
   try {
-    const { tenantId = 1, email, customerName } = req.body;
+    const tenantId = req.tenantId || 1;
+    const { email, customerName } = req.body;
 
     if (!email || !customerName) {
       return res.status(400).json({
@@ -95,9 +95,8 @@ router.post('/welcome', async (req, res) => {
   } catch (error) {
     console.error('Error sending welcome email:', error);
     res.status(500).json({
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      message: error.message
+      error: 'Error interno del servidor',
+      code: 'INTERNAL_ERROR'
     });
   }
 });

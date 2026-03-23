@@ -481,7 +481,8 @@ const authenticateCustomer = (req, res, next) => {
 const handleOAuthCallback = (req, res) => {
   if (req.user && req.user.token) {
     // Redirect to frontend with token
-    const redirectUrl = `/customer/oauth-callback?token=${req.user.token}&name=${encodeURIComponent(req.user.customer.name || '')}&email=${encodeURIComponent(req.user.customer.email || '')}`;
+    // Usar fragment (#) para que el token no quede en logs del servidor ni en Referer headers
+    const redirectUrl = `/customer/oauth-callback#token=${req.user.token}&name=${encodeURIComponent(req.user.customer.name || '')}&email=${encodeURIComponent(req.user.customer.email || '')}`;
     res.redirect(redirectUrl);
   } else {
     res.redirect('/customer/login?error=oauth_failed');

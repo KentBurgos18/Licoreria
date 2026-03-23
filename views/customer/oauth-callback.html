@@ -18,7 +18,9 @@
     </div>
     <script>
         (function() {
-            var params = new URLSearchParams(window.location.search);
+            // Leer del fragment hash (más seguro: no se envía al servidor ni en Referer)
+            var hash = window.location.hash.substring(1); // quitar el #
+            var params = new URLSearchParams(hash || window.location.search);
             var token = params.get('token');
             var name = params.get('name') || '';
             var email = params.get('email') || '';
