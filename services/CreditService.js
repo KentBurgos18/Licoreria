@@ -203,13 +203,17 @@ class CreditService {
       include: [{ association: 'groupPurchaseParticipant' }]
     });
 
+    // Actualizar intereses en paralelo (cada uno es independiente)
+    if (includeInterest && credits.length > 0) {
+      await Promise.all(credits.map(c => this.updateCreditBalance(c.id)));
+      // Recargar balances actualizados
+      await Promise.all(credits.map(c => c.reload()));
+    }
+
     let totalBalance = 0;
     let totalInterest = 0;
 
     for (const credit of credits) {
-      if (includeInterest) {
-        await this.updateCreditBalance(credit.id);
-      }
       totalBalance += parseFloat(credit.currentBalance || 0);
       totalInterest += parseFloat(credit.interestAmount || 0);
     }

@@ -1,8 +1,8 @@
 const express = require('express');
-const { Sale, SaleItem, Product, ProductComponent, InventoryMovement } = require('../models');
+const { SaleItem, Product } = require('../models');
 const ComboService = require('../services/ComboService');
-const { sequelize } = require('../models');
 const { requireRole } = require('./adminAuth');
+const { Op } = require('sequelize');
 
 const router = express.Router();
 
@@ -12,71 +12,53 @@ router.use(requireRole('ADMIN'));
 // GET /reports/combo-sales - Combo sales report with implied discount and margin
 router.get('/combo-sales', async (req, res) => {
   try {
-    const {
-      tenantId,
-      startDate,
-      endDate,
-      comboId
-    } = req.query;
-
-    if (!tenantId) {
-      return res.status(400).json({
-        error: 'Tenant ID is required',
-        code: 'TENANT_REQUIRED'
-      });
-    }
+    const tenantId = req.tenantId || 1;
+    const { startDate, endDate, comboId, limit = 200, page = 1 } = req.query;
+    const pageSize = Math.min(parseInt(limit) || 200, 500);
+    const offset = (Math.max(parseInt(page) || 1, 1) - 1) * pageSize;
 
     // Build where clause for sales
-    const saleWhereClause = {
-      tenantId,
-      status: 'COMPLETED'
-    };
-
+    const saleWhereClause = { tenantId, status: 'COMPLETED' };
     if (startDate || endDate) {
       saleWhereClause.createdAt = {};
-      if (startDate) saleWhereClause.createdAt[require('sequelize').Op.gte] = startDate;
-      if (endDate) saleWhereClause.createdAt[require('sequelize').Op.lte] = endDate;
+      if (startDate) saleWhereClause.createdAt[Op.gte] = startDate;
+      if (endDate) saleWhereClause.createdAt[Op.lte] = endDate;
     }
 
     // Build where clause for sale items (only combos)
-    const itemWhereClause = {
-      productType: 'COMBO'
-    };
+    const itemWhereClause = { productType: 'COMBO' };
+    if (comboId) itemWhereClause.productId = comboId;
 
-    if (comboId) {
-      itemWhereClause.productId = comboId;
-    }
-
-    // Get combo sales with detailed calculations
-    const comboSales = await SaleItem.findAll({
+    // Get combo sales with pagination
+    const { count, rows: comboSales } = await SaleItem.findAndCountAll({
       where: itemWhereClause,
       include: [
-        {
-          association: 'sale',
-          where: saleWhereClause
-        },
-        {
-          association: 'product',
-          where: { tenantId }
-        }
+        { association: 'sale', where: saleWhereClause },
+        { association: 'product', where: { tenantId } }
       ],
-      order: [[{ association: 'sale' }, 'createdAt', 'DESC']]
+      order: [[{ association: 'sale' }, 'createdAt', 'DESC']],
+      limit: pageSize,
+      offset
     });
 
-    // Calculate detailed metrics for each combo sale
-    const detailedSales = [];
-    for (const saleItem of comboSales) {
-      const comboMetrics = await ComboService.calculateComboCost(
-        tenantId,
-        saleItem.productId
-      );
+    // Obtener IDs únicos de combos para batch de costos
+    const uniqueComboIds = [...new Set(comboSales.map(si => si.productId))];
 
+    // Batch: calcular costos de todos los combos de una vez
+    const comboMetricsMap = {};
+    for (const cid of uniqueComboIds) {
+      comboMetricsMap[cid] = await ComboService.calculateComboCost(tenantId, cid);
+    }
+
+    // Calculate detailed metrics for each combo sale
+    const detailedSales = comboSales.map(saleItem => {
+      const comboMetrics = comboMetricsMap[saleItem.productId];
       const itemTotal = saleItem.totalPrice;
       const itemCost = comboMetrics.comboCost * saleItem.quantity;
       const itemMargin = itemTotal - itemCost;
       const itemDiscount = (comboMetrics.componentPriceSum - saleItem.unitPrice) * saleItem.quantity;
 
-      detailedSales.push({
+      return {
         saleId: saleItem.saleId,
         saleDate: saleItem.sale.createdAt,
         comboId: saleItem.productId,
@@ -85,21 +67,18 @@ router.get('/combo-sales', async (req, res) => {
         quantity: saleItem.quantity,
         unitPrice: saleItem.unitPrice,
         totalPrice: itemTotal,
-        // Cost calculations
         comboUnitCost: comboMetrics.comboCost,
         totalCost: itemCost,
-        // Margin calculations
         unitMargin: saleItem.unitPrice - comboMetrics.comboCost,
         totalMargin: itemMargin,
         marginPercentage: itemTotal > 0 ? (itemMargin / itemTotal) * 100 : 0,
-        // Discount calculations
         componentPriceSum: comboMetrics.componentPriceSum,
         unitImpliedDiscount: comboMetrics.componentPriceSum - saleItem.unitPrice,
         totalImpliedDiscount: itemDiscount,
-        discountPercentage: comboMetrics.componentPriceSum > 0 ? 
+        discountPercentage: comboMetrics.componentPriceSum > 0 ?
           ((comboMetrics.componentPriceSum - saleItem.unitPrice) / comboMetrics.componentPriceSum) * 100 : 0
-      });
-    }
+      };
+    });
 
     // Calculate summary totals
     const summary = detailedSales.reduce((acc, sale) => {
@@ -110,93 +89,64 @@ router.get('/combo-sales', async (req, res) => {
       acc.totalQuantity += sale.quantity;
       acc.totalCombos += 1;
       return acc;
-    }, {
-      totalRevenue: 0,
-      totalCost: 0,
-      totalMargin: 0,
-      totalDiscount: 0,
-      totalQuantity: 0,
-      totalCombos: 0
-    });
+    }, { totalRevenue: 0, totalCost: 0, totalMargin: 0, totalDiscount: 0, totalQuantity: 0, totalCombos: 0 });
 
-    summary.avgMarginPercentage = summary.totalRevenue > 0 ? 
+    summary.avgMarginPercentage = summary.totalRevenue > 0 ?
       (summary.totalMargin / summary.totalRevenue) * 100 : 0;
-    summary.avgDiscountPercentage = summary.totalRevenue > 0 ? 
+    summary.avgDiscountPercentage = summary.totalRevenue > 0 ?
       (summary.totalDiscount / (summary.totalRevenue + summary.totalDiscount)) * 100 : 0;
 
     res.json({
       summary,
       sales: detailedSales,
-      filters: {
-        tenantId,
-        startDate,
-        endDate,
-        comboId
-      }
+      pagination: { total: count, page: parseInt(page) || 1, pageSize, totalPages: Math.ceil(count / pageSize) },
+      filters: { tenantId, startDate, endDate, comboId }
     });
   } catch (error) {
     console.error('Error generating combo sales report:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR'
-    });
+    res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
   }
 });
 
 // GET /reports/combo-performance - Overall combo performance metrics
 router.get('/combo-performance', async (req, res) => {
   try {
-    const { tenantId, startDate, endDate } = req.query;
-
-    if (!tenantId) {
-      return res.status(400).json({
-        error: 'Tenant ID is required',
-        code: 'TENANT_REQUIRED'
-      });
-    }
+    const tenantId = req.tenantId || 1;
+    const { startDate, endDate } = req.query;
 
     // Get all active combos
     const combos = await Product.findAll({
-      where: {
-        tenantId,
-        productType: 'COMBO',
-        isActive: true
-      },
-      include: [{
-        association: 'components',
-        include: [{
-          association: 'component'
-        }]
-      }]
+      where: { tenantId, productType: 'COMBO', isActive: true },
+      include: [{ association: 'components', include: [{ association: 'component' }] }]
     });
 
-    // Calculate performance metrics for each combo
+    // Build sale date filter
+    const saleWhereClause = { tenantId, status: 'COMPLETED' };
+    if (startDate || endDate) {
+      saleWhereClause.createdAt = {};
+      if (startDate) saleWhereClause.createdAt[Op.gte] = startDate;
+      if (endDate) saleWhereClause.createdAt[Op.lte] = endDate;
+    }
+
+    // Batch: obtener todas las ventas de combos en 1 query
+    const comboIds = combos.map(c => c.id);
+    const allSalesData = comboIds.length > 0 ? await SaleItem.findAll({
+      where: { productId: comboIds, productType: 'COMBO' },
+      include: [{ association: 'sale', where: saleWhereClause, attributes: ['id'] }],
+      attributes: ['productId', 'quantity', 'totalPrice']
+    }) : [];
+
+    // Agrupar ventas por comboId
+    const salesByCombo = {};
+    for (const si of allSalesData) {
+      if (!salesByCombo[si.productId]) salesByCombo[si.productId] = [];
+      salesByCombo[si.productId].push(si);
+    }
+
+    // Batch: calcular costos y disponibilidad
     const comboPerformance = [];
     for (const combo of combos) {
-      // Get sales data for this combo
-      const saleWhereClause = {
-        tenantId,
-        status: 'COMPLETED'
-      };
-
-      if (startDate || endDate) {
-        saleWhereClause.createdAt = {};
-        if (startDate) saleWhereClause.createdAt[require('sequelize').Op.gte] = startDate;
-        if (endDate) saleWhereClause.createdAt[require('sequelize').Op.lte] = endDate;
-      }
-
-      const salesData = await SaleItem.findAll({
-        where: {
-          productId: combo.id,
-          productType: 'COMBO'
-        },
-        include: [{
-          association: 'sale',
-          where: saleWhereClause
-        }]
-      });
-
-      // Calculate metrics
+      const salesData = salesByCombo[combo.id] || [];
       const totalQuantity = salesData.reduce((sum, item) => sum + item.quantity, 0);
       const totalRevenue = salesData.reduce((sum, item) => sum + item.totalPrice, 0);
 
@@ -205,29 +155,24 @@ router.get('/combo-performance', async (req, res) => {
       const totalMargin = totalRevenue - totalCost;
       const totalDiscount = (comboMetrics.componentPriceSum - combo.salePrice) * totalQuantity;
 
-      // Get current availability
       const availability = await ComboService.getComboAvailability(tenantId, combo.id);
 
       comboPerformance.push({
         comboId: combo.id,
         comboName: combo.name,
         comboSku: combo.sku,
-        // Sales metrics
         totalSales: salesData.length,
         totalQuantity,
         totalRevenue,
-        // Cost and margin
         unitCost: comboMetrics.comboCost,
         totalCost,
         totalMargin,
         marginPercentage: totalRevenue > 0 ? (totalMargin / totalRevenue) * 100 : 0,
-        // Discount metrics
         componentPriceSum: comboMetrics.componentPriceSum,
         unitImpliedDiscount: comboMetrics.componentPriceSum - combo.salePrice,
         totalDiscount,
-        discountPercentage: comboMetrics.componentPriceSum > 0 ? 
+        discountPercentage: comboMetrics.componentPriceSum > 0 ?
           ((comboMetrics.componentPriceSum - combo.salePrice) / comboMetrics.componentPriceSum) * 100 : 0,
-        // Availability
         currentStock: availability.availableStock,
         componentDetails: availability.components
       });
@@ -246,36 +191,21 @@ router.get('/combo-performance', async (req, res) => {
       acc.totalQuantity += combo.totalQuantity;
       acc.totalSales += combo.totalSales;
       return acc;
-    }, {
-      totalCombos: 0,
-      totalRevenue: 0,
-      totalCost: 0,
-      totalMargin: 0,
-      totalDiscount: 0,
-      totalQuantity: 0,
-      totalSales: 0
-    });
+    }, { totalCombos: 0, totalRevenue: 0, totalCost: 0, totalMargin: 0, totalDiscount: 0, totalQuantity: 0, totalSales: 0 });
 
-    overallSummary.avgMarginPercentage = overallSummary.totalRevenue > 0 ? 
+    overallSummary.avgMarginPercentage = overallSummary.totalRevenue > 0 ?
       (overallSummary.totalMargin / overallSummary.totalRevenue) * 100 : 0;
-    overallSummary.avgDiscountPercentage = overallSummary.totalRevenue > 0 ? 
+    overallSummary.avgDiscountPercentage = overallSummary.totalRevenue > 0 ?
       (overallSummary.totalDiscount / (overallSummary.totalRevenue + overallSummary.totalDiscount)) * 100 : 0;
 
     res.json({
       summary: overallSummary,
       combos: comboPerformance,
-      filters: {
-        tenantId,
-        startDate,
-        endDate
-      }
+      filters: { tenantId, startDate, endDate }
     });
   } catch (error) {
     console.error('Error generating combo performance report:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      code: 'INTERNAL_ERROR'
-    });
+    res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
   }
 });
 

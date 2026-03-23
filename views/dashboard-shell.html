@@ -12786,15 +12786,22 @@
             }, 2000);
         }
 
-        // CSS carga async → hacer polling hasta que esté listo
+        // CSS carga async → polling rápido al inicio, luego más lento
         (function() {
             var attempts = 0;
             function check() {
                 if (checkCssLoaded()) { hideAppLoading(); return; }
-                if (++attempts < 30) { setTimeout(check, 100); } // cada 100ms hasta 3s
-                else { window.location.reload(); } // si en 3s no cargó, recargar
+                if (++attempts < 50) {
+                    // Primeros 10 intentos: cada 20ms (cache hit rápido)
+                    // Luego: cada 100ms (esperando red)
+                    var delay = attempts <= 10 ? 20 : 100;
+                    setTimeout(check, delay);
+                } else {
+                    window.location.reload();
+                }
             }
-            check();
+            // Usar rAF para el primer check (más rápido que setTimeout)
+            requestAnimationFrame(check);
         })();
 
         // Al ocultar la página (cierre PWA, back button) → mostrar skeleton sin condición

@@ -46,17 +46,16 @@ async function getCartAwareAvailability(tenantId, cartItems, products) {
   const comboIds = products.filter(p => p.productType === 'COMBO').map(p => p.id);
   const allComponents = [];
   if (comboIds.length > 0) {
-    for (const comboId of comboIds) {
-      const comps = await ProductComponent.findAll({
-        where: { comboProductId: comboId, tenantId },
-        attributes: ['componentProductId', 'qty']
-      });
-      allComponents.push(...comps.map(c => ({
-        comboProductId: comboId,
-        componentProductId: c.componentProductId,
-        qty: parseFloat(c.qty) || 1
-      })));
-    }
+    // Batch: 1 query para todos los componentes de todos los combos
+    const comps = await ProductComponent.findAll({
+      where: { comboProductId: comboIds, tenantId },
+      attributes: ['comboProductId', 'componentProductId', 'qty']
+    });
+    allComponents.push(...comps.map(c => ({
+      comboProductId: c.comboProductId,
+      componentProductId: c.componentProductId,
+      qty: parseFloat(c.qty) || 1
+    })));
   }
 
   // 1. Recolectar todos los pool keys (productos que tienen stock físico)
@@ -78,12 +77,8 @@ async function getCartAwareAvailability(tenantId, cartItems, products) {
     }
   }
 
-  // 2. Stock físico en unidades base por pool
-  const physicalBaseByPool = {};
-  for (const pk of poolKeys) {
-    const s = await InventoryMovement.getCurrentStock(tenantId, pk);
-    physicalBaseByPool[pk] = s || 0;
-  }
+  // 2. Stock físico en unidades base por pool (1 query batch)
+  const physicalBaseByPool = await InventoryMovement.getCurrentStockBatch(tenantId, [...poolKeys]);
 
   // 3. Consumo en unidades base por pool (carrito + combos)
   const consumedBaseByPool = {};

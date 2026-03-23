@@ -114,6 +114,47 @@ module.exports = (sequelize) => {
     return totalQty > 0 ? totalCost / totalQty : 0;
   };
 
+  // Batch: obtener stock de múltiples productos en 1 query
+  InventoryMovement.getCurrentStockBatch = async function(tenantId, productIds) {
+    if (!productIds || productIds.length === 0) return {};
+    const results = await this.findAll({
+      where: { tenantId, productId: productIds },
+      attributes: [
+        'productId',
+        [literal("SUM(CASE WHEN movement_type = 'IN' THEN qty ELSE -qty END)"), 'currentStock']
+      ],
+      group: ['product_id'],
+      raw: true
+    });
+    const map = {};
+    for (const r of results) map[r.productId] = parseFloat(r.currentStock || 0);
+    for (const id of productIds) if (!(id in map)) map[id] = 0;
+    return map;
+  };
+
+  // Batch: obtener costo promedio de múltiples productos en 1 query
+  InventoryMovement.getAverageCostBatch = async function(tenantId, productIds) {
+    if (!productIds || productIds.length === 0) return {};
+    const results = await this.findAll({
+      where: { tenantId, productId: productIds, movementType: 'IN', unitCost: { [Op.ne]: null } },
+      attributes: [
+        'productId',
+        [literal('SUM(qty * unit_cost)'), 'totalCost'],
+        [literal('SUM(qty)'), 'totalQty']
+      ],
+      group: ['product_id'],
+      raw: true
+    });
+    const map = {};
+    for (const r of results) {
+      const tc = parseFloat(r.totalCost || 0);
+      const tq = parseFloat(r.totalQty || 0);
+      map[r.productId] = tq > 0 ? tc / tq : 0;
+    }
+    for (const id of productIds) if (!(id in map)) map[id] = 0;
+    return map;
+  };
+
   InventoryMovement.getUnitCost = async function(tenantId, productId, qty, transaction = null) {
     // For FIFO, get the cost of the oldest items
     // For simplicity, using average cost here

@@ -244,15 +244,12 @@ router.post('/from-cart', async (req, res) => {
       status: 'PENDING'
     }, { transaction });
 
-    // Create GroupPurchaseParticipants
-    const createdParticipants = [];
-    for (const pData of participants) {
+    // Create GroupPurchaseParticipants (bulk)
+    const participantRecords = participants.map(pData => {
       const payMethod = pData.paymentMethod || 'CREDIT';
-      // CASH/TRANSFER = paid upfront; CREDIT = adeudo
       const amountDue = parseFloat(pData.amountDue);
       const amountPaid = (payMethod === 'CASH' || payMethod === 'TRANSFER') ? amountDue : 0;
-
-      const participant = await GroupPurchaseParticipant.create({
+      return {
         groupPurchaseId: groupPurchase.id,
         customerId: pData.customerId,
         amountDue,
@@ -263,12 +260,25 @@ router.post('/from-cart', async (req, res) => {
         dueDate: pData.dueDate || null,
         interestRate: pData.interestRate || 0,
         interestAmount: 0,
-        paidAt: amountPaid >= amountDue ? new Date() : null
-      }, { transaction });
+        paidAt: amountPaid >= amountDue ? new Date() : null,
+        _originalData: pData // temporal para crear créditos
+      };
+    });
 
-      // Create CustomerCredit only for CREDIT participants
+    const createdParticipants = await GroupPurchaseParticipant.bulkCreate(
+      participantRecords.map(({ _originalData, ...rec }) => rec),
+      { transaction, returning: true }
+    );
+
+    // Create CustomerCredits for CREDIT participants (bulk)
+    const creditRecords = [];
+    const todayStr = new Date().toISOString().split('T')[0];
+    createdParticipants.forEach((participant, i) => {
+      const pData = participants[i];
+      const payMethod = pData.paymentMethod || 'CREDIT';
+      const amountDue = parseFloat(pData.amountDue);
       if (payMethod === 'CREDIT' && amountDue > 0) {
-        await CustomerCredit.create({
+        creditRecords.push({
           tenantId,
           customerId: pData.customerId,
           groupPurchaseParticipantId: participant.id,
@@ -278,11 +288,12 @@ router.post('/from-cart', async (req, res) => {
           overdueInterestRate: pData.overdueInterestRate || 0,
           dueDate: pData.dueDate || null,
           status: 'ACTIVE',
-          lastInterestCalculationDate: new Date().toISOString().split('T')[0]
-        }, { transaction });
+          lastInterestCalculationDate: todayStr
+        });
       }
-
-      createdParticipants.push(participant);
+    });
+    if (creditRecords.length > 0) {
+      await CustomerCredit.bulkCreate(creditRecords, { transaction });
     }
 
     // Update GroupPurchase status

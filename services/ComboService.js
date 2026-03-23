@@ -4,6 +4,7 @@ class ComboService {
   /**
    * Calculate available stock for a combo product
    * Formula: floor(min_i(stock_component_i / qty_i))
+   * Optimizado: 1 query batch en vez de N queries individuales
    */
   static async calculateComboStock(tenantId, comboProductId) {
     const components = await ProductComponent.findByCombo(comboProductId, {
@@ -13,18 +14,15 @@ class ComboService {
       }]
     });
 
-    if (components.length === 0) {
-      return 0;
-    }
+    if (components.length === 0) return 0;
+
+    // Batch: obtener stock de todos los componentes en 1 query
+    const productIds = components.map(c => c.componentProductId);
+    const stockMap = await InventoryMovement.getCurrentStockBatch(tenantId, productIds);
 
     let minStock = Infinity;
-
     for (const component of components) {
-      const currentStock = await InventoryMovement.getCurrentStock(
-        tenantId,
-        component.componentProductId
-      );
-      
+      const currentStock = stockMap[component.componentProductId] || 0;
       const maxCombosFromComponent = Math.floor(currentStock / component.qty);
       minStock = Math.min(minStock, maxCombosFromComponent);
     }
@@ -35,6 +33,7 @@ class ComboService {
   /**
    * Get detailed availability for a combo
    * Returns stock calculation and component details
+   * Optimizado: 1 query batch en vez de N queries individuales
    */
   static async getComboAvailability(tenantId, comboProductId) {
     const combo = await Product.findOne({
@@ -52,15 +51,15 @@ class ComboService {
       }]
     });
 
+    // Batch: obtener stock de todos los componentes en 1 query
+    const productIds = components.map(c => c.componentProductId);
+    const stockMap = await InventoryMovement.getCurrentStockBatch(tenantId, productIds);
+
     const componentDetails = [];
     let minStock = Infinity;
 
     for (const component of components) {
-      const currentStock = await InventoryMovement.getCurrentStock(
-        tenantId,
-        component.componentProductId
-      );
-      
+      const currentStock = stockMap[component.componentProductId] || 0;
       const maxCombosFromComponent = Math.floor(currentStock / component.qty);
       minStock = Math.min(minStock, maxCombosFromComponent);
 
@@ -71,15 +70,21 @@ class ComboService {
         requiredQty: component.qty,
         currentStock,
         maxCombosFromComponent,
-        isLimiting: maxCombosFromComponent === minStock
+        isLimiting: false // se recalcula abajo
       });
+    }
+
+    const available = minStock === Infinity ? 0 : minStock;
+    // Marcar componentes limitantes
+    for (const cd of componentDetails) {
+      cd.isLimiting = cd.maxCombosFromComponent === available;
     }
 
     return {
       comboId: comboProductId,
       comboName: combo.name,
       comboSku: combo.sku,
-      availableStock: minStock === Infinity ? 0 : minStock,
+      availableStock: available,
       components: componentDetails
     };
   }
@@ -90,7 +95,7 @@ class ComboService {
    */
   static async validateComboSale(tenantId, comboProductId, quantity) {
     const availability = await this.getComboAvailability(tenantId, comboProductId);
-    
+
     const canSell = availability.availableStock >= quantity;
     const missingComponents = [];
 
@@ -129,27 +134,23 @@ class ComboService {
       }]
     });
 
-    const movements = [];
+    // Batch: obtener costos de todos los componentes en 1 query
+    const productIds = components.map(c => c.componentProductId);
+    const costMap = await InventoryMovement.getAverageCostBatch(tenantId, productIds);
 
+    const movements = [];
     for (const component of components) {
       const movementQty = component.qty * quantity;
-      
       const movement = await InventoryMovement.create({
         tenantId,
         productId: component.componentProductId,
         movementType: 'OUT',
         reason: 'SALE',
         qty: movementQty,
-        unitCost: await InventoryMovement.getUnitCost(
-          tenantId,
-          component.componentProductId,
-          movementQty,
-          transaction
-        ),
+        unitCost: costMap[component.componentProductId] || 0,
         refType: 'SALE',
         refId: saleId
       }, { transaction });
-
       movements.push(movement);
     }
 
@@ -168,27 +169,23 @@ class ComboService {
       }]
     });
 
-    const movements = [];
+    // Batch: obtener costos de todos los componentes en 1 query
+    const productIds = components.map(c => c.componentProductId);
+    const costMap = await InventoryMovement.getAverageCostBatch(tenantId, productIds);
 
+    const movements = [];
     for (const component of components) {
       const movementQty = component.qty * quantity;
-      
       const movement = await InventoryMovement.create({
         tenantId,
         productId: component.componentProductId,
         movementType: 'IN',
         reason: 'VOID',
         qty: movementQty,
-        unitCost: await InventoryMovement.getUnitCost(
-          tenantId,
-          component.componentProductId,
-          movementQty,
-          transaction
-        ),
+        unitCost: costMap[component.componentProductId] || 0,
         refType: 'SALE',
         refId: saleId
       }, { transaction });
-
       movements.push(movement);
     }
 
@@ -197,6 +194,7 @@ class ComboService {
 
   /**
    * Calculate combo cost and margin
+   * Optimizado: 1 query batch para costos
    */
   static async calculateComboCost(tenantId, comboProductId) {
     const components = await ProductComponent.findByCombo(comboProductId, {
@@ -206,15 +204,15 @@ class ComboService {
       }]
     });
 
+    // Batch: obtener costos de todos los componentes en 1 query
+    const productIds = components.map(c => c.componentProductId);
+    const costMap = await InventoryMovement.getAverageCostBatch(tenantId, productIds);
+
     let totalCost = 0;
     let totalPriceSum = 0;
 
     for (const component of components) {
-      const avgCost = await InventoryMovement.getAverageCost(
-        tenantId,
-        component.componentProductId
-      );
-      
+      const avgCost = costMap[component.componentProductId] || 0;
       totalCost += avgCost * component.qty;
       totalPriceSum += component.component.salePrice * component.qty;
     }

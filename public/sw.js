@@ -1,9 +1,10 @@
 /* Service Worker para Web Push + cache de assets PWA */
 'use strict';
 
-const SW_VERSION   = 'v4';
+const SW_VERSION   = 'v5';
 const CACHE_STATIC = 'locobar-static-' + SW_VERSION;
 const CACHE_ICONS  = 'locobar-icons-'  + SW_VERSION;
+const CACHE_API    = 'locobar-api-'    + SW_VERSION;
 
 const PRECACHE_STATIC = [
   '/libs/css/bootstrap.min.css',
@@ -12,7 +13,8 @@ const PRECACHE_STATIC = [
   '/libs/js/jquery.min.js',
   '/public/css/dashboard-themes.css',
   '/public/css/customer-themes.css',
-  '/public/css/theme.css'
+  '/public/css/theme.css',
+  '/js/dashboard-spa-router.js?v=2'
 ];
 
 const PRECACHE_ICONS = [
@@ -42,7 +44,7 @@ self.addEventListener('activate', function(event) {
   event.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
-        keys.filter(function(k) { return k !== CACHE_STATIC && k !== CACHE_ICONS; })
+        keys.filter(function(k) { return k !== CACHE_STATIC && k !== CACHE_ICONS && k !== CACHE_API; })
             .map(function(k) { return caches.delete(k); })
       );
     })
@@ -63,8 +65,21 @@ self.addEventListener('fetch', function(event) {
 
   // CSS y JS estático → stale-while-revalidate
   if (url.includes('/libs/css/') || url.includes('/libs/js/') ||
-      url.includes('/public/css/')) {
+      url.includes('/public/css/') || url.includes('/js/dashboard-spa-router')) {
     event.respondWith(staleWhileRevalidate(event.request, CACHE_STATIC));
+    return;
+  }
+
+  // Dashboard shell + fragmentos SPA → stale-while-revalidate (carga instantánea al reabrir PWA)
+  var pathname = new URL(url).pathname;
+  if (pathname === '/dashboard' || pathname === '/dashboard/') {
+    event.respondWith(staleWhileRevalidate(event.request, CACHE_STATIC));
+    return;
+  }
+
+  // API auth/me → stale-while-revalidate (muestra datos del último login mientras revalida)
+  if (url.includes('/api/admin/auth/me')) {
+    event.respondWith(staleWhileRevalidate(event.request, CACHE_API));
     return;
   }
 });

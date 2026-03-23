@@ -543,7 +543,8 @@ router.post('/checkout/confirm-payphone', authenticateCustomer, async (req, res)
           body: JSON.stringify({
             id: parseInt(id, 10),
             clientTxId: clientTransactionId
-          })
+          }),
+          signal: AbortSignal.timeout(10000)
         });
 
         const responseText = await response.text();
@@ -1375,7 +1376,8 @@ router.post('/credits/confirm-payphone', authenticateCustomer, async (req, res) 
         const response = await fetch('https://pay.payphonetodoesposible.com/api/button/V2/Confirm', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ id: parseInt(id, 10), clientTxId: clientTransactionId })
+          body: JSON.stringify({ id: parseInt(id, 10), clientTxId: clientTransactionId }),
+          signal: AbortSignal.timeout(10000)
         });
         const responseText = await response.text();
         try {

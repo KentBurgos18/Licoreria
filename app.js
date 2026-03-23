@@ -4,6 +4,7 @@ const express = require('express');
 const http = require('http');
 const cors = require('cors');
 const helmet = require('helmet');
+const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 
@@ -63,6 +64,9 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
+
+// Compresión gzip para respuestas (reduce ~70% el tamaño de JSON/HTML)
+app.use(compression());
 
 // Referrer-Policy requerida por Payphone SDK (sobreescribe la de Helmet)
 app.use((req, res, next) => {
@@ -224,15 +228,25 @@ app.get('/api/public/vapid-public-key', (req, res) => {
   res.json({ publicKey: key });
 });
 
+// Caché en memoria para categorías y presentaciones (datos que cambian poco)
+const _publicCache = { categories: null, categoriesAt: 0, presentations: null, presentationsAt: 0 };
+const PUBLIC_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
 // API pública: categorías de producto (sin auth, para catálogo de clientes)
 app.get('/api/public/product-categories', async (req, res) => {
   try {
+    const now = Date.now();
+    if (_publicCache.categories && (now - _publicCache.categoriesAt) < PUBLIC_CACHE_TTL) {
+      return res.json({ categories: _publicCache.categories });
+    }
     const tenantId = 1;
     const { ProductCategory } = require('./models');
     const categories = await ProductCategory.findAll({
       where: { tenantId },
       order: [['sortOrder', 'ASC'], ['name', 'ASC']]
     });
+    _publicCache.categories = categories;
+    _publicCache.categoriesAt = now;
     res.json({ categories });
   } catch (err) {
     console.error('Error getting public categories:', err);
@@ -243,12 +257,18 @@ app.get('/api/public/product-categories', async (req, res) => {
 // API pública: presentaciones de producto (sin auth, para catálogo de clientes)
 app.get('/api/public/product-presentations', async (req, res) => {
   try {
+    const now = Date.now();
+    if (_publicCache.presentations && (now - _publicCache.presentationsAt) < PUBLIC_CACHE_TTL) {
+      return res.json({ presentations: _publicCache.presentations });
+    }
     const tenantId = 1;
     const { ProductPresentation } = require('./models');
     const presentations = await ProductPresentation.findAll({
       where: { tenantId },
       order: [['sortOrder', 'ASC'], ['name', 'ASC']]
     });
+    _publicCache.presentations = presentations;
+    _publicCache.presentationsAt = now;
     res.json({ presentations });
   } catch (err) {
     console.error('Error getting public presentations:', err);
@@ -262,7 +282,8 @@ app.get('/api/public/bin/:bin', async (req, res) => {
   if (bin.length < 6) return res.status(400).json({ error: 'BIN inválido' });
   try {
     const r = await fetch(`https://lookup.binlist.net/${bin}`, {
-      headers: { 'Accept-Version': '3', 'Accept': 'application/json' }
+      headers: { 'Accept-Version': '3', 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(5000) // 5s timeout
     });
     if (!r.ok) return res.json({});
     const data = await r.json();
@@ -1216,6 +1237,30 @@ async function initializeApp() {
       if (!e.message.includes('numeric(12,4)') && !e.message.includes('no change')) {
         console.warn('⚠️ Migración 029 (current_balance precision):', e.message);
       }
+    }
+
+    // Migración 030: Índices compuestos para rendimiento
+    try {
+      const indexes = [
+        `CREATE INDEX IF NOT EXISTS idx_inv_mov_tenant_product ON inventory_movements(tenant_id, product_id, movement_type)`,
+        `CREATE INDEX IF NOT EXISTS idx_sales_customer_status ON sales(customer_id, status)`,
+        `CREATE INDEX IF NOT EXISTS idx_sales_tenant_created ON sales(tenant_id, created_at DESC)`,
+        `CREATE INDEX IF NOT EXISTS idx_audit_tenant_created ON audit_logs(tenant_id, created_at DESC)`,
+        `CREATE INDEX IF NOT EXISTS idx_audit_tenant_action ON audit_logs(tenant_id, action)`,
+        `CREATE INDEX IF NOT EXISTS idx_settings_tenant_key ON settings(tenant_id, setting_key)`,
+        `CREATE INDEX IF NOT EXISTS idx_credits_customer_status ON customer_credits(customer_id, status)`,
+        `CREATE INDEX IF NOT EXISTS idx_payments_customer ON customer_payments(customer_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_prod_components_combo ON product_components(combo_product_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_prod_components_component ON product_components(component_product_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_sale_items_sale ON sale_items(sale_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_sale_items_product ON sale_items(product_id)`
+      ];
+      for (const sql of indexes) {
+        try { await sequelize.query(sql); } catch (e) { /* índice ya existe o tabla no existe */ }
+      }
+      console.log('✅ Migración 030 aplicada (índices de rendimiento)');
+    } catch (e) {
+      console.warn('⚠️ Migración 030 (índices):', e.message);
     }
 
     // ── Seed primer despliegue ────────────────────────────────────────────────

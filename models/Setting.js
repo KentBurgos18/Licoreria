@@ -48,33 +48,60 @@ module.exports = (sequelize) => {
     ]
   });
 
-  // Método estático para obtener un setting
-  Setting.getSetting = async function(tenantId, key, defaultValue = null) {
-    const setting = await this.findOne({
-      where: { tenantId, settingKey: key }
-    });
-    
-    if (!setting) return defaultValue;
-    
-    // Convertir según el tipo
-    switch (setting.settingType) {
-      case 'number':
-        const parsed = parseFloat(setting.settingValue);
-        return isNaN(parsed) ? defaultValue : parsed;
-      case 'boolean':
-        return setting.settingValue === 'true';
-      case 'json':
-        try {
-          return JSON.parse(setting.settingValue);
-        } catch {
-          return defaultValue;
-        }
-      default:
-        return setting.settingValue || defaultValue;
+  // ── Caché en memoria para settings (TTL 5 minutos) ──
+  const _cache = new Map();
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
+  function cacheKey(tenantId, key) { return `${tenantId}:${key}`; }
+
+  Setting.clearCache = function(tenantId, key) {
+    if (key) {
+      _cache.delete(cacheKey(tenantId, key));
+    } else {
+      // Invalidar todo el tenant
+      for (const k of _cache.keys()) {
+        if (k.startsWith(`${tenantId}:`)) _cache.delete(k);
+      }
     }
   };
 
-  // Método estático para guardar un setting
+  // Método estático para obtener un setting (con caché)
+  Setting.getSetting = async function(tenantId, key, defaultValue = null) {
+    const ck = cacheKey(tenantId, key);
+    const cached = _cache.get(ck);
+    if (cached && Date.now() - cached.ts < CACHE_TTL) {
+      return cached.val !== undefined ? cached.val : defaultValue;
+    }
+
+    const setting = await this.findOne({
+      where: { tenantId, settingKey: key }
+    });
+
+    let result;
+    if (!setting) {
+      result = defaultValue;
+    } else {
+      switch (setting.settingType) {
+        case 'number':
+          const parsed = parseFloat(setting.settingValue);
+          result = isNaN(parsed) ? defaultValue : parsed;
+          break;
+        case 'boolean':
+          result = setting.settingValue === 'true';
+          break;
+        case 'json':
+          try { result = JSON.parse(setting.settingValue); } catch { result = defaultValue; }
+          break;
+        default:
+          result = setting.settingValue || defaultValue;
+      }
+    }
+
+    _cache.set(ck, { val: result, ts: Date.now() });
+    return result;
+  };
+
+  // Método estático para guardar un setting (invalida caché)
   Setting.setSetting = async function(tenantId, key, value, type = 'string', description = null) {
     let stringValue = value;
     
@@ -105,7 +132,10 @@ module.exports = (sequelize) => {
       setting.updatedAt = new Date();
       await setting.save();
     }
-    
+
+    // Invalidar caché de esta key
+    Setting.clearCache(tenantId, key);
+
     return setting;
   };
 

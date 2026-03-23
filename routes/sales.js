@@ -10,8 +10,8 @@ const router = express.Router();
 
 // POST /sales - Create sale with combo support
 router.post('/', async (req, res) => {
-  const transaction = await sequelize.transaction();
-  
+  // ── Validaciones de lectura (SIN transacción para no bloquear BD) ──
+  let transaction;
   try {
     const {
       tenantId,
@@ -49,7 +49,7 @@ router.post('/', async (req, res) => {
     const productIds = items.map(item => item.productId);
     const products = await Product.findAll({
       where: {
-        id: { [require('sequelize').Op.in]: productIds },
+        id: { [Op.in]: productIds },
         tenantId,
         isActive: true
       }
@@ -86,7 +86,6 @@ router.post('/', async (req, res) => {
     const failedValidations = validations.filter(v => !v.canSell);
 
     if (failedValidations.length > 0) {
-      await transaction.rollback();
       return res.status(400).json({
         error: 'Insufficient stock for one or more items',
         code: 'INSUFFICIENT_STOCK',
@@ -113,7 +112,6 @@ router.post('/', async (req, res) => {
       const taxRateRaw = await Setting.getSetting(tenantId, 'tax_rate');
       taxRate = taxRateRaw != null ? parseFloat(taxRateRaw) : NaN;
       if (isNaN(taxRate) || taxRate < 0 || taxRate > 100) {
-        await transaction.rollback();
         return res.status(400).json({
           error: 'El IVA no está configurado. Configure el IVA en Configuración.',
           code: 'TAX_RATE_NOT_CONFIGURED'
@@ -129,30 +127,27 @@ router.post('/', async (req, res) => {
 
     // Ventas a crédito quedan PENDING hasta que el crédito se pague; el resto COMPLETED
     const saleStatus = paymentMethod === 'CREDIT' ? 'PENDING' : 'COMPLETED';
-    
+
     // For credit sales, customerId is required
     let finalCustomerId = customerId;
     if (paymentMethod === 'CREDIT') {
       if (!customerId) {
-        await transaction.rollback();
         return res.status(400).json({
           error: 'customerId is required for credit sales',
           code: 'MISSING_CUSTOMER_ID'
         });
       }
-      
+
       // Verify customer exists and is active
       const customer = await Customer.findOne({
         where: {
           id: customerId,
           tenantId,
           isActive: true
-        },
-        transaction
+        }
       });
-      
+
       if (!customer) {
-        await transaction.rollback();
         return res.status(400).json({
           error: 'Customer not found or inactive',
           code: 'CUSTOMER_NOT_FOUND'
@@ -167,15 +162,16 @@ router.post('/', async (req, res) => {
           tenantId,
           name: customerName.trim(),
           isActive: true
-        },
-        transaction
+        }
       });
-      
+
       if (existingCustomer) {
         finalCustomerId = existingCustomer.id;
       }
-      // Don't create new customer for non-credit sales if not found
     }
+
+    // ── Abrir transacción solo para las escrituras (minimizar tiempo de lock) ──
+    transaction = await sequelize.transaction();
 
     // Create the sale with historical tax information
     const sale = await Sale.create({
@@ -316,7 +312,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json(completeSale);
   } catch (error) {
-    await transaction.rollback();
+    if (transaction) await transaction.rollback();
     console.error('Error creating sale:', error);
     res.status(500).json({
       error: 'Internal server error',
