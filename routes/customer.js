@@ -9,7 +9,11 @@ const { sequelize } = require('../models');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('⛔ FATAL: JWT_SECRET no está definido en las variables de entorno');
+  process.exit(1);
+}
 
 // Middleware to verify JWT token
 const authenticateCustomer = (req, res, next) => {
@@ -326,7 +330,6 @@ router.post('/cart/validate', authenticateCustomer, async (req, res) => {
 async function getPayphoneCredentials(tenantId = 1) {
   const tokenFromDB = await Setting.getSetting(tenantId, 'payphone_token', null);
   const storeIdFromDB = await Setting.getSetting(tenantId, 'payphone_store_id', null);
-  console.log(`[PayPhone DEBUG] tenantId=${tenantId} | tokenFromDB=${tokenFromDB ? 'SET('+String(tokenFromDB).length+'chars)' : 'NULL'} | storeIdFromDB=${storeIdFromDB || 'NULL'} | env_token=${process.env.PAYPHONE_TOKEN ? 'SET' : 'empty'} | env_store=${process.env.PAYPHONE_STORE_ID || 'empty'}`);
   const token = tokenFromDB || process.env.PAYPHONE_TOKEN;
   const storeId = storeIdFromDB || process.env.PAYPHONE_STORE_ID;
   return { token, storeId };

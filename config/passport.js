@@ -9,7 +9,11 @@ const sequelize = require('./database');
 const { QueryTypes } = require('sequelize');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'licoreria-secret-key-2024';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('⛔ FATAL: JWT_SECRET no está definido en las variables de entorno');
+  process.exit(1);
+}
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 /**

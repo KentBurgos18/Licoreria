@@ -15,7 +15,11 @@ async function fetchPermissions(user) {
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('⛔ FATAL: JWT_SECRET no está definido en las variables de entorno');
+  process.exit(1);
+}
 
 // POST /admin/auth/login - Login administrador/empleado
 router.post('/login', async (req, res) => {

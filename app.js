@@ -3,6 +3,8 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 
 // VAPID keys para Web Push (generar si no están en .env); no bloquear arranque si falla
@@ -21,7 +23,11 @@ try {
 }
 
 const { sequelize, Setting, Sale } = require('./models');
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('⛔ FATAL: JWT_SECRET no está definido en las variables de entorno');
+  process.exit(1);
+}
 
 // Import routes
 const productsRouter = require('./routes/products');
@@ -39,27 +45,41 @@ const { configurePassport, passport } = require('./config/passport');
 const app = express();
 const server = http.createServer(app);
 const { Server } = require('socket.io');
-const io = new Server(server, {
-  cors: { origin: '*' }
-});
+// Orígenes permitidos (configurar en .env separados por coma, ej: ALLOWED_ORIGINS=https://midominio.com,https://admin.midominio.com)
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : undefined; // undefined = permitir todo en desarrollo
+
+const corsOptions = allowedOrigins
+  ? { origin: allowedOrigins, credentials: true }
+  : { origin: true, credentials: true };
+
+const io = new Server(server, { cors: corsOptions });
 app.set('io', io);
 
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Helmet: headers de seguridad (desactivar CSP para no romper scripts inline del frontend)
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
 
-// Referrer-Policy requerida por Payphone SDK para evitar errores de acceso denegado
+// Referrer-Policy requerida por Payphone SDK (sobreescribe la de Helmet)
 app.use((req, res, next) => {
     res.setHeader('Referrer-Policy', 'origin-when-cross-origin');
     next();
 });
 
+// CORS
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
 // Session for Passport OAuth
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'licoreria-session-secret-2024',
+    secret: process.env.SESSION_SECRET || process.env.JWT_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: { 
@@ -326,6 +346,31 @@ app.use('/libs', express.static(path.join(__dirname, 'public', 'libs'), staticCa
 
 // Serve uploaded images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Rate limiters para endpoints sensibles
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 15, // máximo 15 intentos por ventana
+  message: { error: 'Demasiados intentos. Intenta de nuevo en 15 minutos.', code: 'RATE_LIMIT' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minuto
+  max: 100, // 100 peticiones por minuto
+  message: { error: 'Demasiadas peticiones. Intenta de nuevo en un momento.', code: 'RATE_LIMIT' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Rate limiting global para APIs
+app.use('/api/', apiLimiter);
+// Rate limiting estricto para autenticación
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/admin/auth/login', authLimiter);
 
 // API Routes (dashboard APIs protegidas con authenticateAdmin)
 app.use('/api/products', authenticateAdmin, productsRouter);

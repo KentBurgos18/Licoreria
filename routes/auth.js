@@ -8,7 +8,11 @@ const EmailService = require('../services/EmailService');
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('⛔ FATAL: JWT_SECRET no está definido en las variables de entorno');
+  process.exit(1);
+}
 
 // Almacenamiento temporal para códigos y claves temporales de recuperación de contraseña
 // Estructura: { [email]: { code, codeExpires, tempPassword, tempPasswordExpires, attempts } }
@@ -45,113 +49,6 @@ setInterval(() => {
     }
   });
 }, 5 * 60 * 1000); // Cada 5 minutos
-
-// GET /auth/debug-emails - Ruta temporal para verificar correos en la base de datos
-router.get('/debug-emails', async (req, res) => {
-  try {
-    const { searchEmail = 'rogerburgos208@gmail.com' } = req.query;
-    const searchEmailTrimmed = searchEmail.trim();
-    
-    const result = {
-      searchEmail,
-      searchEmailTrimmed,
-      customers: [],
-      users: [],
-      foundInCustomers: false,
-      foundInUsers: false,
-      details: {}
-    };
-    
-    // Buscar todos los clientes
-    const customers = await Customer.unscoped().findAll({
-      attributes: ['id', 'name', 'email', 'cedula', 'isActive', 'tenantId'],
-      order: [['email', 'ASC']]
-    });
-    
-    result.customers = customers.map(c => ({
-      id: c.id,
-      name: c.name,
-      email: c.email || '(sin correo)',
-      emailLength: c.email ? c.email.length : 0,
-      hasSpaces: c.email ? c.email !== c.email.trim() : false,
-      emailTrimmed: c.email ? c.email.trim() : null,
-      cedula: c.cedula,
-      isActive: c.isActive,
-      tenantId: c.tenantId,
-      exactMatch: c.email === searchEmailTrimmed,
-      trimmedMatch: c.email && c.email.trim() === searchEmailTrimmed,
-      caseInsensitiveMatch: c.email && c.email.toLowerCase() === searchEmailTrimmed.toLowerCase()
-    }));
-    
-    // Buscar todos los usuarios
-    const users = await User.findAll({
-      attributes: ['id', 'name', 'email', 'role', 'isActive', 'tenantId'],
-      order: [['email', 'ASC']]
-    });
-    
-    result.users = users.map(u => ({
-      id: u.id,
-      name: u.name,
-      email: u.email || '(sin correo)',
-      emailLength: u.email ? u.email.length : 0,
-      hasSpaces: u.email ? u.email !== u.email.trim() : false,
-      emailTrimmed: u.email ? u.email.trim() : null,
-      role: u.role,
-      isActive: u.isActive,
-      tenantId: u.tenantId,
-      exactMatch: u.email === searchEmailTrimmed,
-      trimmedMatch: u.email && u.email.trim() === searchEmailTrimmed,
-      caseInsensitiveMatch: u.email && u.email.toLowerCase() === searchEmailTrimmed.toLowerCase()
-    }));
-    
-    // Buscar específicamente el correo
-    const customerExact = await Customer.unscoped().findOne({
-      where: { email: searchEmailTrimmed, tenantId: 1, isActive: true }
-    });
-    
-    const customerCaseInsensitive = await Customer.unscoped().findOne({
-      where: { 
-        email: { [Op.iLike]: searchEmailTrimmed },
-        tenantId: 1,
-        isActive: true
-      }
-    });
-    
-    const userExact = await User.findOne({
-      where: { email: searchEmailTrimmed, tenantId: 1, isActive: true }
-    });
-    
-    result.foundInCustomers = !!(customerExact || customerCaseInsensitive);
-    result.foundInUsers = !!userExact;
-    
-    result.details = {
-      customerExact: customerExact ? {
-        id: customerExact.id,
-        name: customerExact.name,
-        email: customerExact.email
-      } : null,
-      customerCaseInsensitive: customerCaseInsensitive ? {
-        id: customerCaseInsensitive.id,
-        name: customerCaseInsensitive.name,
-        email: customerCaseInsensitive.email
-      } : null,
-      userExact: userExact ? {
-        id: userExact.id,
-        name: userExact.name,
-        email: userExact.email
-      } : null
-    };
-    
-    res.json(result);
-  } catch (error) {
-    console.error('Error in debug-emails:', error);
-    res.status(500).json({
-      error: 'Error interno del servidor',
-      code: 'INTERNAL_ERROR',
-      message: error.message
-    });
-  }
-});
 
 // GET /auth/check-email - Verificar si un email ya existe
 router.get('/check-email', async (req, res) => {
@@ -637,31 +534,11 @@ router.post('/forgot-password', async (req, res) => {
       where: { email: emailNormalized, tenantId, isActive: true }
     }) : null;
     
-    // Debug: Log para verificar búsqueda
-    console.log('Password reset search:', { 
-      inputEmail: email,
-      emailNormalized: emailNormalized,
-      tenantId,
-      foundUser: !!user, 
-      foundCustomer: !!customer,
-      userEmail: user?.email,
-      customerEmail: customer?.email,
-      userActive: user?.isActive,
-      customerActive: customer?.isActive
-    });
-
-    // Si no existe ninguno, retornar error
+    // Si no existe ninguno, responder igual para no revelar si el email existe
     if (!user && !customer) {
-      console.log('Password reset - Email not found:', {
-        inputEmail: email,
-        emailNormalized: emailNormalized,
-        tenantId: tenantId,
-        userTable: 'checked',
-        customerTable: 'checked (unscoped)'
-      });
-      return res.status(404).json({
-        error: 'No se encontró una cuenta con este correo electrónico',
-        code: 'EMAIL_NOT_FOUND'
+      return res.json({
+        success: true,
+        message: 'Si el email existe, recibirás un código de verificación'
       });
     }
 
