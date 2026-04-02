@@ -1,7 +1,7 @@
 const express = require('express');
 const { Supplier, SupplierPrice, PurchaseOrder, Product } = require('../models');
 const { Op } = require('sequelize');
-const { requireRole } = require('./adminAuth');
+const { requireRole, checkPermission } = require('./adminAuth');
 const AuditService = require('../services/AuditService');
 
 const router = express.Router();
@@ -96,7 +96,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /suppliers - Create supplier - ADMIN only
-router.post('/', requireRole('ADMIN'), async (req, res) => {
+router.post('/', checkPermission('suppliers', 'full'), async (req, res) => {
   try {
     const {
       tenantId = 1,
@@ -159,7 +159,7 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
 });
 
 // PUT /suppliers/:id - Update supplier - ADMIN only
-router.put('/:id', requireRole('ADMIN'), async (req, res) => {
+router.put('/:id', checkPermission('suppliers', 'full'), async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -229,7 +229,7 @@ router.put('/:id', requireRole('ADMIN'), async (req, res) => {
 });
 
 // DELETE /suppliers/:id - Delete supplier (soft delete) - ADMIN only
-router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
+router.delete('/:id', checkPermission('suppliers', 'full'), async (req, res) => {
   try {
     const { id } = req.params;
     const tenantId = req.tenantId || 1;

@@ -3,13 +3,13 @@ const { CustomerPayment, GroupPurchaseParticipant, Customer } = require('../mode
 const PaymentService = require('../services/PaymentService');
 const { sequelize } = require('../models');
 const { Op } = require('sequelize');
-const { requireRole } = require('./adminAuth');
+const { requireRole, checkPermission } = require('./adminAuth');
 const AuditService = require('../services/AuditService');
 
 const router = express.Router();
 
-// Todas las rutas de pagos de clientes requieren rol ADMIN
-router.use(requireRole('ADMIN'));
+// Todas las rutas de pagos de clientes requieren permiso 'full' en sección 'credits'
+router.use(checkPermission('credits', 'full'));
 
 // POST /customer-payments - Register payment
 router.post('/', async (req, res) => {

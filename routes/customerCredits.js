@@ -4,15 +4,15 @@ const { sequelize } = require('../models');
 const CreditService = require('../services/CreditService');
 const EmailService = require('../services/EmailService');
 const { Op } = require('sequelize');
-const { requireRole } = require('./adminAuth');
+const { requireRole, checkPermission } = require('./adminAuth');
 
 const router = express.Router();
 
 // Floor a 2 decimales para display de saldos con precisión interna de 4 decimales
 const floorBal = (x) => Math.floor(parseFloat(x || 0) * 100) / 100;
 
-// Todas las rutas de créditos requieren rol ADMIN
-router.use(requireRole('ADMIN'));
+// Todas las rutas de créditos requieren permiso 'full' en sección 'credits'
+router.use(checkPermission('credits', 'full'));
 
 // GET /customer-credits - List credits (all or for a specific customer)
 router.get('/', async (req, res) => {

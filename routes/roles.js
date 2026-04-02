@@ -5,7 +5,7 @@ const { sequelize } = require('../models');
 const RoleModel = require('../models/Role');
 const Role = RoleModel(sequelize);
 
-const { requireRole } = require('./adminAuth');
+const { requireRole, invalidateRolePermCache } = require('./adminAuth');
 const AuditService = require('../services/AuditService');
 
 const SECTIONS = [
@@ -87,6 +87,7 @@ router.put('/:id', requireRole('ADMIN'), async (req, res) => {
     if (name)        role.name        = name.trim();
     if (permissions) role.permissions = permissions;
     await role.save();
+    invalidateRolePermCache(role.id);
 
     const afterSnap = { name: role.name, permissions: role.permissions };
     const diff = AuditService.diffObjects(beforeSnap, afterSnap);

@@ -1,12 +1,12 @@
 const express = require('express');
 const { Product, ProductComponent } = require('../models');
 const ComboService = require('../services/ComboService');
-const { requireRole } = require('./adminAuth');
+const { requireRole, checkPermission } = require('./adminAuth');
 
 const router = express.Router();
 
 // POST /products/:id/components - Update combo components - ADMIN only
-router.post('/:id/components', requireRole('ADMIN'), async (req, res) => {
+router.post('/:id/components', checkPermission('products', 'full'), async (req, res) => {
   try {
     const { id } = req.params;
     const { tenantId, components } = req.body;
@@ -134,7 +134,7 @@ router.get('/:id/components', async (req, res) => {
 });
 
 // DELETE /products/:id/components/:componentId - Remove specific component - ADMIN only
-router.delete('/:id/components/:componentId', requireRole('ADMIN'), async (req, res) => {
+router.delete('/:id/components/:componentId', checkPermission('products', 'full'), async (req, res) => {
   try {
     const { id, componentId } = req.params;
     const { tenantId } = req.query;

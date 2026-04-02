@@ -1,6 +1,6 @@
 const express = require('express');
 const { ProductPresentation, Product } = require('../models');
-const { requireRole } = require('./adminAuth');
+const { requireRole, checkPermission } = require('./adminAuth');
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST / - Create presentation (admin)
-router.post('/', requireRole('ADMIN'), async (req, res) => {
+router.post('/', checkPermission('products', 'full'), async (req, res) => {
   try {
     const { tenantId = 1, name, unitsPerSale = 1, sortOrder = 0 } = req.body;
     if (!name || !name.trim()) {
@@ -46,7 +46,7 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
 });
 
 // PUT /:id - Update presentation (admin)
-router.put('/:id', requireRole('ADMIN'), async (req, res) => {
+router.put('/:id', checkPermission('products', 'full'), async (req, res) => {
   try {
     const { id } = req.params;
     const { tenantId = 1, name, unitsPerSale, sortOrder } = req.body;
@@ -70,7 +70,7 @@ router.put('/:id', requireRole('ADMIN'), async (req, res) => {
 });
 
 // DELETE /:id - Delete presentation (admin)
-router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
+router.delete('/:id', checkPermission('products', 'full'), async (req, res) => {
   try {
     const { id } = req.params;
     const { tenantId } = req.query;

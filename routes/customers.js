@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const { Customer, sequelize } = require('../models');
 const { Op } = require('sequelize');
-const { requireRole } = require('./adminAuth');
+const { requireRole, checkPermission } = require('./adminAuth');
 const AuditService = require('../services/AuditService');
 
 const router = express.Router();
@@ -363,7 +363,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /customers/:id - Delete customer (soft delete or permanent) - ADMIN only
-router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
+router.delete('/:id', checkPermission('customers', 'full'), async (req, res) => {
   try {
     const { id } = req.params;
     const tenantId = req.tenantId || 1;
@@ -430,7 +430,7 @@ router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
 
 // POST /customers/cleanup - Limpiar todos los clientes excepto el de prueba y todas las ventas - ADMIN only
 // ⚠️ RUTA TEMPORAL PARA LIMPIEZA - ELIMINAR EN PRODUCCIÓN
-router.post('/cleanup', requireRole('ADMIN'), async (req, res) => {
+router.post('/cleanup', checkPermission('customers', 'full'), async (req, res) => {
   try {
     const { Op } = require('sequelize');
     const { Sale, SaleItem, CustomerPayment, CustomerCredit, GroupPurchaseParticipant } = require('../models');

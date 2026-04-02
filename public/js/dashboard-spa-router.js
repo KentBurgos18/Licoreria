@@ -132,6 +132,10 @@
         if (initFn && typeof window[initFn] === 'function') {
             setTimeout(function () { window[initFn](); }, 0);
         }
+        // Aplicar permisos granulares después de que la vista y su init carguen
+        setTimeout(function() {
+            if (typeof window.applyViewPermissions === 'function') window.applyViewPermissions();
+        }, 450);
 
         document.body.classList.toggle('section-sell', viewName === 'sell');
         if (typeof updateSellCart === 'function') updateSellCart();

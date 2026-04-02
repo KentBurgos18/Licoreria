@@ -5,12 +5,12 @@ const ComboService = require('../services/ComboService');
 const { validateSimpleSaleQuantity, resolveMovement } = require('../services/InventoryPoolHelper');
 const { sequelize } = require('../models');
 const { Op } = require('sequelize');
-const { requireRole } = require('./adminAuth');
+const { requireRole, checkPermission } = require('./adminAuth');
 
 const router = express.Router();
 
-// Todas las rutas de compras grupales requieren rol ADMIN
-router.use(requireRole('ADMIN'));
+// Todas las rutas de compras grupales requieren permiso 'full' en sección 'group-purchases'
+router.use(checkPermission('group-purchases', 'full'));
 
 // POST /group-purchases - Create group purchase
 router.post('/', async (req, res) => {

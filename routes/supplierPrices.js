@@ -1,7 +1,7 @@
 const express = require('express');
 const { SupplierPrice, Supplier, Product } = require('../models');
 const { Op } = require('sequelize');
-const { requireRole } = require('./adminAuth');
+const { requireRole, checkPermission } = require('./adminAuth');
 
 const router = express.Router();
 
@@ -98,7 +98,7 @@ router.get('/current/:supplierId/:productId', async (req, res) => {
 });
 
 // POST /supplier-prices - Create supplier price - ADMIN only
-router.post('/', requireRole('ADMIN'), async (req, res) => {
+router.post('/', checkPermission('suppliers', 'full'), async (req, res) => {
   try {
     const {
       tenantId = 1,
@@ -178,7 +178,7 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
 });
 
 // PUT /supplier-prices/:id - Update supplier price - ADMIN only
-router.put('/:id', requireRole('ADMIN'), async (req, res) => {
+router.put('/:id', checkPermission('suppliers', 'full'), async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -237,7 +237,7 @@ router.put('/:id', requireRole('ADMIN'), async (req, res) => {
 });
 
 // DELETE /supplier-prices/:id - Delete supplier price - ADMIN only
-router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
+router.delete('/:id', checkPermission('suppliers', 'full'), async (req, res) => {
   try {
     const { id } = req.params;
     const tenantId = req.tenantId || 1;

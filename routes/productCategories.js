@@ -1,6 +1,6 @@
 const express = require('express');
 const { ProductCategory, Product } = require('../models');
-const { requireRole } = require('./adminAuth');
+const { requireRole, checkPermission } = require('./adminAuth');
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST / - Create category (admin)
-router.post('/', requireRole('ADMIN'), async (req, res) => {
+router.post('/', checkPermission('products', 'full'), async (req, res) => {
   try {
     const { tenantId = 1, name, sortOrder = 0 } = req.body;
     if (!name || !name.trim()) {
@@ -42,7 +42,7 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
 });
 
 // PUT /:id - Update category (admin)
-router.put('/:id', requireRole('ADMIN'), async (req, res) => {
+router.put('/:id', checkPermission('products', 'full'), async (req, res) => {
   try {
     const { id } = req.params;
     const { tenantId = 1, name, sortOrder } = req.body;
@@ -65,7 +65,7 @@ router.put('/:id', requireRole('ADMIN'), async (req, res) => {
 });
 
 // DELETE /:id - Delete category (admin)
-router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
+router.delete('/:id', checkPermission('products', 'full'), async (req, res) => {
   try {
     const { id } = req.params;
     const { tenantId } = req.query;

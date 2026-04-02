@@ -4,7 +4,7 @@ const { Product, ProductComponent, InventoryMovement, SaleItem, GroupPurchase, P
 const { Op } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
-const { requireRole } = require('./adminAuth');
+const { requireRole, checkPermission } = require('./adminAuth');
 const { processProductImage } = require('../services/ImageProcessor');
 const AuditService = require('../services/AuditService');
 const { resolveMovement } = require('../services/InventoryPoolHelper');
@@ -89,7 +89,7 @@ function uploadSingle(field) {
 const router = express.Router();
 
 // POST /products - Create product (SIMPLE or COMBO) - ADMIN only
-router.post('/', requireRole('ADMIN'), uploadSingle('image'), async (req, res) => {
+router.post('/', checkPermission('products', 'full'), uploadSingle('image'), async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     // Parse FormData values (they come as strings)
@@ -455,7 +455,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // PUT /products/:id - Update product - ADMIN only
-router.put('/:id', requireRole('ADMIN'), uploadSingle('image'), async (req, res) => {
+router.put('/:id', checkPermission('products', 'full'), uploadSingle('image'), async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -569,7 +569,7 @@ router.put('/:id', requireRole('ADMIN'), uploadSingle('image'), async (req, res)
 });
 
 // POST /products/:id/add-stock - Add stock to existing product - ADMIN only
-router.post('/:id/add-stock', requireRole('ADMIN'), async (req, res) => {
+router.post('/:id/add-stock', checkPermission('products', 'full'), async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const { id } = req.params;
@@ -656,7 +656,7 @@ router.post('/:id/add-stock', requireRole('ADMIN'), async (req, res) => {
 });
 
 // DELETE /products/:id - Eliminar producto de la base de datos (solo si no tiene dependencias) - ADMIN only
-router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
+router.delete('/:id', checkPermission('products', 'full'), async (req, res) => {
   try {
     const { id } = req.params;
     const rawTenant = req.query.tenantId ?? req.body?.tenantId ?? 1;

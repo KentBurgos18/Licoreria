@@ -1,13 +1,13 @@
 const express = require('express');
 const { SaleItem, Product } = require('../models');
 const ComboService = require('../services/ComboService');
-const { requireRole } = require('./adminAuth');
+const { requireRole, checkPermission } = require('./adminAuth');
 const { Op } = require('sequelize');
 
 const router = express.Router();
 
-// Todas las rutas de reportes requieren rol ADMIN
-router.use(requireRole('ADMIN'));
+// Reportes requieren al menos permiso 'read' en sección 'sales'
+router.use(checkPermission('sales', 'read'));
 
 // GET /reports/combo-sales - Combo sales report with implied discount and margin
 router.get('/combo-sales', async (req, res) => {

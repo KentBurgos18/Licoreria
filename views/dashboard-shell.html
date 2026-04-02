@@ -2793,15 +2793,15 @@
         // ===== SISTEMA DE PERMISOS =====
         var _perms = null; // null = ADMIN (acceso total)
         var SECTION_READ_HIDE = {
-            products:          ['#addProductBtn', '.btn-edit-product', '.btn-delete-product'],
-            suppliers:         ['#addSupplierBtn', '.btn-edit-supplier', '.btn-delete-supplier'],
+            products:          ['#btnNewProduct', '.btn-edit-product', '.btn-delete-product'],
+            suppliers:         ['#btnNewSupplier', '.btn-edit-supplier', '.btn-delete-supplier'],
             purchases:         ['#addPurchaseBtn'],
             sell:              ['#sellPanelActive'],
             sales:             ['.btn-cancel-sale', '.btn-void-sale'],
             'group-purchases': ['#addGroupPurchaseBtn'],
             credits:           ['.btn-pay-credit'],
-            customers:         ['#addCustomerBtn', '.btn-edit-customer', '.btn-delete-customer'],
-            users:             ['#addUserBtn', '.btn-edit-user', '.btn-delete-user'],
+            customers:         ['#btnNewCustomer', '.btn-edit-customer', '.btn-delete-customer'],
+            users:             ['#btnNewUser', '.btn-edit-user', '.btn-delete-user'],
             expenses:          ['#addExpenseBtn', '.btn-edit-expense', '.btn-delete-expense'],
             settings:          []
         };
@@ -2853,6 +2853,7 @@
                 item.style.display = getPermission(sec) === 'none' ? 'none' : '';
             });
             if (_perms !== null) {
+                // Ocultar elementos verdaderamente solo-admin (audit, profitability, treasury en sidebar)
                 document.querySelectorAll('.admin-only').forEach(function(el) { el.style.display = 'none'; });
             }
         }
@@ -2861,6 +2862,28 @@
             if (getPermission(section) !== 'read') return;
             (SECTION_READ_HIDE[section] || []).forEach(function(sel) {
                 document.querySelectorAll(sel).forEach(function(el) { el.style.display = 'none'; });
+            });
+        }
+
+        // Oculta botones de acción según permisos granulares en la vista actual
+        // Se llama después de cargar cada vista dinámica
+        function applyViewPermissions() {
+            if (_perms === null) return; // ADMIN: todo visible
+            var levelOrder = { none: 0, read: 1, full: 2 };
+            Object.keys(SECTION_READ_HIDE).forEach(function(sec) {
+                var userLevel = getPermission(sec);
+                // Si no tiene permiso 'full', ocultar botones de acción
+                if ((levelOrder[userLevel] || 0) < 2) {
+                    (SECTION_READ_HIDE[sec] || []).forEach(function(sel) {
+                        document.querySelectorAll(sel).forEach(function(el) { el.style.display = 'none'; });
+                    });
+                }
+            });
+            // Ocultar elementos marcados con perm-full-SECTION
+            document.querySelectorAll('[class*="perm-full-"]').forEach(function(el) {
+                var match = el.className.match(/perm-full-([a-z-]+)/);
+                if (!match) return;
+                if (getPermission(match[1]) !== 'full') el.style.display = 'none';
             });
         }
         // ===== FIN PERMISOS =====
@@ -3408,10 +3431,11 @@
                         break;
                 }
             }
-            // Aplicar modo lectura (ocultar botones de acción) si el permiso es 'read'
-            if (section !== 'dashboard') {
-                setTimeout(function() { applySectionReadMode(section); }, 400);
-            }
+            // Aplicar permisos granulares tras cargar la vista
+            setTimeout(function() {
+                if (section !== 'dashboard') applySectionReadMode(section);
+                applyViewPermissions();
+            }, 400);
         }
 
         function initializeNavigation() {
@@ -6927,7 +6951,7 @@
         var allCategories = [];
 
         function loadCategoriesForDropdowns() {
-            $.ajax({
+            return $.ajax({
                 url: '/api/product-categories',
                 method: 'GET',
                 data: { tenantId: 1 },
@@ -6952,7 +6976,7 @@
         var allPresentations = [];
 
         function loadPresentationsForDropdowns() {
-            $.ajax({
+            return $.ajax({
                 url: '/api/product-presentations',
                 method: 'GET',
                 data: { tenantId: 1 },
@@ -7279,51 +7303,48 @@
         }
 
         function editProduct(productId) {
-            loadCategoriesForDropdowns();
-            loadPresentationsForDropdowns();
-            $.ajax({
-                url: `/api/products/${productId}`,
+            var catPromise  = loadCategoriesForDropdowns();
+            var presPromise = loadPresentationsForDropdowns();
+            var prodPromise = $.ajax({
+                url: '/api/products/' + productId,
                 method: 'GET',
-                data: { tenantId: 1 },
-                success: function(product) {
+                data: { tenantId: 1 }
+            });
+
+            $.when(catPromise, presPromise, prodPromise)
+                .done(function(catResult, presResult, prodResult) {
+                    // $.when pasa [data, status, jqXHR] por cada deferred
+                    var product = Array.isArray(prodResult) ? prodResult[0] : prodResult;
                     currentEditingProduct = product;
                     $('#productModalTitle').text('Editar Producto');
-
-                    // Hide initial stock section when editing
                     $('#initialStockSection').hide();
 
-                    // Populate form with product data
+                    // Llenar campos — los dropdowns ya están listos, no hay race condition
                     $('#productName').val(product.name);
                     $('#productSku').val(product.sku);
                     $('#productType').val(product.productType);
                     $('#productSalePrice').val(product.salePrice);
                     $('#productStatus').val(product.isActive.toString());
                     $('#productCategory').val(product.categoryId || '');
+                    $('#productPresentation').val(product.presentationId || '');
+                    $('#productUnitsPerSale').val(product.unitsPerSale || 1);
                     $('#productTaxApplies').prop('checked', product.taxApplies !== false);
                     $('#productIsReturnable').prop('checked', product.isReturnable === true);
 
-                    // Set presentation and unitsPerSale after dropdowns load
-                    setTimeout(function() {
-                        $('#productPresentation').val(product.presentationId || '');
-                        $('#productUnitsPerSale').val(product.unitsPerSale || 1);
-                    }, 300);
-
-                    // Cargar opciones de producto base y setear el valor cuando ya estén listas
                     var onlyIndividual = parseFloat(product.unitsPerSale || 1) > 1;
                     loadBaseProductOptions(productId, onlyIndividual, function() {
                         $('#productBaseProduct').val(product.baseProductId || '');
                     });
-                    
+
                     if (product.productType === 'SIMPLE') {
                         $('#presentationRow').show();
                     } else {
                         $('#presentationRow').hide();
                     }
-                    
+
                     if (product.productType === 'SIMPLE') {
                         var manualCost = product.unitCost != null && product.unitCost > 0 ? product.unitCost : null;
                         $('#productPurchasePrice').val(manualCost != null ? manualCost : '');
-                        // Si no hay costo manual, mostrar el calculado como referencia
                         var hint = $('#productPurchasePriceHint');
                         if (manualCost == null && product.purchasePrice > 0) {
                             hint.text('Calculado automáticamente: $' + parseFloat(product.purchasePrice).toFixed(4)).show();
@@ -7340,32 +7361,28 @@
                         $('#comboComponentsSection').show();
                         $('#productPurchasePrice').closest('.col-md-4').hide();
                         $('#productStockMin').closest('.col-md-4').hide();
-                        // Load components for combo and options for the dropdown
                         loadProductComponents(productId);
                         loadComponentOptions();
                     }
-                    
-                    // Load image
+
                     if (product.imageUrl) {
-                        $('#imagePreview').html(`
-                            <img src="${product.imageUrl}" style="max-width: 100%; max-height: 150px; border-radius: 5px;" alt="Current image">
-                            <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="removeProductImage()">
-                                <i class="bi bi-trash"></i> Quitar imagen
-                            </button>
-                        `);
+                        $('#imagePreview').html(
+                            '<img src="' + product.imageUrl + '" style="max-width:100%;max-height:150px;border-radius:5px;" alt="Current image">' +
+                            '<button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="removeProductImage()">' +
+                            '<i class="bi bi-trash"></i> Quitar imagen</button>'
+                        );
                         $('#productImageUrl').val(product.imageUrl);
                     } else {
                         $('#imagePreview').html('');
                         $('#productImageUrl').val('');
                     }
-                    
+
                     const modal = new bootstrap.Modal(document.getElementById('productModal'));
                     modal.show();
-                },
-                error: function() {
+                })
+                .fail(function() {
                     showAlert('Error al cargar datos del producto', 'danger');
-                }
-            });
+                });
         }
 
         function deleteProduct(productId) {
@@ -10222,11 +10239,25 @@
         }
 
         // Enviar token en todas las peticiones AJAX del dashboard
+        var _sessionExpiredHandled = false;
         $.ajaxSetup({
             beforeSend: function(xhr) {
                 const token = localStorage.getItem('adminToken');
                 if (token) {
                     xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+                }
+            },
+            statusCode: {
+                401: function() {
+                    if (_sessionExpiredHandled) return;
+                    _sessionExpiredHandled = true;
+                    localStorage.removeItem('adminToken');
+                    localStorage.removeItem('adminUser');
+                    var msg = document.createElement('div');
+                    msg.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999999;background:#f59e0b;color:#1a1a1a;padding:12px 24px;border-radius:8px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+                    msg.textContent = '⚠️ Sesión expirada. Redirigiendo al login...';
+                    document.body.appendChild(msg);
+                    setTimeout(function() { window.location.href = '/login'; }, 2000);
                 }
             }
         });

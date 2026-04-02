@@ -2,12 +2,12 @@ const express = require('express');
 const { Sale, SaleItem, Product, InventoryMovement } = require('../models');
 const ComboService = require('../services/ComboService');
 const { sequelize } = require('../models');
-const { requireRole } = require('./adminAuth');
+const { requireRole, checkPermission } = require('./adminAuth');
 
 const router = express.Router();
 
 // POST /sales/:id/void - Void a sale (reverse inventory movements) - ADMIN only
-router.post('/:id/void', requireRole('ADMIN'), async (req, res) => {
+router.post('/:id/void', checkPermission('sales', 'full'), async (req, res) => {
   const transaction = await sequelize.transaction();
   
   try {

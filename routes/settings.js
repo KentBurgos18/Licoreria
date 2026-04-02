@@ -5,7 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const { requireRole } = require('./adminAuth');
+const { requireRole, checkPermission } = require('./adminAuth');
 const { processBrandImage, regeneratePwaIcons } = require('../services/ImageProcessor');
 
 // Mapeo tipo → nombre de archivo en /public/img/
@@ -127,7 +127,7 @@ router.get('/:key', async (req, res) => {
 });
 
 // POST /settings - Create or update setting (solo ADMIN)
-router.post('/', requireRole('ADMIN'), async (req, res) => {
+router.post('/', checkPermission('settings', 'full'), async (req, res) => {
   try {
     const {
       tenantId = 1,
@@ -163,7 +163,7 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
 });
 
 // PUT /settings/:key - Update setting (solo ADMIN)
-router.put('/:key', requireRole('ADMIN'), async (req, res) => {
+router.put('/:key', checkPermission('settings', 'full'), async (req, res) => {
   try {
     const { key } = req.params;
     const {
@@ -192,7 +192,7 @@ router.put('/:key', requireRole('ADMIN'), async (req, res) => {
 });
 
 // POST /settings/bulk - Update multiple settings (solo ADMIN)
-router.post('/bulk', requireRole('ADMIN'), async (req, res) => {
+router.post('/bulk', checkPermission('settings', 'full'), async (req, res) => {
   try {
     const { tenantId = 1, settings } = req.body;
 
@@ -228,7 +228,7 @@ router.post('/bulk', requireRole('ADMIN'), async (req, res) => {
 });
 
 // POST /settings/upload-brand-image?type=logo|favicon|banner|login_bg
-router.post('/upload-brand-image', requireRole('ADMIN'), uploadBrandImg.single('image'), async (req, res) => {
+router.post('/upload-brand-image', checkPermission('settings', 'full'), uploadBrandImg.single('image'), async (req, res) => {
   const { type } = req.query;
   const filename = BRAND_IMG_MAP[type];
   if (!filename) {

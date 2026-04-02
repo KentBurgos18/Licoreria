@@ -72,7 +72,7 @@ router.post('/login', async (req, res) => {
         type: 'admin' // Indica que es un usuario admin/empleado
       },
       JWT_SECRET,
-      { expiresIn: '8h' } // Token válido por 8 horas (jornada laboral)
+      { expiresIn: '7d' } // Token válido por 7 días
     );
 
     // Log de auditoría: login exitoso
@@ -334,4 +334,44 @@ const requireRole = (...roles) => {
   };
 };
 
-module.exports = { router, authenticateAdmin, requireRole };
+// Cache de permisos por customRoleId (TTL 5 min)
+const _rolePermCache = new Map();
+const ROLE_PERM_CACHE_TTL = 5 * 60 * 1000;
+const LEVEL_ORDER = { none: 0, read: 1, full: 2 };
+
+// Middleware granular: verifica permiso de sección (para roles personalizados)
+// ADMIN siempre pasa. Otros usuarios necesitan permissions[section] >= requiredLevel.
+const checkPermission = (section, requiredLevel = 'full') => {
+  return async (req, res, next) => {
+    try {
+      if (req.userRole === 'ADMIN') return next();
+      const { User } = require('../models');
+      const user = await User.findByPk(req.userId, { attributes: ['customRoleId'] });
+      if (!user || !user.customRoleId) {
+        return res.status(403).json({ error: 'No tienes permisos para esta acción', code: 'INSUFFICIENT_PERMISSIONS' });
+      }
+      const roleId = user.customRoleId;
+      const cached = _rolePermCache.get(roleId);
+      let permissions;
+      if (cached && (Date.now() - cached.cachedAt) < ROLE_PERM_CACHE_TTL) {
+        permissions = cached.permissions;
+      } else {
+        const role = await Role.findByPk(roleId);
+        permissions = role ? (role.permissions || {}) : {};
+        _rolePermCache.set(roleId, { permissions, cachedAt: Date.now() });
+      }
+      const userLevel = permissions[section] || 'none';
+      if ((LEVEL_ORDER[userLevel] || 0) >= (LEVEL_ORDER[requiredLevel] || 0)) {
+        return next();
+      }
+      return res.status(403).json({ error: 'No tienes permisos para esta acción', code: 'INSUFFICIENT_PERMISSIONS' });
+    } catch (err) {
+      return res.status(403).json({ error: 'Error verificando permisos', code: 'PERMISSION_ERROR' });
+    }
+  };
+};
+
+// Invalida cache cuando se modifica un rol
+const invalidateRolePermCache = (roleId) => _rolePermCache.delete(roleId);
+
+module.exports = { router, authenticateAdmin, requireRole, checkPermission, invalidateRolePermCache };
