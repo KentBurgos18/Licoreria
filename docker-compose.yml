@@ -32,6 +32,8 @@ services:
     dns:
       - 8.8.8.8
       - 8.8.4.4
+    env_file:
+      - ./.env
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -41,8 +43,8 @@ services:
       PORT: 3000
       NODE_ENV: production
       TZ: America/Guayaquil
-      JWT_SECRET: tu_secreto_jwt_aqui
-      SESSION_SECRET: tu_secreto_session_aqui
+      JWT_SECRET: ${JWT_SECRET:-tu_secreto_jwt_aqui}
+      SESSION_SECRET: ${SESSION_SECRET:-tu_secreto_session_aqui}
       DEFAULT_TENANT_ID: 1
       BASE_URL: http://localhost:3000
       # Web Push (VAPID keys)

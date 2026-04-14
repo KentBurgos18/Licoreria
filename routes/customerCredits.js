@@ -1,5 +1,5 @@
 const express = require('express');
-const { CustomerCredit, GroupPurchaseParticipant, Customer, Setting, Sale, CreditPaymentRequest } = require('../models');
+const { CustomerCredit, GroupPurchaseParticipant, Customer, Setting, Sale, CreditPaymentRequest, CustomerPayment } = require('../models');
 const { sequelize } = require('../models');
 const CreditService = require('../services/CreditService');
 const EmailService = require('../services/EmailService');
@@ -130,6 +130,17 @@ router.post('/payment-requests/:id/approve', async (req, res) => {
     }
 
     await CreditService.applyPayment(credit.id, parseFloat(request.amount), transaction);
+
+    await CustomerPayment.create({
+      tenantId: request.tenantId,
+      customerId: request.customerId,
+      groupPurchaseParticipantId: credit.groupPurchaseParticipantId || null,
+      amount: parseFloat(request.amount),
+      paymentMethod: request.paymentMethod,
+      paymentDate: new Date().toISOString().split('T')[0],
+      notes: request.notes || null
+    }, { transaction });
+
     await request.update({ status: 'APPROVED', reviewedAt: new Date(), reviewNotes: reviewNotes || null }, { transaction });
 
     await transaction.commit();
@@ -183,6 +194,17 @@ router.post('/:id/payment', async (req, res) => {
     }
 
     await CreditService.applyPayment(credit.id, payAmt, transaction);
+
+    await CustomerPayment.create({
+      tenantId,
+      customerId: credit.customerId,
+      groupPurchaseParticipantId: credit.groupPurchaseParticipantId || null,
+      amount: payAmt,
+      paymentMethod,
+      paymentDate: paymentDate || new Date().toISOString().split('T')[0],
+      notes: notes || null
+    }, { transaction });
+
     await transaction.commit();
     res.json({ ok: true });
   } catch (error) {

@@ -23,6 +23,7 @@ class PaymentService {
       paymentMethod,
       paymentDate = new Date(),
       groupPurchaseParticipantId,
+      creditId,
       notes,
       transferAccountInfo
     } = data;
@@ -43,9 +44,11 @@ class PaymentService {
         transferAccountInfo: transferAccountInfo || null
       }, { transaction: useTransaction });
 
-      // If payment is for a group purchase participant, apply it
+      // Apply payment to credit balance
       if (groupPurchaseParticipantId) {
         await this.applyToCredit(groupPurchaseParticipantId, amount, useTransaction);
+      } else if (creditId) {
+        await CreditService.applyPayment(parseInt(creditId), parseFloat(amount), useTransaction);
       }
 
       if (shouldCommit) {

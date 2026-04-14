@@ -23,6 +23,7 @@ router.post('/', async (req, res) => {
       paymentMethod,
       paymentDate,
       groupPurchaseParticipantId,
+      creditId,
       notes,
       transferAccountInfo
     } = req.body;
@@ -59,6 +60,7 @@ router.post('/', async (req, res) => {
       paymentMethod,
       paymentDate,
       groupPurchaseParticipantId,
+      creditId,
       notes,
       transferAccountInfo
     }, transaction);

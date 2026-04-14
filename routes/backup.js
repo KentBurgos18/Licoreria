@@ -117,8 +117,8 @@ router.post('/restore', requireRole('ADMIN'), upload.single('backup'), async (re
 
     if (isTarGz) {
       fs.mkdirSync(extractDir, { recursive: true });
-      // Extraer con --no-absolute-names para prevenir path traversal
-      await spawnPromise('tar', ['--no-absolute-names', '-xzf', filePath, '-C', extractDir]);
+      // Extraer el backup (la validación de path traversal se hace debajo manualmente)
+      await spawnPromise('tar', ['-xzf', filePath, '-C', extractDir]);
 
       // Verificar que no haya path traversal en archivos extraídos
       const extractedFiles = fs.readdirSync(extractDir);
