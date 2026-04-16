@@ -2687,7 +2687,16 @@
                             <select class="form-select" id="supplierPayMethod" onchange="onSupplierPayMethodChange()">
                                 <option value="CASH">Efectivo</option>
                                 <option value="TRANSFER">Transferencia</option>
+                                <option value="MIXED">Efectivo + Transferencia</option>
                             </select>
+                        </div>
+                        <div class="mb-3" id="supplierPayCashAmountGroup" style="display:none">
+                            <label class="form-label">Monto en Efectivo <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="supplierPayCashAmount" step="0.01" min="0.01" placeholder="0.00" oninput="onSupplierPayCashAmountChange()">
+                            </div>
+                            <small class="form-text text-muted">Por transferencia: <strong id="supplierPayTransferAmountLabel">$0.00</strong></small>
                         </div>
                         <div class="mb-3" id="supplierPayBankAccountGroup" style="display:none">
                             <label class="form-label">Cuenta de origen <span class="text-danger">*</span></label>
@@ -11100,7 +11109,7 @@
 
         function onSupplierPayMethodChange() {
             const method = $('#supplierPayMethod').val();
-            if (method === 'TRANSFER') {
+            if (method === 'TRANSFER' || method === 'MIXED') {
                 $('#supplierPayBankAccountGroup').show();
                 if ($('#supplierPayBankAccount option').length <= 1) {
                     $.ajax({
@@ -11119,10 +11128,26 @@
                         }
                     });
                 }
+                if (method === 'MIXED') {
+                    $('#supplierPayCashAmountGroup').show();
+                    onSupplierPayCashAmountChange();
+                } else {
+                    $('#supplierPayCashAmountGroup').hide();
+                    $('#supplierPayCashAmount').val('');
+                }
             } else {
                 $('#supplierPayBankAccountGroup').hide();
                 $('#supplierPayBankAccount').val('');
+                $('#supplierPayCashAmountGroup').hide();
+                $('#supplierPayCashAmount').val('');
             }
+        }
+
+        function onSupplierPayCashAmountChange() {
+            const total = parseFloat($('#supplierPayAmount').val()) || 0;
+            const cash = parseFloat($('#supplierPayCashAmount').val()) || 0;
+            const transfer = Math.max(0, total - cash);
+            $('#supplierPayTransferAmountLabel').text('$' + transfer.toFixed(2));
         }
 
         function showPaySupplierModal(orderId, supplierName, balance, total) {
@@ -11135,6 +11160,9 @@
             $('#supplierPayMethod').val('CASH');
             $('#supplierPayBankAccountGroup').hide();
             $('#supplierPayBankAccount').val('');
+            $('#supplierPayCashAmountGroup').hide();
+            $('#supplierPayCashAmount').val('');
+            $('#supplierPayTransferAmountLabel').text('$0.00');
             $('#supplierPayNotes').val('');
             new bootstrap.Modal(document.getElementById('supplierPayModal')).show();
         }
@@ -11146,10 +11174,22 @@
                 return;
             }
             const method = $('#supplierPayMethod').val();
-            const transferAccountInfo = method === 'TRANSFER' ? ($('#supplierPayBankAccount').val() || null) : null;
-            if (method === 'TRANSFER' && !transferAccountInfo) {
+            const transferAccountInfo = (method === 'TRANSFER' || method === 'MIXED') ? ($('#supplierPayBankAccount').val() || null) : null;
+            const cashAmount = method === 'MIXED' ? (parseFloat($('#supplierPayCashAmount').val()) || 0) : null;
+
+            if ((method === 'TRANSFER' || method === 'MIXED') && !transferAccountInfo) {
                 showAlert('Selecciona la cuenta de origen para la transferencia', 'warning');
                 return;
+            }
+            if (method === 'MIXED') {
+                if (!cashAmount || cashAmount <= 0) {
+                    showAlert('Ingrese el monto en efectivo', 'warning');
+                    return;
+                }
+                if (cashAmount >= amount) {
+                    showAlert('El monto en efectivo debe ser menor al total', 'warning');
+                    return;
+                }
             }
 
             $.ajax({
@@ -11162,6 +11202,7 @@
                     paymentDate: $('#supplierPayDate').val(),
                     paymentMethod: method,
                     transferAccountInfo: transferAccountInfo,
+                    cashAmount: cashAmount,
                     notes: $('#supplierPayNotes').val()
                 }),
                 success: function() {

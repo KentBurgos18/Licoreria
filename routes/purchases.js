@@ -304,7 +304,7 @@ router.patch('/:id/pay', async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const { id } = req.params;
-    const { tenantId, amount, paymentDate, paymentMethod, transferAccountInfo, notes } = req.body;
+    const { tenantId, amount, paymentDate, paymentMethod, transferAccountInfo, cashAmount, notes } = req.body;
 
     if (!tenantId || !amount || parseFloat(amount) <= 0) {
       await transaction.rollback();
@@ -346,8 +346,25 @@ router.patch('/:id/pay', async (req, res) => {
 
     // Guardar método de pago y cuenta bancaria usados para el pago
     if (paymentMethod && paymentMethod !== 'SUPPLIER_CREDIT') {
-      updates.paymentMethod = paymentMethod;
-      updates.transferAccountInfo = paymentMethod === 'TRANSFER' ? (transferAccountInfo || null) : null;
+      if (paymentMethod === 'MIXED') {
+        const cash = parseFloat(cashAmount) || 0;
+        const transfer = paymentAmount - cash;
+        if (cash <= 0 || transfer <= 0) {
+          await transaction.rollback();
+          return res.status(400).json({ error: 'Para pago mixto, el monto en efectivo debe ser mayor a 0 y menor al total', code: 'INVALID_MIXED_AMOUNT' });
+        }
+        if (!transferAccountInfo) {
+          await transaction.rollback();
+          return res.status(400).json({ error: 'Selecciona la cuenta bancaria para el pago por transferencia', code: 'TRANSFER_ACCOUNT_REQUIRED' });
+        }
+        updates.paymentMethod = 'MIXED';
+        updates.cashAmount = cash;
+        updates.transferAccountInfo = transferAccountInfo;
+      } else {
+        updates.paymentMethod = paymentMethod;
+        updates.transferAccountInfo = paymentMethod === 'TRANSFER' ? (transferAccountInfo || null) : null;
+        updates.cashAmount = 0;
+      }
     }
 
     await order.update(updates, { transaction });

@@ -460,10 +460,33 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
         SUM(total_amount) AS total
       FROM purchase_orders
       WHERE tenant_id = :tenantId
-        AND status != 'PENDING'
-        AND status != 'OVERDUE'
-        AND (payment_method IS NULL OR payment_method != 'SUPPLIER_CREDIT')
+        AND status NOT IN ('PENDING', 'OVERDUE')
+        AND payment_method NOT IN ('SUPPLIER_CREDIT', 'MIXED')
+        AND (payment_method IS NOT NULL)
       GROUP BY payment_method, transfer_account_info
+
+      UNION ALL
+
+      SELECT
+        'CASH' AS payment_method,
+        '' AS transfer_account_info,
+        SUM(COALESCE(cash_amount, 0)) AS total
+      FROM purchase_orders
+      WHERE tenant_id = :tenantId
+        AND status NOT IN ('PENDING', 'OVERDUE')
+        AND payment_method = 'MIXED'
+
+      UNION ALL
+
+      SELECT
+        'TRANSFER' AS payment_method,
+        COALESCE(transfer_account_info, 'unassigned') AS transfer_account_info,
+        SUM(total_amount - COALESCE(cash_amount, 0)) AS total
+      FROM purchase_orders
+      WHERE tenant_id = :tenantId
+        AND status NOT IN ('PENDING', 'OVERDUE')
+        AND payment_method = 'MIXED'
+      GROUP BY transfer_account_info
     `, { replacements: { tenantId } });
 
     // Salidas: gastos
@@ -1572,6 +1595,14 @@ async function initializeApp() {
       console.log('✅ Migración payment_method/transfer_account_info en purchase_orders y expenses completada');
     } catch (e) {
       console.warn('⚠️ Migración payment_method/transfer_account_info:', e.message);
+    }
+
+    // Migración: cash_amount en purchase_orders para pagos mixtos (Efectivo + Transferencia)
+    try {
+      await sequelize.query(`ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS cash_amount DECIMAL(12,2) DEFAULT 0`);
+      console.log('✅ Migración cash_amount en purchase_orders completada');
+    } catch (e) {
+      console.warn('⚠️ Migración cash_amount en purchase_orders:', e.message);
     }
 
     // Índices de rendimiento

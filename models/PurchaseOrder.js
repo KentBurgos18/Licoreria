@@ -75,6 +75,12 @@ module.exports = (sequelize) => {
       allowNull: true,
       field: 'transfer_account_info'
     },
+    cashAmount: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: true,
+      defaultValue: 0,
+      field: 'cash_amount'
+    },
     paidAt: {
       type: DataTypes.DATE,
       allowNull: true,
