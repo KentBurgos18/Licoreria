@@ -1,4 +1,14 @@
 /* =====================================================
+   PREVENIR ZOOM EN MÓVILES
+   iOS/Android hacen zoom si font-size < 16px en inputs
+   ===================================================== */
+input, input[type="text"], input[type="number"], input[type="email"],
+input[type="password"], input[type="search"], input[type="tel"],
+input[type="date"], input[type="time"], select, textarea {
+  font-size: max(16px, 1em) !important;
+}
+
+/* =====================================================
    DASHBOARD THEMES — LOCOBAR
    4 temas × 2 modos (dark / light)
    Aplicados via html[data-theme-id][data-theme-mode]
@@ -1461,3 +1471,4 @@ code {
   /* No mostrar tooltip al nav-link activo para que no tape el contenido */
   body.sidebar-collapsed .sidebar .nav-link.active[title]:hover::after { display: none; }
 }
+

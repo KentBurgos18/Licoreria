@@ -1,4 +1,13 @@
 /* ═══════════════════════════════════════════════════════════
+   PREVENIR ZOOM EN MÓVILES
+   ═══════════════════════════════════════════════════════════ */
+input, input[type="text"], input[type="number"], input[type="email"],
+input[type="password"], input[type="search"], input[type="tel"],
+input[type="date"], input[type="time"], select, textarea {
+  font-size: max(16px, 1em) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
    LOCOBAR – Customer Theme System
    5 temas × 2 modos (dark / light) + auto basado en hora
    Aplica a todas las vistas del cliente (SPA)
