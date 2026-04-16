@@ -1256,12 +1256,6 @@
             display: block;
         }
 
-        /* Prevenir zoom automático en móviles (iOS/Android zooman si font-size < 16px) */
-        input, input[type="text"], input[type="number"], input[type="email"],
-        input[type="password"], input[type="search"], input[type="tel"],
-        input[type="date"], input[type="time"], select, textarea {
-            font-size: 16px !important;
-        }
     </style>
 </head>
 <body>
@@ -12946,6 +12940,35 @@
                 }
             }
         });
+    </script>
+
+    <!-- Prevenir zoom automático en móviles: aplica font-size:16px como inline style
+         a todos los inputs/select/textarea, incluyendo los generados dinámicamente -->
+    <script>
+        (function() {
+            function fixFontSize(root) {
+                (root || document).querySelectorAll('input, select, textarea').forEach(function(el) {
+                    el.style.fontSize = '16px';
+                });
+            }
+            // Aplicar al cargar
+            document.addEventListener('DOMContentLoaded', function() { fixFontSize(document); });
+            // Aplicar en cada elemento nuevo que Bootstrap o JS agreguen al DOM
+            var _zo = new MutationObserver(function(mutations) {
+                mutations.forEach(function(m) {
+                    m.addedNodes.forEach(function(node) {
+                        if (node.nodeType !== 1) return;
+                        if (['INPUT','SELECT','TEXTAREA'].includes(node.tagName)) {
+                            node.style.fontSize = '16px';
+                        }
+                        if (node.querySelectorAll) fixFontSize(node);
+                    });
+                });
+            });
+            document.addEventListener('DOMContentLoaded', function() {
+                _zo.observe(document.body, { childList: true, subtree: true });
+            });
+        })();
     </script>
 </body>
 </html>
