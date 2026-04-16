@@ -8,20 +8,22 @@
             
             <!-- Filters -->
             <div class="card mb-4">
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <label class="form-label">Estado</label>
-                            <select class="form-select" id="salesStatusFilter">
+                <div class="card-body py-2">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <!-- Estado -->
+                        <div class="d-flex align-items-center gap-1">
+                            <label class="form-label mb-0 text-nowrap small fw-semibold">Estado</label>
+                            <select class="form-select form-select-sm" id="salesStatusFilter">
                                 <option value="">Todos</option>
                                 <option value="COMPLETED">Completadas</option>
                                 <option value="PENDING">Pendientes</option>
                                 <option value="VOIDED">Anuladas</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Método de pago</label>
-                            <select class="form-select" id="salesPaymentMethodFilter">
+                        <!-- Método de pago -->
+                        <div class="d-flex align-items-center gap-1">
+                            <label class="form-label mb-0 text-nowrap small fw-semibold">Método</label>
+                            <select class="form-select form-select-sm" id="salesPaymentMethodFilter">
                                 <option value="">Todos</option>
                                 <option value="CASH">Efectivo</option>
                                 <option value="CARD">Tarjeta</option>
@@ -29,19 +31,21 @@
                                 <option value="CREDIT">Crédito</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Fecha Desde</label>
-                            <input type="date" class="form-control" id="salesStartDateFilter">
+                        <!-- Desde -->
+                        <div class="d-flex align-items-center gap-1">
+                            <label class="form-label mb-0 text-nowrap small fw-semibold">Desde</label>
+                            <input type="date" class="form-control form-control-sm" id="salesStartDateFilter">
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Fecha Hasta</label>
-                            <input type="date" class="form-control" id="salesEndDateFilter">
+                        <!-- Hasta -->
+                        <div class="d-flex align-items-center gap-1">
+                            <label class="form-label mb-0 text-nowrap small fw-semibold">Hasta</label>
+                            <input type="date" class="form-control form-control-sm" id="salesEndDateFilter">
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Cuenta (transferencia)</label>
-                            <select class="form-select" id="salesTransferAccountFilter">
+                        <!-- Cuenta -->
+                        <div class="d-flex align-items-center gap-1">
+                            <label class="form-label mb-0 text-nowrap small fw-semibold">Cuenta</label>
+                            <select class="form-select form-select-sm" id="salesTransferAccountFilter">
                                 <option value="">Todas</option>
-                                <!-- Opciones cargadas por loadSalesTransferAccountFilter() -->
                             </select>
                         </div>
                     </div>
