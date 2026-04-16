@@ -460,7 +460,7 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
         SUM(total_amount) AS total
       FROM purchase_orders
       WHERE tenant_id = :tenantId
-        AND status NOT IN ('PENDING', 'OVERDUE')
+        AND status NOT IN ('PENDING', 'OVERDUE', 'VOIDED')
         AND payment_method NOT IN ('SUPPLIER_CREDIT', 'MIXED')
         AND (payment_method IS NOT NULL)
       GROUP BY payment_method, transfer_account_info
@@ -473,7 +473,7 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
         SUM(COALESCE(cash_amount, 0)) AS total
       FROM purchase_orders
       WHERE tenant_id = :tenantId
-        AND status NOT IN ('PENDING', 'OVERDUE')
+        AND status NOT IN ('PENDING', 'OVERDUE', 'VOIDED')
         AND payment_method = 'MIXED'
 
       UNION ALL
@@ -484,7 +484,7 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
         SUM(total_amount - COALESCE(cash_amount, 0)) AS total
       FROM purchase_orders
       WHERE tenant_id = :tenantId
-        AND status NOT IN ('PENDING', 'OVERDUE')
+        AND status NOT IN ('PENDING', 'OVERDUE', 'VOIDED')
         AND payment_method = 'MIXED'
       GROUP BY transfer_account_info
     `, { replacements: { tenantId } });
@@ -1603,6 +1603,14 @@ async function initializeApp() {
       console.log('✅ Migración cash_amount en purchase_orders completada');
     } catch (e) {
       console.warn('⚠️ Migración cash_amount en purchase_orders:', e.message);
+    }
+
+    // Migración: agregar valor VOIDED al ENUM status de purchase_orders
+    try {
+      await sequelize.query(`ALTER TYPE "enum_purchase_orders_status" ADD VALUE IF NOT EXISTS 'VOIDED'`);
+      console.log('✅ Migración VOIDED en enum purchase_orders status completada');
+    } catch (e) {
+      console.warn('⚠️ Migración VOIDED enum purchase_orders:', e.message);
     }
 
     // Índices de rendimiento

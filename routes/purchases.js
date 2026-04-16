@@ -382,6 +382,78 @@ router.patch('/:id/pay', async (req, res) => {
   }
 });
 
+// PATCH /purchases/:id/void - Anular una orden de compra y revertir inventario
+router.patch('/:id/void', async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { id } = req.params;
+    const { tenantId } = req.body;
+
+    if (!tenantId) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'tenantId is required', code: 'TENANT_REQUIRED' });
+    }
+
+    const order = await PurchaseOrder.findOne({
+      where: { id, tenantId },
+      include: [
+        { association: 'supplier' },
+        {
+          association: 'movements',
+          where: { reason: 'PURCHASE' },
+          required: false
+        }
+      ],
+      transaction
+    });
+
+    if (!order) {
+      await transaction.rollback();
+      return res.status(404).json({ error: 'Orden de compra no encontrada', code: 'NOT_FOUND' });
+    }
+
+    if (order.status === 'VOIDED') {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Esta orden ya fue anulada', code: 'ALREADY_VOIDED' });
+    }
+
+    // Revertir movimientos de inventario: crear movimiento OUT por cada IN de esta compra
+    const movements = order.movements || [];
+    for (const mv of movements) {
+      await InventoryMovement.create({
+        tenantId,
+        productId: mv.productId,
+        movementType: 'OUT',
+        reason: 'VOID_PURCHASE',
+        qty: mv.qty,
+        unitCost: mv.unitCost,
+        refType: 'PURCHASE',
+        refId: order.id,
+        purchaseOrderId: order.id,
+        createdAt: new Date()
+      }, { transaction });
+    }
+
+    // Marcar la orden como anulada
+    await order.update({ status: 'VOIDED' }, { transaction });
+
+    await transaction.commit();
+
+    AuditService.log({
+      ...AuditService.fromReq(req),
+      action: 'VOID', entity: 'purchase', entityId: order.id,
+      description: `Anuló compra #${order.id}${order.supplier ? ` de "${order.supplier.name}"` : ''} — $${parseFloat(order.totalAmount).toFixed(2)}`,
+      metadata: { totalAmount: order.totalAmount, previousStatus: order.status }
+    });
+
+    res.json({ message: 'Orden de compra anulada correctamente', orderId: order.id });
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error voiding purchase order:', error);
+    res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
+  }
+});
+
 // POST /purchases/check-overdue-notifications - Send email alerts for overdue/due orders
 router.post('/check-overdue-notifications', async (req, res) => {
   try {

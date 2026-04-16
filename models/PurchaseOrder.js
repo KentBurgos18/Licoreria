@@ -51,7 +51,7 @@ module.exports = (sequelize) => {
       field: 'amount_paid'
     },
     status: {
-      type: DataTypes.ENUM('PAID', 'PENDING', 'PARTIAL', 'OVERDUE'),
+      type: DataTypes.ENUM('PAID', 'PENDING', 'PARTIAL', 'OVERDUE', 'VOIDED'),
       allowNull: false,
       defaultValue: 'PAID'
     },

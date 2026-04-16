@@ -2059,6 +2059,9 @@
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-danger d-none" id="voidPurchaseBtn" onclick="voidCurrentPurchase()">
+                        <i class="bi bi-x-circle"></i> Anular Compra
+                    </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
@@ -4551,6 +4554,7 @@
                 if (o.status === 'PAID') statusBadge = '<span class="badge bg-success">Pagado</span>';
                 else if (o.status === 'OVERDUE') statusBadge = '<span class="badge bg-danger">Vencida</span>';
                 else if (o.status === 'PARTIAL') statusBadge = '<span class="badge bg-warning text-dark">Parcial</span>';
+                else if (o.status === 'VOIDED') statusBadge = '<span class="badge bg-secondary">Anulada</span>';
                 else statusBadge = '<span class="badge bg-info text-dark">Pendiente</span>';
 
                 const supplierCell = supplierName !== '—'
@@ -4572,9 +4576,13 @@
             });
         }
 
+        var _currentPurchaseOrderId = null;
+
         function showPurchaseDetail(idx) {
             const o = purchaseOrdersData[idx];
             if (!o) return;
+
+            _currentPurchaseOrderId = o.id;
 
             const supplierName = o.supplier ? o.supplier.name : '—';
             const supplierCode = o.supplier ? (o.supplier.supplierCode || '—') : '—';
@@ -4583,7 +4591,15 @@
             if (o.status === 'PAID') statusBadge = '<span class="badge bg-success">Pagado</span>';
             else if (o.status === 'OVERDUE') statusBadge = '<span class="badge bg-danger">Vencida</span>';
             else if (o.status === 'PARTIAL') statusBadge = '<span class="badge bg-warning text-dark">Parcial</span>';
+            else if (o.status === 'VOIDED') statusBadge = '<span class="badge bg-secondary">Anulada</span>';
             else statusBadge = '<span class="badge bg-info text-dark">Pendiente</span>';
+
+            // Mostrar botón Anular solo si no está ya anulada
+            if (o.status === 'VOIDED') {
+                $('#voidPurchaseBtn').addClass('d-none');
+            } else {
+                $('#voidPurchaseBtn').removeClass('d-none');
+            }
 
             const amountPaid = parseFloat(o.amountPaid || 0);
             const totalAmount = parseFloat(o.totalAmount || 0);
@@ -4644,6 +4660,28 @@
             $('#purchaseDetailTotal').text('$' + totalAmount.toFixed(2));
 
             new bootstrap.Modal(document.getElementById('purchaseDetailModal')).show();
+        }
+
+        function voidCurrentPurchase() {
+            if (!_currentPurchaseOrderId) return;
+            if (!confirm('¿Estás seguro de que deseas anular esta compra? Se revertirá el inventario y no se podrá deshacer.')) return;
+
+            $.ajax({
+                url: '/api/purchases/' + _currentPurchaseOrderId + '/void',
+                method: 'PATCH',
+                contentType: 'application/json',
+                headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '') },
+                data: JSON.stringify({ tenantId: 1 }),
+                success: function() {
+                    bootstrap.Modal.getInstance(document.getElementById('purchaseDetailModal')).hide();
+                    showToast('Compra anulada correctamente', 'success');
+                    loadPurchases();
+                },
+                error: function(xhr) {
+                    const msg = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : 'Error al anular la compra';
+                    showToast(msg, 'danger');
+                }
+            });
         }
 
         var _salesTransferAccountsLoaded = false;
