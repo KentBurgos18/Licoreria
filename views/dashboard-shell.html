@@ -2256,9 +2256,6 @@
                 <div class="modal-body">
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <strong>Producto:</strong> <span id="groupPurchaseDetailsProduct"></span>
-                        </div>
-                        <div class="col-md-6">
                             <strong>Total:</strong> <span id="groupPurchaseDetailsTotal"></span>
                         </div>
                     </div>
@@ -5663,7 +5660,6 @@
                 data: { tenantId: 1 },
                 success: function(groupPurchase) {
                     $('#groupPurchaseDetailsId').text(groupPurchase.id);
-                    $('#groupPurchaseDetailsProduct').text(groupPurchase.product ? groupPurchase.product.name : 'N/A');
                     $('#groupPurchaseDetailsTotal').text('$' + parseFloat(groupPurchase.totalAmount).toFixed(2));
                     $('#groupPurchaseDetailsDate').text(new Date(groupPurchase.createdAt).toLocaleDateString('es-ES'));
                     
