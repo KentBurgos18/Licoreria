@@ -1339,8 +1339,8 @@
                 <a class="nav-link" href="/dashboard/sales" data-section="sales" title="Ventas">
                     <svg class="sb-icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span>Ventas</span>
                 </a>
-                <a class="nav-link" href="/dashboard/group-purchases" data-section="group-purchases" title="Compras Grupales">
-                    <svg class="sb-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Compras Grupales</span>
+                <a class="nav-link" href="/dashboard/group-purchases" data-section="group-purchases" title="Ventas Grupales">
+                    <svg class="sb-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Ventas Grupales</span>
                 </a>
                 <a class="nav-link" href="/dashboard/credits" data-section="credits" title="Créditos">
                     <svg class="sb-icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><span>Créditos</span>
@@ -3376,7 +3376,7 @@
                 purchases:        { label: 'Compras',           icon: 'bi-bag' },
                 sell:             { label: 'Punto de Venta',    icon: 'bi-cart3' },
                 sales:            { label: 'Ventas',            icon: 'bi-bar-chart-line' },
-                'group-purchases':{ label: 'Compras Grupales',  icon: 'bi-people' },
+                'group-purchases':{ label: 'Ventas Grupales',  icon: 'bi-people' },
                 credits:          { label: 'Créditos',          icon: 'bi-wallet2' },
                 customers:        { label: 'Clientes',          icon: 'bi-person' },
                 users:            { label: 'Usuarios',          icon: 'bi-person-gear' },
@@ -4768,7 +4768,10 @@
                 } else if (sale.status === 'VOIDED') {
                     statusBadge = '<span class="badge bg-danger">Anulada</span>';
                 }
-                
+                if (sale.groupPurchase) {
+                    statusBadge += ' <span class="badge bg-info text-dark">Venta Grupal</span>';
+                }
+
                 const paymentMethod = sale.paymentMethod === 'CASH' ? 'Efectivo' :
                                      sale.paymentMethod === 'CARD' ? 'Tarjeta' :
                                      sale.paymentMethod === 'TRANSFER' ? 'Transferencia' :
@@ -5380,7 +5383,7 @@
                     tbody.html(`
                         <tr>
                             <td colspan="7" class="text-center text-danger">
-                                Error al cargar compras grupales
+                                Error al cargar ventas grupales
                             </td>
                         </tr>
                     `);
@@ -5396,7 +5399,7 @@
                 tbody.html(`
                     <tr>
                         <td colspan="7" class="text-center text-muted">
-                            No se encontraron compras grupales
+                            No se encontraron ventas grupales
                         </td>
                     </tr>
                 `);
@@ -6511,7 +6514,7 @@
         var ROLES_SECTIONS = [
             ['dashboard','Dashboard'], ['products','Productos'], ['suppliers','Proveedores'],
             ['purchases','Compras'], ['sell','Punto de Venta'], ['sales','Ventas'],
-            ['group-purchases','Compras Grupales'], ['credits','Créditos'],
+            ['group-purchases','Ventas Grupales'], ['credits','Créditos'],
             ['customers','Clientes'], ['expenses','Gastos'], ['users','Usuarios'], ['settings','Configuración']
         ];
 

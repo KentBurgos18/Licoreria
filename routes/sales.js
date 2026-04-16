@@ -360,7 +360,8 @@ router.get('/', async (req, res) => {
           include: [{
             association: 'product'
           }]
-        }
+        },
+        { association: 'groupPurchase', required: false, attributes: ['id'] }
       ],
       limit: parseInt(limit),
       offset,

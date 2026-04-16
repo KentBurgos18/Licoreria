@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="/public/img/pestana-LB.png" type="image/png">
-    <title>Mis Compras Grupales - LOCOBAR</title>
+    <title>Mis Ventas Grupales - LOCOBAR</title>
     <link href="/libs/css/bootstrap.min.css" rel="stylesheet">
     <link href="/libs/css/bootstrap-icons.css" rel="stylesheet">
     <link href="/public/css/theme.css" rel="stylesheet">
@@ -79,7 +79,7 @@
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item spa-link" href="/customer/orders"><i class="bi bi-receipt"></i> Mis Pedidos</a></li>
                         <li><a class="dropdown-item spa-link" href="/customer/credits"><i class="bi bi-credit-card"></i> Crédito que está debiendo</a></li>
-                        <li><a class="dropdown-item spa-link" href="/customer/group-purchases"><i class="bi bi-people"></i> Compras Grupales</a></li>
+                        <li><a class="dropdown-item spa-link" href="/customer/group-purchases"><i class="bi bi-people"></i> Ventas Grupales</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="#" onclick="logout(); return false;"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
                     </ul>
@@ -92,7 +92,7 @@
     <!-- Main Content -->
     <div class="container mt-4">
         <h2 class="mb-4">
-            <i class="bi bi-people"></i> Mis Compras Grupales
+            <i class="bi bi-people"></i> Mis Ventas Grupales
         </h2>
 
         <div id="groupPurchasesList">
@@ -100,7 +100,7 @@
                 <div class="spinner-border" role="status">
                     <span class="visually-hidden">Cargando...</span>
                 </div>
-                <p class="mt-2">Cargando compras grupales...</p>
+                <p class="mt-2">Cargando ventas grupales...</p>
             </div>
         </div>
     </div>
@@ -194,7 +194,7 @@
                     }
                     $('#groupPurchasesList').html(`
                         <div class="alert alert-danger">
-                            Error al cargar compras grupales
+                            Error al cargar ventas grupales
                         </div>
                     `);
                 }
@@ -222,7 +222,7 @@
             if (customerGroupPurchases.length === 0) {
                 container.html(`
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> No tienes compras grupales activas
+                        <i class="bi bi-info-circle"></i> No tienes ventas grupales activas
                     </div>
                 `);
                 return;
