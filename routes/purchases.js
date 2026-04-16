@@ -304,7 +304,7 @@ router.patch('/:id/pay', async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const { id } = req.params;
-    const { tenantId, amount, paymentDate, paymentMethod, notes } = req.body;
+    const { tenantId, amount, paymentDate, paymentMethod, transferAccountInfo, notes } = req.body;
 
     if (!tenantId || !amount || parseFloat(amount) <= 0) {
       await transaction.rollback();
@@ -342,6 +342,12 @@ router.patch('/:id/pay', async (req, res) => {
       updates.amountPaid = total; // Avoid floating point drift
     } else {
       updates.status = 'PARTIAL';
+    }
+
+    // Guardar método de pago y cuenta bancaria usados para el pago
+    if (paymentMethod && paymentMethod !== 'SUPPLIER_CREDIT') {
+      updates.paymentMethod = paymentMethod;
+      updates.transferAccountInfo = paymentMethod === 'TRANSFER' ? (transferAccountInfo || null) : null;
     }
 
     await order.update(updates, { transaction });

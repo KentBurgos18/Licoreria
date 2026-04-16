@@ -2684,9 +2684,15 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Método de Pago</label>
-                            <select class="form-select" id="supplierPayMethod">
+                            <select class="form-select" id="supplierPayMethod" onchange="onSupplierPayMethodChange()">
                                 <option value="CASH">Efectivo</option>
                                 <option value="TRANSFER">Transferencia</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="supplierPayBankAccountGroup" style="display:none">
+                            <label class="form-label">Cuenta de origen <span class="text-danger">*</span></label>
+                            <select class="form-select" id="supplierPayBankAccount">
+                                <option value="">— Seleccionar cuenta —</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -11092,6 +11098,33 @@
             });
         }
 
+        function onSupplierPayMethodChange() {
+            const method = $('#supplierPayMethod').val();
+            if (method === 'TRANSFER') {
+                $('#supplierPayBankAccountGroup').show();
+                if ($('#supplierPayBankAccount option').length <= 1) {
+                    $.ajax({
+                        url: '/api/settings/bank_accounts', method: 'GET',
+                        data: { tenantId: 1 },
+                        headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || '') },
+                        success: function(r) {
+                            var accounts = [];
+                            try { var raw = r.value || r.accounts; if (typeof raw === 'string') raw = JSON.parse(raw); accounts = Array.isArray(raw) ? raw : []; } catch(e) {}
+                            var opts = '<option value="">— Seleccionar cuenta —</option>';
+                            accounts.forEach(function(acc) {
+                                var lbl = (acc.bankName || '') + (acc.accountNumber ? ' - ' + acc.accountNumber : '');
+                                opts += `<option value="${lbl.replace(/"/g,'&quot;')}">${lbl}</option>`;
+                            });
+                            $('#supplierPayBankAccount').html(opts);
+                        }
+                    });
+                }
+            } else {
+                $('#supplierPayBankAccountGroup').hide();
+                $('#supplierPayBankAccount').val('');
+            }
+        }
+
         function showPaySupplierModal(orderId, supplierName, balance, total) {
             currentPayingOrderId = orderId;
             const today = new Date().toISOString().split('T')[0];
@@ -11100,6 +11133,8 @@
             $('#supplierPayAmount').val(parseFloat(balance).toFixed(2)).attr('max', parseFloat(balance));
             $('#supplierPayDate').val(today);
             $('#supplierPayMethod').val('CASH');
+            $('#supplierPayBankAccountGroup').hide();
+            $('#supplierPayBankAccount').val('');
             $('#supplierPayNotes').val('');
             new bootstrap.Modal(document.getElementById('supplierPayModal')).show();
         }
@@ -11108,6 +11143,12 @@
             const amount = parseFloat($('#supplierPayAmount').val());
             if (!amount || amount <= 0) {
                 showAlert('Ingrese un monto válido', 'warning');
+                return;
+            }
+            const method = $('#supplierPayMethod').val();
+            const transferAccountInfo = method === 'TRANSFER' ? ($('#supplierPayBankAccount').val() || null) : null;
+            if (method === 'TRANSFER' && !transferAccountInfo) {
+                showAlert('Selecciona la cuenta de origen para la transferencia', 'warning');
                 return;
             }
 
@@ -11119,7 +11160,8 @@
                     tenantId: 1,
                     amount: amount,
                     paymentDate: $('#supplierPayDate').val(),
-                    paymentMethod: $('#supplierPayMethod').val(),
+                    paymentMethod: method,
+                    transferAccountInfo: transferAccountInfo,
                     notes: $('#supplierPayNotes').val()
                 }),
                 success: function() {
