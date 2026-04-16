@@ -1,5 +1,6 @@
 const { CustomerCredit, Sale } = require('../models');
 const { Op } = require('sequelize');
+const GroupPurchaseService = require('./GroupPurchaseService');
 
 class CreditService {
   /**
@@ -156,6 +157,14 @@ class CreditService {
     }
 
     await credit.save({ transaction });
+
+    // Actualizar estado de la compra grupal si el crédito pertenece a una
+    if (credit.groupPurchaseParticipant && credit.groupPurchaseParticipant.groupPurchaseId) {
+      await GroupPurchaseService.updateGroupPurchaseStatus(
+        credit.groupPurchaseParticipant.groupPurchaseId,
+        transaction
+      );
+    }
 
     return credit;
   }
