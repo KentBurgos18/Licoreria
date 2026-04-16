@@ -192,11 +192,11 @@ router.post('/refresh', async (req, res) => {
       return res.status(401).json({ error: 'Usuario inactivo o no encontrado', code: 'USER_INACTIVE' });
     }
 
-    // Emitir token nuevo con otros 8 horas
+    // Emitir token nuevo con otros 7 días
     const newToken = jwt.sign(
       { userId: user.id, tenantId: user.tenantId, email: user.email, name: user.name, role: user.role, type: 'admin' },
       JWT_SECRET,
-      { expiresIn: '8h' }
+      { expiresIn: '7d' }
     );
 
     res.json({ token: newToken });
