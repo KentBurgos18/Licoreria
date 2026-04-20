@@ -175,12 +175,17 @@ router.post('/:id/payment', async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const { id } = req.params;
-    const { amount, paymentMethod, paymentDate, notes } = req.body;
+    const { amount, paymentMethod, paymentDate, notes, transferAccountInfo } = req.body;
     const tenantId = 1;
 
     if (!amount || amount <= 0 || !paymentMethod) {
       await transaction.rollback();
       return res.status(400).json({ error: 'amount y paymentMethod son requeridos', code: 'MISSING_FIELDS' });
+    }
+
+    if (paymentMethod === 'TRANSFER' && !transferAccountInfo) {
+      await transaction.rollback();
+      return res.status(400).json({ error: 'Selecciona la cuenta bancaria para la transferencia', code: 'TRANSFER_ACCOUNT_REQUIRED' });
     }
 
     const credit = await CustomerCredit.findOne({ where: { id, tenantId }, transaction });
@@ -202,7 +207,8 @@ router.post('/:id/payment', async (req, res) => {
       amount: payAmt,
       paymentMethod,
       paymentDate: paymentDate || new Date().toISOString().split('T')[0],
-      notes: notes || null
+      notes: notes || null,
+      transferAccountInfo: paymentMethod === 'TRANSFER' ? (transferAccountInfo || null) : null
     }, { transaction });
 
     await transaction.commit();

@@ -6468,7 +6468,7 @@
                         };
                     } else {
                         url = `/api/customer-credits/${creditId}/payment`;
-                        payload = { amount: amount, paymentMethod: paymentMethod, paymentDate: paymentDate, notes: notes };
+                        payload = { amount: amount, paymentMethod: paymentMethod, paymentDate: paymentDate, notes: notes, transferAccountInfo: transferAccountInfo };
                     }
                     $.ajax({
                         url: url,
