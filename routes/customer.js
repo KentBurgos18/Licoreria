@@ -1397,8 +1397,15 @@ router.post('/credits/confirm-payphone', authenticateCustomer, async (req, res) 
       return res.status(400).json({ error: payphoneResult.message || 'Pago no aprobado', code: 'PAYMENT_NOT_APPROVED' });
     }
 
+    // Para pagos de crédito, si PayPhone no confirmó, NO registrar el pago.
+    // A diferencia del checkout (inventario ya comprometido), el crédito no tiene
+    // efectos secundarios irreversibles, por lo que es más seguro rechazar.
     if (!payphoneResult) {
       console.warn('PayPhone credit confirm falló. Error:', confirmError, 'payphone_id:', id, 'clientTxId:', clientTransactionId);
+      return res.status(502).json({
+        error: 'No se pudo confirmar el pago con PayPhone. Tu tarjeta NO fue cobrada. Por favor intenta nuevamente.',
+        code: 'PAYPHONE_CONFIRM_FAILED'
+      });
     }
 
     const pending = await PayphonePendingPayment.findOne({ where: { clientTransactionId, tenantId, customerId } });
