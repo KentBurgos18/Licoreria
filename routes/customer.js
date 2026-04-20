@@ -1380,11 +1380,12 @@ router.post('/credits/confirm-payphone', authenticateCustomer, async (req, res) 
           signal: AbortSignal.timeout(10000)
         });
         const responseText = await response.text();
+        console.log(`[PayPhone Credit Confirm] intento=${attempt} status=${response.status} body=${responseText.substring(0, 300)}`);
         try {
           payphoneResult = JSON.parse(responseText);
           break;
         } catch {
-          confirmError = `Status ${response.status} - respuesta no JSON`;
+          confirmError = `Status ${response.status} - respuesta no JSON: ${responseText.substring(0, 200)}`;
           if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
         }
       } catch (fetchError) {
@@ -1394,6 +1395,7 @@ router.post('/credits/confirm-payphone', authenticateCustomer, async (req, res) 
     }
 
     if (payphoneResult && payphoneResult.statusCode !== 3) {
+      console.warn(`[PayPhone Credit Confirm] rechazado statusCode=${payphoneResult.statusCode} msg=${payphoneResult.message}`);
       return res.status(400).json({ error: payphoneResult.message || 'Pago no aprobado', code: 'PAYMENT_NOT_APPROVED' });
     }
 
