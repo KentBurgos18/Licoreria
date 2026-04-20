@@ -1125,6 +1125,11 @@
             var btn = document.getElementById('processBtn');
             if (!btn) return;
             var method = $('#paymentMethod').val();
+            if (!method) {
+                btn.disabled = true;
+                btn.title = 'Seleccione un método de pago';
+                return;
+            }
             if (method === 'CARD') {
                 btn.disabled = true;
                 btn.title = '';
@@ -1690,6 +1695,7 @@
 
             displayCreditSummary();
             updateCreditTotals();
+            updateProcessButtonState();
         }
 
         function displayCreditSummary() {
