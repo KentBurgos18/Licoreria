@@ -1,7 +1,7 @@
 /* Service Worker para Web Push + cache de assets PWA */
 'use strict';
 
-const SW_VERSION   = 'v5';
+const SW_VERSION   = 'v6';
 const CACHE_STATIC = 'locobar-static-' + SW_VERSION;
 const CACHE_ICONS  = 'locobar-icons-'  + SW_VERSION;
 const CACHE_API    = 'locobar-api-'    + SW_VERSION;
