@@ -454,7 +454,7 @@ router.post('/checkout/prepare-payphone', authenticateCustomer, async (req, res)
     const commission = commRate > 0 ? Math.round((totalBase / (1 - commRate / 100) - totalBase) * 100) / 100 : 0;
     const totalWithCommission = Math.round((totalBase + commission) * 100) / 100;
 
-    const clientTransactionId = `sale-${Date.now()}-${customerId}`;
+    const clientTransactionId = `s${Date.now() % 10000000000}-${customerId}`.substring(0, 15);
     const itemsWithProductInfo = validItems.map(item => {
       const product = productMap[item.productId];
       return {
@@ -1315,7 +1315,7 @@ router.post('/credits/:id/prepare-payphone', authenticateCustomer, async (req, r
     const commission = commRate > 0 ? Math.round((balance / (1 - commRate / 100) - balance) * 100) / 100 : 0;
     const totalWithCommission = Math.round((balance + commission) * 100) / 100;
 
-    const clientTransactionId = `credit-${id}-${Date.now()}-${customerId}`;
+    const clientTransactionId = `c${id}-${Date.now() % 10000000000}-${customerId}`.substring(0, 15);
 
     // totalAmount = monto base del crédito (sin comisión)
     await PayphonePendingPayment.create({
@@ -1376,7 +1376,7 @@ router.post('/credits/confirm-payphone', authenticateCustomer, async (req, res) 
         const response = await fetch('https://pay.payphonetodoesposible.com/api/button/V2/Confirm', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ id: parseInt(id, 10), clientTransactionId: clientTransactionId }),
+          body: JSON.stringify({ id: parseInt(id, 10), clientTxId: clientTransactionId }),
           signal: AbortSignal.timeout(10000)
         });
         const responseText = await response.text();
