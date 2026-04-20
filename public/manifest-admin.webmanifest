@@ -2,7 +2,7 @@
   "name": "LOCOBAR - Licorería",
   "short_name": "LOCOBAR Admin",
   "start_url": "/dashboard",
-  "scope": "/dashboard",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0f1117",
   "theme_color": "#0f3460",
