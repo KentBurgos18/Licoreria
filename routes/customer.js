@@ -579,7 +579,7 @@ router.post('/checkout/confirm-payphone', authenticateCustomer, async (req, res)
     // Si no se pudo confirmar con Payphone pero el pago sí llegó (tenemos id de Payphone),
     // registrar la venta de todas formas. Payphone ya procesó el cobro.
     if (!payphoneResult) {
-      console.warn('PayPhone Confirm falló pero se procede con la venta. Error:', confirmError, 'payphone_id:', id, 'clientTxId:', clientTransactionId);
+      console.warn('PayPhone Confirm falló pero se procede con la venta. Error:', confirmError, 'payphone_id:', id, 'clientTransactionId:', clientTransactionId);
     }
 
     const pending = await PayphonePendingPayment.findOne({
@@ -1376,7 +1376,7 @@ router.post('/credits/confirm-payphone', authenticateCustomer, async (req, res) 
         const response = await fetch('https://pay.payphonetodoesposible.com/api/button/V2/Confirm', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ id: parseInt(id, 10), clientTxId: clientTransactionId }),
+          body: JSON.stringify({ id: parseInt(id, 10), clientTransactionId: clientTransactionId }),
           signal: AbortSignal.timeout(10000)
         });
         const responseText = await response.text();
@@ -1403,7 +1403,7 @@ router.post('/credits/confirm-payphone', authenticateCustomer, async (req, res) 
     // A diferencia del checkout (inventario ya comprometido), el crédito no tiene
     // efectos secundarios irreversibles, por lo que es más seguro rechazar.
     if (!payphoneResult) {
-      console.warn('PayPhone credit confirm falló. Error:', confirmError, 'payphone_id:', id, 'clientTxId:', clientTransactionId);
+      console.warn('PayPhone credit confirm falló. Error:', confirmError, 'payphone_id:', id, 'clientTransactionId:', clientTransactionId);
       return res.status(502).json({
         error: 'No se pudo confirmar el pago con PayPhone. Tu tarjeta NO fue cobrada. Por favor intenta nuevamente.',
         code: 'PAYPHONE_CONFIRM_FAILED'

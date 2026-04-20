@@ -159,6 +159,11 @@
                 var appContent = document.getElementById(APP_CONTENT_ID);
                 appContent.innerHTML = wrapper.innerHTML;
 
+                // Scroll al inicio de la página al navegar
+                window.scrollTo(0, 0);
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+
                 var titleEl = doc.querySelector('title');
                 if (titleEl && titleEl.textContent) {
                     document.title = titleEl.textContent;
