@@ -8,6 +8,36 @@ const { getCartAwareAvailability } = require('../services/CartAvailabilityHelper
 const { sequelize } = require('../models');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
+const https = require('https');
+
+// Helper: llamar al Confirm de PayPhone usando https nativo (fetch de Node/Undici
+// dispara 500 "Runtime Error" en el servidor IIS de PayPhone, probablemente por
+// diferencias en headers/HTTP2. El módulo https nativo se comporta como curl.)
+function callPayphoneConfirm(token, body, timeoutMs = 10000) {
+  return new Promise((resolve, reject) => {
+    const bodyStr = JSON.stringify(body);
+    const req = https.request({
+      hostname: 'pay.payphonetodoesposible.com',
+      path: '/api/button/V2/Confirm',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'Content-Length': Buffer.byteLength(bodyStr)
+      },
+      timeout: timeoutMs
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => resolve({ status: res.statusCode, body: data }));
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(new Error('Request timeout')); });
+    req.write(bodyStr);
+    req.end();
+  });
+}
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -534,21 +564,12 @@ router.post('/checkout/confirm-payphone', authenticateCustomer, async (req, res)
     let confirmError = null;
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        const response = await fetch('https://pay.payphonetodoesposible.com/api/button/V2/Confirm', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            id: parseInt(id, 10),
-            clientTxId: clientTransactionId,
-            clientTransactionId: clientTransactionId
-          }),
-          signal: AbortSignal.timeout(10000)
+        const response = await callPayphoneConfirm(token, {
+          id: parseInt(id, 10),
+          clientTxId: clientTransactionId,
+          clientTransactionId: clientTransactionId
         });
-
-        const responseText = await response.text();
+        const responseText = response.body;
         console.log(`[PayPhone Sale Confirm] intento=${attempt} status=${response.status} body=${responseText.substring(0, 300)}`);
         try {
           payphoneResult = JSON.parse(responseText);
@@ -1375,13 +1396,12 @@ router.post('/credits/confirm-payphone', authenticateCustomer, async (req, res) 
     let confirmError = null;
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        const response = await fetch('https://pay.payphonetodoesposible.com/api/button/V2/Confirm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ id: parseInt(id, 10), clientTxId: clientTransactionId, clientTransactionId: clientTransactionId }),
-          signal: AbortSignal.timeout(10000)
+        const response = await callPayphoneConfirm(token, {
+          id: parseInt(id, 10),
+          clientTxId: clientTransactionId,
+          clientTransactionId: clientTransactionId
         });
-        const responseText = await response.text();
+        const responseText = response.body;
         console.log(`[PayPhone Credit Confirm] intento=${attempt} status=${response.status} body=${responseText.substring(0, 300)}`);
         try {
           payphoneResult = JSON.parse(responseText);
