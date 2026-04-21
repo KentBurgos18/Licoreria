@@ -1315,7 +1315,7 @@ router.post('/credits/:id/prepare-payphone', authenticateCustomer, async (req, r
     const commission = commRate > 0 ? Math.round((balance / (1 - commRate / 100) - balance) * 100) / 100 : 0;
     const totalWithCommission = Math.round((balance + commission) * 100) / 100;
 
-    const clientTransactionId = `c${id}-${Date.now() % 10000000000}-${customerId}`.substring(0, 15);
+    const clientTransactionId = `c${Date.now()}`.slice(0, 15);
 
     // totalAmount = monto base del crédito (sin comisión)
     await PayphonePendingPayment.create({
