@@ -498,6 +498,13 @@
             return;
         }
 
+        // Calcular el total como suma de valores ya truncados (evita discrepancia con los subtotales mostrados)
+        var computedTotal = 0;
+        credits.forEach(function(credit) {
+            if (credit.status === 'ACTIVE') computedTotal += floorBal(credit.currentBalance);
+        });
+        $('#totalBalance').text('$' + computedTotal.toFixed(2));
+
         credits.forEach(function(credit, idx) {
             var initialAmount  = parseFloat(credit.initialAmount || 0).toFixed(2);
             var currentBalance = floorBal(credit.currentBalance).toFixed(2);
