@@ -542,12 +542,14 @@ router.post('/checkout/confirm-payphone', authenticateCustomer, async (req, res)
           },
           body: JSON.stringify({
             id: parseInt(id, 10),
-            clientTxId: clientTransactionId
+            clientTxId: clientTransactionId,
+            clientTransactionId: clientTransactionId
           }),
           signal: AbortSignal.timeout(10000)
         });
 
         const responseText = await response.text();
+        console.log(`[PayPhone Sale Confirm] intento=${attempt} status=${response.status} body=${responseText.substring(0, 300)}`);
         try {
           payphoneResult = JSON.parse(responseText);
           break; // Respuesta JSON válida, salir del retry
@@ -1376,7 +1378,7 @@ router.post('/credits/confirm-payphone', authenticateCustomer, async (req, res) 
         const response = await fetch('https://pay.payphonetodoesposible.com/api/button/V2/Confirm', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ id: parseInt(id, 10), clientTxId: clientTransactionId }),
+          body: JSON.stringify({ id: parseInt(id, 10), clientTxId: clientTransactionId, clientTransactionId: clientTransactionId }),
           signal: AbortSignal.timeout(10000)
         });
         const responseText = await response.text();
