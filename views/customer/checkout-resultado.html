@@ -48,8 +48,11 @@
             document.getElementById('errorState').classList.remove('d-none');
             document.getElementById('errorMsg').textContent = 'Faltan parámetros de la transacción.';
         } else {
-            // Detectar si es un pago de crédito (clientTransactionId empieza con "credit-")
-            var isCredit = clientTransactionId && String(clientTransactionId).startsWith('credit-');
+            // Detectar si es un pago de crédito (empieza con "credit-" formato antiguo, o "c" + dígito formato nuevo)
+            var isCredit = clientTransactionId && (
+                String(clientTransactionId).startsWith('credit-') ||
+                /^c\d/.test(String(clientTransactionId))
+            );
             var confirmUrl = isCredit
                 ? '/api/customer/credits/confirm-payphone'
                 : '/api/customer/checkout/confirm-payphone';
