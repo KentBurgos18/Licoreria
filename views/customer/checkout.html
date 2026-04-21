@@ -1696,6 +1696,17 @@
             displayCreditSummary();
             updateCreditTotals();
             updateProcessButtonState();
+
+            // Cargar tasa de comisión PayPhone para mostrarla en el resumen
+            $.ajax({
+                url: '/api/public/payphone-commission',
+                method: 'GET',
+                data: { tenantId: 1 },
+                success: function(r) {
+                    payphoneCommissionRate = r.rate || 0;
+                    updateCreditTotals();
+                }
+            });
         }
 
         function displayCreditSummary() {
