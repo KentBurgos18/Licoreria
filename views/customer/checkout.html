@@ -1715,11 +1715,25 @@
 
         function updateCreditTotals() {
             if (!creditPaymentCtx) return;
-            var amount = parseFloat(creditPaymentCtx.amount).toFixed(2);
-            $('#subtotal').text('$' + amount);
+            var amount = parseFloat(creditPaymentCtx.amount);
+            var payMethod = $('#paymentMethod').val();
+
+            var applyCommission = payMethod === 'CARD' && payphoneCommissionRate > 0;
+            var commissionAmt = applyCommission
+                ? Math.round((amount / (1 - payphoneCommissionRate / 100) - amount) * 100) / 100
+                : 0;
+            var total = amount + commissionAmt;
+
+            $('#subtotal').text('$' + amount.toFixed(2));
             $('.tax-row').addClass('d-none');
-            $('#commissionRow').addClass('d-none');
-            $('#total').text('$' + amount);
+            if (applyCommission) {
+                $('#commissionRow').removeClass('d-none');
+                $('#commissionLabel').text('Comisión tarjeta (' + payphoneCommissionRate + '%)');
+                $('#commission').text('$' + commissionAmt.toFixed(2));
+            } else {
+                $('#commissionRow').addClass('d-none');
+            }
+            $('#total').text('$' + total.toFixed(2));
         }
 
         function processCreditPayment(paymentMethod) {
