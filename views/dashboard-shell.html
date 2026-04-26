@@ -4472,6 +4472,7 @@
             if (!data.description) { alert('La descripción es requerida'); return; }
             if (!data.amount || data.amount <= 0) { alert('El monto debe ser mayor a 0'); return; }
             if (!data.expenseDate) { alert('La fecha es requerida'); return; }
+            if (expPM === 'TRANSFER' && !data.transferAccountInfo) { alert('Debe seleccionar una cuenta bancaria para transferencias'); return; }
 
             var method = id ? 'PUT' : 'POST';
             var url    = id ? '/api/expenses/' + id : '/api/expenses';
@@ -8134,6 +8135,10 @@
 
             if (!purchaseDate) {
                 showAlert('La fecha de compra es requerida', 'warning');
+                return;
+            }
+            if (paymentMethod === 'TRANSFER' && !transferAccountInfo) {
+                showAlert('Debe seleccionar una cuenta bancaria para transferencias', 'warning');
                 return;
             }
 
