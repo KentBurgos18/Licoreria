@@ -1377,6 +1377,67 @@ router.post('/credits/:id/prepare-payphone', authenticateCustomer, async (req, r
   }
 });
 
+// POST /customer/credits/prepare-payphone-all — prepara pago con tarjeta para TODOS los créditos activos
+router.post('/credits/prepare-payphone-all', authenticateCustomer, async (req, res) => {
+  try {
+    const { customerId, tenantId } = req;
+
+    const credits = await CustomerCredit.findAll({
+      where: { customerId, tenantId, status: 'ACTIVE' }
+    });
+    const activeCredits = credits.filter(c => parseFloat(c.currentBalance) > 0.01);
+    if (activeCredits.length === 0) return res.status(400).json({ error: 'No tienes créditos activos pendientes', code: 'NO_CREDITS' });
+
+    const { token, storeId } = await getPayphoneCredentials(tenantId);
+    if (!token || !storeId) return res.status(503).json({ error: 'Pago con tarjeta no configurado.', code: 'PAYPHONE_NOT_CONFIGURED' });
+
+    const commRateRaw = await Setting.getSetting(tenantId, 'payphone_commission_rate');
+    const commRate = (commRateRaw != null && !isNaN(parseFloat(commRateRaw))) ? parseFloat(commRateRaw) : 5.75;
+
+    // Sumar balances truncados individualmente (consistente con lo que se muestra en pantalla)
+    const totalBalance = Math.round(activeCredits.reduce((sum, c) => {
+      return sum + Math.floor(parseFloat(c.currentBalance) * 100) / 100;
+    }, 0) * 100) / 100;
+
+    const commission = commRate > 0 ? Math.round((totalBalance / (1 - commRate / 100) - totalBalance) * 100) / 100 : 0;
+    const totalWithCommission = Math.round((totalBalance + commission) * 100) / 100;
+
+    const clientTransactionId = `c${Date.now()}`.slice(0, 15);
+
+    await PayphonePendingPayment.create({
+      clientTransactionId,
+      tenantId,
+      customerId,
+      itemsJson: activeCredits.map(c => ({ type: 'credit', creditId: c.id, balance: Math.floor(parseFloat(c.currentBalance) * 100) / 100 })),
+      subtotal: totalBalance,
+      taxAmount: 0,
+      totalAmount: totalBalance,
+      taxRate: 0,
+      notes: null
+    });
+
+    const amountCents = Math.round(totalWithCommission * 100);
+    const balanceCents = Math.round(totalBalance * 100);
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+    res.json({
+      clientTransactionId,
+      token,
+      storeId,
+      amount: amountCents,
+      amountWithoutTax: amountCents,
+      amountWithTax: 0,
+      tax: 0,
+      currency: 'USD',
+      reference: `Créditos LOCOBAR (${activeCredits.length})`,
+      returnUrl: `${baseUrl}/customer/checkout/resultado`
+    });
+  } catch (error) {
+    console.error('Error preparing PayPhone all-credits payment:', error);
+    res.status(500).json({ error: 'Error al preparar el pago', code: 'INTERNAL_ERROR' });
+  }
+});
+
 // POST /customer/credits/confirm-payphone — confirma pago con tarjeta para un crédito
 router.post('/credits/confirm-payphone', authenticateCustomer, async (req, res) => {
   try {
@@ -1435,32 +1496,47 @@ router.post('/credits/confirm-payphone', authenticateCustomer, async (req, res) 
     const pending = await PayphonePendingPayment.findOne({ where: { clientTransactionId, tenantId, customerId } });
     if (!pending) return res.status(404).json({ error: 'No se encontró el pago pendiente', code: 'PENDING_NOT_FOUND' });
 
-    const creditItem = (pending.itemsJson || []).find(i => i.type === 'credit');
-    if (!creditItem) return res.status(400).json({ error: 'Tipo de pago inválido', code: 'INVALID_TYPE' });
-
-    const credit = await CustomerCredit.findOne({ where: { id: creditItem.creditId, customerId, tenantId } });
-    if (!credit) return res.status(404).json({ error: 'Crédito no encontrado', code: 'NOT_FOUND' });
+    const creditItems = (pending.itemsJson || []).filter(i => i.type === 'credit');
+    if (creditItems.length === 0) return res.status(400).json({ error: 'Tipo de pago inválido', code: 'INVALID_TYPE' });
 
     const transaction = await sequelize.transaction();
     try {
-      const payAmt = parseFloat(pending.totalAmount);
       const today = new Date().toISOString().split('T')[0];
 
-      await CustomerPayment.create({
-        tenantId,
-        customerId,
-        groupPurchaseParticipantId: credit.groupPurchaseParticipantId || null,
-        amount: payAmt,
-        paymentMethod: 'CARD',
-        paymentDate: today,
-        notes: `Pago con tarjeta - PayPhone TX: ${id}`
-      }, { transaction });
+      if (creditItems.length === 1) {
+        // Pago individual — comportamiento original
+        const credit = await CustomerCredit.findOne({ where: { id: creditItems[0].creditId, customerId, tenantId } });
+        if (!credit) throw new Error('Crédito no encontrado');
+        const payAmt = parseFloat(pending.totalAmount);
 
-      await CreditService.applyPayment(credit.id, payAmt, transaction);
+        await CustomerPayment.create({
+          tenantId, customerId,
+          groupPurchaseParticipantId: credit.groupPurchaseParticipantId || null,
+          amount: payAmt, paymentMethod: 'CARD', paymentDate: today,
+          notes: `Pago con tarjeta - PayPhone TX: ${id}`
+        }, { transaction });
+        await CreditService.applyPayment(credit.id, payAmt, transaction);
+      } else {
+        // Pago de todos los créditos — aplicar a cada uno según su balance registrado
+        for (const item of creditItems) {
+          const credit = await CustomerCredit.findOne({ where: { id: item.creditId, customerId, tenantId } });
+          if (!credit) continue;
+          const payAmt = item.balance || Math.floor(parseFloat(credit.currentBalance) * 100) / 100;
+
+          await CustomerPayment.create({
+            tenantId, customerId,
+            groupPurchaseParticipantId: credit.groupPurchaseParticipantId || null,
+            amount: payAmt, paymentMethod: 'CARD', paymentDate: today,
+            notes: `Pago con tarjeta (total) - PayPhone TX: ${id}`
+          }, { transaction });
+          await CreditService.applyPayment(credit.id, payAmt, transaction);
+        }
+      }
+
       await pending.destroy({ transaction });
       await transaction.commit();
 
-      res.json({ ok: true, amount: payAmt, creditId: credit.id });
+      res.json({ ok: true, creditCount: creditItems.length });
     } catch (err) {
       await transaction.rollback();
       throw err;

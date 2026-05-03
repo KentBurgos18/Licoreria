@@ -387,6 +387,11 @@
                 <div class="cr-stat-lbl">Créditos Activos</div>
             </div>
         </div>
+        <div class="d-flex justify-content-center mt-3" id="payAllWrapper" style="display:none!important">
+            <button class="btn btn-lb-primary px-4" onclick="payAllCredits()">
+                <i class="bi bi-credit-card me-2"></i>Pagar Todo
+            </button>
+        </div>
     </div>
 
     <!-- Credits list -->
@@ -500,10 +505,21 @@
 
         // Calcular el total como suma de valores ya truncados (evita discrepancia con los subtotales mostrados)
         var computedTotal = 0;
+        var activeCreditsForPayAll = [];
         credits.forEach(function(credit) {
-            if (credit.status === 'ACTIVE') computedTotal += floorBal(credit.currentBalance);
+            if (credit.status === 'ACTIVE' && floorBal(credit.currentBalance) > 0.01) {
+                computedTotal += floorBal(credit.currentBalance);
+                activeCreditsForPayAll.push(credit);
+            }
         });
         $('#totalBalance').text('$' + computedTotal.toFixed(2));
+
+        // Mostrar botón "Pagar Todo" solo si hay 2 o más créditos activos
+        if (activeCreditsForPayAll.length >= 2) {
+            $('#payAllWrapper').css('display', 'flex');
+        } else {
+            $('#payAllWrapper').css('display', 'none');
+        }
 
         credits.forEach(function(credit, idx) {
             var initialAmount  = parseFloat(credit.initialAmount || 0).toFixed(2);
@@ -695,6 +711,28 @@
     function goToCheckoutCredit(creditId) {
         var ctx = _creditPayData[creditId];
         if (!ctx) return;
+        sessionStorage.setItem('creditPayment', JSON.stringify(ctx));
+        if (window.spaNavigate) window.spaNavigate('/customer/checkout');
+        else window.location.href = '/customer/checkout';
+    }
+
+    // ── Pagar TODOS los créditos en un solo cobro ─────────────
+    function payAllCredits() {
+        // Calcular total de todos los créditos activos (balances truncados)
+        var total = 0;
+        var names = [];
+        Object.values(_creditPayData).forEach(function(ctx) {
+            total += parseFloat(ctx.amount);
+            names.push(ctx.productName || 'Crédito');
+        });
+        total = Math.round(total * 100) / 100;
+        if (total <= 0.01) return;
+
+        var ctx = {
+            allCredits: true,
+            amount: total,
+            productName: 'Todos mis créditos (' + Object.keys(_creditPayData).length + ')'
+        };
         sessionStorage.setItem('creditPayment', JSON.stringify(ctx));
         if (window.spaNavigate) window.spaNavigate('/customer/checkout');
         else window.location.href = '/customer/checkout';

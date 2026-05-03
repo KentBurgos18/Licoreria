@@ -1353,7 +1353,11 @@
             var url, payload;
             if (isCreditMode && creditPaymentCtx) {
                 // En modo crédito, preparar pago de crédito
-                url = '/api/customer/credits/' + creditPaymentCtx.creditId + '/prepare-payphone';
+                if (creditPaymentCtx.allCredits) {
+                    url = '/api/customer/credits/prepare-payphone-all';
+                } else {
+                    url = '/api/customer/credits/' + creditPaymentCtx.creditId + '/prepare-payphone';
+                }
                 payload = {};
             } else {
                 // En modo checkout regular, preparar pago de carrito
@@ -1693,6 +1697,17 @@
                 };
             }
 
+            // En modo "Pagar Todo" solo se permite tarjeta — ocultar Efectivo y Transferencia
+            if (creditPaymentCtx && creditPaymentCtx.allCredits) {
+                document.querySelectorAll('.payment-method-card[data-method="CASH"], .payment-method-card[data-method="TRANSFER"]').forEach(function(el) {
+                    el.style.display = 'none';
+                });
+            } else {
+                document.querySelectorAll('.payment-method-card').forEach(function(el) {
+                    el.style.display = '';
+                });
+            }
+
             displayCreditSummary();
             updateCreditTotals();
             updateProcessButtonState();
@@ -1753,6 +1768,14 @@
             var btn      = document.getElementById('processBtn');
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando solicitud...';
+
+            // Modo "Pagar Todo": no hay un creditId individual — no se puede hacer solicitud de pago manual
+            if (creditPaymentCtx.allCredits && paymentMethod !== 'CARD') {
+                showAlert('Para pagar todos los créditos a la vez solo se permite pago con tarjeta.', 'warning');
+                btn.disabled = false;
+                btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Confirmar Pago';
+                return;
+            }
 
             // CASH y TRANSFER: crear solicitud pendiente (requiere confirmación admin)
             var notes = $('#checkoutNotes').val() || '';
