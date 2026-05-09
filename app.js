@@ -1823,17 +1823,16 @@ async function initializeApp() {
       try {
         const tenantId = 1;
         const now = new Date();
-        // Fecha límite para "próximo a vencer" = hoy + 3 días
-        const in3days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-        const in3Str  = CreditService.localDateStr(in3days);
         const threshold24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-        // Créditos activos que vencen en ≤ 3 días o ya están vencidos
+        // Todos los créditos activos con saldo pendiente (envío diario mientras
+        // tenga deudas, no solo cuando estén próximos a vencer). El throttle
+        // de 24h impide que se envíe más de una vez por día.
         const credits = await CustomerCredit.findAll({
           where: {
             tenantId,
             status: 'ACTIVE',
-            dueDate: { [require('sequelize').Op.not]: null, [require('sequelize').Op.lte]: in3Str },
+            currentBalance: { [require('sequelize').Op.gt]: 0.01 },
             [require('sequelize').Op.or]: [
               { lastNotifiedAt: null },
               { lastNotifiedAt: { [require('sequelize').Op.lt]: threshold24h } }
