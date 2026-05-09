@@ -22,6 +22,11 @@ module.exports = (sequelize) => {
       allowNull: true,
       field: 'group_purchase_participant_id'
     },
+    creditId: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      field: 'credit_id'
+    },
     amount: {
       type: DataTypes.DECIMAL(12, 2),
       allowNull: false

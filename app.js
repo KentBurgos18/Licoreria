@@ -1657,6 +1657,15 @@ async function initializeApp() {
       console.warn('⚠️ Migración customer_payments.transfer_account_info:', e.message);
     }
 
+    // Migración: agregar credit_id a customer_payments (vincular pagos con créditos individuales)
+    try {
+      await sequelize.query(`ALTER TABLE customer_payments ADD COLUMN IF NOT EXISTS credit_id BIGINT`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_customer_payments_credit ON customer_payments (credit_id)`);
+      console.log('✅ Migración customer_payments.credit_id completada');
+    } catch (e) {
+      console.warn('⚠️ Migración customer_payments.credit_id:', e.message);
+    }
+
     // Migración: agregar is_returnable a products
     try {
       await sequelize.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_returnable BOOLEAN NOT NULL DEFAULT false`);

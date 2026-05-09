@@ -135,6 +135,7 @@ router.post('/payment-requests/:id/approve', async (req, res) => {
       tenantId: request.tenantId,
       customerId: request.customerId,
       groupPurchaseParticipantId: credit.groupPurchaseParticipantId || null,
+      creditId: credit.id,
       amount: parseFloat(request.amount),
       paymentMethod: request.paymentMethod,
       paymentDate: new Date().toISOString().split('T')[0],
@@ -204,6 +205,7 @@ router.post('/:id/payment', async (req, res) => {
       tenantId,
       customerId: credit.customerId,
       groupPurchaseParticipantId: credit.groupPurchaseParticipantId || null,
+      creditId: credit.id,
       amount: payAmt,
       paymentMethod,
       paymentDate: paymentDate || new Date().toISOString().split('T')[0],
@@ -265,6 +267,17 @@ router.post('/bulk-payment', async (req, res) => {
       const updated = await CustomerCredit.findByPk(credit.id, { transaction });
       const balance = parseFloat(updated.currentBalance);
       if (balance <= 0.01) continue;
+      await CustomerPayment.create({
+        tenantId,
+        customerId,
+        groupPurchaseParticipantId: updated.groupPurchaseParticipantId || null,
+        creditId: updated.id,
+        amount: balance,
+        paymentMethod,
+        paymentDate: paymentDate || new Date().toISOString().split('T')[0],
+        notes: notes || 'Cobro masivo',
+        transferAccountInfo: paymentMethod === 'TRANSFER' ? (transferAccountInfo || null) : null
+      }, { transaction });
       await CreditService.applyPayment(updated.id, balance, transaction);
       paidCount++;
     }
@@ -279,6 +292,36 @@ router.post('/bulk-payment', async (req, res) => {
 });
 
 // GET /customer-credits/:id - Get credit by ID
+// GET /customer-credits/:id/payments — pagos realizados sobre un crédito (admin)
+router.get('/:id/payments', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const tenantId = 1;
+
+    const credit = await CustomerCredit.findOne({ where: { id, tenantId } });
+    if (!credit) return res.status(404).json({ error: 'Crédito no encontrado' });
+
+    const where = { tenantId, customerId: credit.customerId };
+    if (credit.groupPurchaseParticipantId) {
+      where[Op.or] = [
+        { creditId: credit.id },
+        { groupPurchaseParticipantId: credit.groupPurchaseParticipantId }
+      ];
+    } else {
+      where.creditId = credit.id;
+    }
+
+    const payments = await CustomerPayment.findAll({
+      where,
+      order: [['paymentDate', 'DESC'], ['createdAt', 'DESC']]
+    });
+    res.json({ payments });
+  } catch (error) {
+    console.error('Error listing credit payments (admin):', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;

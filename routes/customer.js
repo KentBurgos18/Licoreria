@@ -1281,6 +1281,38 @@ router.get('/credits/summary', authenticateCustomer, async (req, res) => {
   }
 });
 
+// GET /customer/credits/:id/payments — lista de pagos realizados sobre un crédito
+router.get('/credits/:id/payments', authenticateCustomer, async (req, res) => {
+  try {
+    const { customerId, tenantId } = req;
+    const { id } = req.params;
+
+    // Verificar que el crédito pertenece al cliente
+    const credit = await CustomerCredit.findOne({ where: { id, customerId, tenantId } });
+    if (!credit) return res.status(404).json({ error: 'Crédito no encontrado', code: 'NOT_FOUND' });
+
+    // Buscar pagos vinculados a este crédito (por creditId directo o por participante grupal)
+    const where = { tenantId, customerId };
+    if (credit.groupPurchaseParticipantId) {
+      where[require('sequelize').Op.or] = [
+        { creditId: credit.id },
+        { groupPurchaseParticipantId: credit.groupPurchaseParticipantId }
+      ];
+    } else {
+      where.creditId = credit.id;
+    }
+
+    const payments = await CustomerPayment.findAll({
+      where,
+      order: [['paymentDate', 'DESC'], ['createdAt', 'DESC']]
+    });
+    res.json({ payments });
+  } catch (error) {
+    console.error('Error listing credit payments:', error);
+    res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
+  }
+});
+
 // GET /customer/credits/:id  — detalle de un crédito (solo si pertenece al cliente)
 router.get('/credits/:id', authenticateCustomer, async (req, res) => {
   try {
@@ -1512,6 +1544,7 @@ router.post('/credits/confirm-payphone', authenticateCustomer, async (req, res) 
         await CustomerPayment.create({
           tenantId, customerId,
           groupPurchaseParticipantId: credit.groupPurchaseParticipantId || null,
+          creditId: credit.id,
           amount: payAmt, paymentMethod: 'CARD', paymentDate: today,
           notes: `Pago con tarjeta - PayPhone TX: ${id}`
         }, { transaction });
@@ -1526,6 +1559,7 @@ router.post('/credits/confirm-payphone', authenticateCustomer, async (req, res) 
           await CustomerPayment.create({
             tenantId, customerId,
             groupPurchaseParticipantId: credit.groupPurchaseParticipantId || null,
+            creditId: credit.id,
             amount: payAmt, paymentMethod: 'CARD', paymentDate: today,
             notes: `Pago con tarjeta (total) - PayPhone TX: ${id}`
           }, { transaction });
@@ -1588,6 +1622,7 @@ router.post('/credits/:id/payment', authenticateCustomer, async (req, res) => {
       tenantId,
       customerId,
       groupPurchaseParticipantId: credit.groupPurchaseParticipantId || null,
+      creditId: credit.id,
       amount: payAmt,
       paymentMethod,
       paymentDate,

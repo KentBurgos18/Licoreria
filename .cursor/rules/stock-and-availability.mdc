@@ -1,0 +1,21 @@
+---
+description: Una sola fuente de verdad para stock y disponibilidad; cambios aplican en admin y cliente
+alwaysApply: true
+---
+
+# Stock y disponibilidad (presentaciones / pool)
+
+## Principio
+- La lógica de **stock disponible** y **disponibilidad por presentación** (baseProductId, unitsPerSale, availableQty) vive en **un solo lugar**: `services/InventoryPoolHelper.js`.
+- Las rutas solo deben **llamar** a ese helper, no repetir la fórmula.
+
+## Funciones compartidas (InventoryPoolHelper)
+- **getSimpleProductAvailability(tenantId, product)** – Disponibilidad completa para producto SIMPLE (dashboard, catálogo cliente, bulk). Usar en lugar de calcular `getCurrentStock` + `unitsPerSale` en las rutas.
+- **validateSimpleSaleQuantity(tenantId, product, quantity)** – Validar si se puede vender una cantidad (ventas, checkout cliente).
+- **getPoolStock(tenantId, product)** – Base units y availableQty; usar si solo necesitas esos valores.
+- **resolveMovement(product, quantity)** – Para crear movimientos de inventario (compras/ventas) con producto base y cantidad en unidades base.
+
+## Reglas
+1. Al mostrar o validar stock de un producto SIMPLE, usar siempre `getSimpleProductAvailability` o `validateSimpleSaleQuantity` desde las rutas. No duplicar la fórmula de `baseProductId`/`unitsPerSale` en ningún archivo.
+2. Al corregir un bug de stock o presentaciones, cambiar solo en `InventoryPoolHelper.js`; así se refleja en dashboard, cliente y ventas.
+3. Combos siguen usando `ComboService.getComboAvailability` y `ComboService.validateComboSale`; no mezclar con la lógica SIMPLE.

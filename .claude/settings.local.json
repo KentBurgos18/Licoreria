@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit",
+      "Read",
+      "Bash(docker*)",
+      "Bash(git*)",
+      "Bash(ls*)",
+      "Bash(curl*)",
+      "Bash(node*)",
+      "Bash(grep*)",
+      "Bash(powershell -command \":*)",
+      "Read(//c/Users/rburgos/Music/Onboard-NAPA/pr/**)",
+      "Read(//c/Users/rburgos/Music/Onboard-NAPA/Bin/20102/pr/**)",
+      "Read(//c/Users/rburgos/Música/**)",
+      "Read(//c/Users/rburgos/Music/SM - copia/**)"
+    ],
+    "additionalDirectories": [
+      "C:\\PROYECTOS\\bar\\routes",
+      "C:\\PROYECTOS\\bar"
+    ]
+  }
+}

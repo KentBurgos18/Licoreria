@@ -37,6 +37,7 @@ class PaymentService {
         tenantId,
         customerId,
         groupPurchaseParticipantId,
+        creditId: creditId || null,
         amount,
         paymentMethod,
         paymentDate: paymentDate instanceof Date ? paymentDate.toISOString().split('T')[0] : paymentDate,

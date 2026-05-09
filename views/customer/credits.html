@@ -465,6 +465,7 @@
     // ── Load credits ──────────────────────────────────────────
     function loadCredits() {
         if (!token || !customer.id) return;
+        _paymentsLoaded = {}; // resetear caché de pagos al recargar lista
         $('#creditsList').html('<div class="cr-loading"><div class="cr-spinner"></div>Cargando créditos...</div>');
         $.ajax({
             url: '/api/customer/credits',
@@ -638,6 +639,14 @@
                   '<div class="cr-items-panel">' + itemsHtml + '</div>'
                 : '';
 
+            // Pagos realizados — panel desplegable cargado bajo demanda
+            var paymentsToggle = '<div class="cr-items-toggle" onclick="toggleCrPayments(this, ' + credit.id + ')">' +
+                    '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>' +
+                    'Ver pagos realizados' +
+                    '<svg class="toggle-chevron" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>' +
+                  '</div>' +
+                  '<div class="cr-items-panel cr-payments-panel" id="crPayments-' + credit.id + '"><div class="text-muted" style="font-size:12px">Cargando...</div></div>';
+
             var card = '<div class="cr-card ' + statusCls + '" style="animation-delay:' + (idx * 0.07) + 's">' +
                 '<div class="cr-head">' +
                     '<div class="cr-head-left">' +
@@ -672,6 +681,7 @@
                 '</div>' +
                 alertHtml +
                 itemsToggle +
+                paymentsToggle +
                 '<div class="cr-footer">' +
                     (rateHtml || '<span></span>') +
                     actionHtml +
@@ -693,6 +703,58 @@
             toggleEl.classList.add('open');
             panel.classList.add('open');
         }
+    }
+
+    // ── Toggle "Ver pagos realizados" ─────────────────────────
+    var _paymentsLoaded = {};
+    function toggleCrPayments(toggleEl, creditId) {
+        var isOpen = toggleEl.classList.contains('open');
+        var panel = toggleEl.nextElementSibling;
+        if (isOpen) {
+            toggleEl.classList.remove('open');
+            panel.classList.remove('open');
+            return;
+        }
+        toggleEl.classList.add('open');
+        panel.classList.add('open');
+
+        if (_paymentsLoaded[creditId]) return;
+        $.ajax({
+            url: '/api/customer/credits/' + creditId + '/payments',
+            method: 'GET',
+            headers: { 'Authorization': 'Bearer ' + token },
+            success: function(r) {
+                _paymentsLoaded[creditId] = true;
+                renderPaymentsList(creditId, r.payments || []);
+            },
+            error: function() {
+                $('#crPayments-' + creditId).html('<div class="text-danger" style="font-size:12px">No se pudieron cargar los pagos.</div>');
+            }
+        });
+    }
+
+    function renderPaymentsList(creditId, payments) {
+        var box = document.getElementById('crPayments-' + creditId);
+        if (!box) return;
+        if (!payments.length) {
+            box.innerHTML = '<div class="text-muted" style="font-size:12px;padding:8px 4px">No se han registrado pagos sobre este crédito todavía.</div>';
+            return;
+        }
+        var methodLabels = { CASH: 'Efectivo', CARD: 'Tarjeta', TRANSFER: 'Transferencia' };
+        var rows = payments.map(function(p) {
+            var d = new Date(p.paymentDate + 'T00:00:00').toLocaleDateString('es-ES', { day:'numeric', month:'short', year:'numeric' });
+            var amt = parseFloat(p.amount).toFixed(2);
+            var method = methodLabels[p.paymentMethod] || p.paymentMethod;
+            var extra = p.transferAccountInfo ? ' · ' + p.transferAccountInfo : '';
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 6px;border-bottom:1px solid var(--card-border);font-size:12.5px">' +
+                '<div>' +
+                    '<div style="font-weight:600;color:var(--text)">' + method + extra + '</div>' +
+                    '<div style="color:var(--text3);font-size:11px">' + d + (p.notes ? ' · ' + p.notes : '') + '</div>' +
+                '</div>' +
+                '<div style="font-weight:700;color:var(--green)">$' + amt + '</div>' +
+            '</div>';
+        }).join('');
+        box.innerHTML = rows;
     }
 
     // ── Construir HTML de artículos para panel expandible ────
