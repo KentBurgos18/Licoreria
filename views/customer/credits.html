@@ -394,6 +394,12 @@
         </div>
     </div>
 
+    <!-- Tabs Activos / Historial -->
+    <div class="cr-tabs" style="display:flex;gap:8px;margin:18px 0 14px;border-bottom:1px solid var(--card-border);">
+        <button class="cr-tab cr-tab-active" id="tabActive" onclick="switchTab('ACTIVE')" style="background:transparent;border:none;padding:10px 18px;font-weight:700;color:var(--text);border-bottom:2px solid var(--accent);cursor:pointer;font-family:inherit;">Activos</button>
+        <button class="cr-tab" id="tabHistory" onclick="switchTab('PAID')" style="background:transparent;border:none;padding:10px 18px;font-weight:600;color:var(--text3);border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;">Historial</button>
+    </div>
+
     <!-- Credits list -->
     <div class="cr-list" id="creditsList">
         <div class="cr-loading">
@@ -409,6 +415,7 @@
     var token    = localStorage.getItem('customerToken');
     var customer = JSON.parse(localStorage.getItem('customer') || '{}');
     var _creditPayData = {};
+    var _currentTab  = 'ACTIVE'; // 'ACTIVE' | 'PAID'
 
     if (!token) { window.location.href = '/customer/login'; }
 
@@ -437,6 +444,24 @@
         loadCreditSummary();
     });
 
+    // ── Tabs Activos / Historial ──────────────────────────────
+    function switchTab(tab) {
+        if (_currentTab === tab) return;
+        _currentTab = tab;
+        var act = (tab === 'ACTIVE');
+        $('#tabActive').toggleClass('cr-tab-active', act).css({
+            'color': act ? 'var(--text)' : 'var(--text3)',
+            'border-bottom-color': act ? 'var(--accent)' : 'transparent',
+            'font-weight': act ? '700' : '600'
+        });
+        $('#tabHistory').toggleClass('cr-tab-active', !act).css({
+            'color': !act ? 'var(--text)' : 'var(--text3)',
+            'border-bottom-color': !act ? 'var(--accent)' : 'transparent',
+            'font-weight': !act ? '700' : '600'
+        });
+        loadCredits();
+    }
+
     // ── Load credits ──────────────────────────────────────────
     function loadCredits() {
         if (!token || !customer.id) return;
@@ -445,7 +470,7 @@
             url: '/api/customer/credits',
             method: 'GET',
             headers: { 'Authorization': 'Bearer ' + token },
-            data: { status: 'ACTIVE' },
+            data: { status: _currentTab },
             success: function(response) { displayCredits(response.credits); },
             error: function(xhr) {
                 if (xhr.status === 401) { window.location.href = '/customer/login'; return; }
@@ -492,32 +517,43 @@
         var container = $('#creditsList');
         container.empty();
 
+        var isHistory = (_currentTab === 'PAID');
+
         if (!credits || credits.length === 0) {
+            var emptyTitle = isHistory ? 'Sin créditos en el historial' : 'Sin créditos pendientes';
+            var emptyMsg   = isHistory ? 'Aún no has pagado completamente ningún crédito.' : 'No tienes deudas activas en este momento.';
             container.html(
                 '<div class="cr-empty">' +
                 '<div class="cr-empty-icon"><i class="bi bi-check2-circle"></i></div>' +
-                '<h3>Sin créditos pendientes</h3>' +
-                '<p>No tienes deudas activas en este momento.</p>' +
+                '<h3>' + emptyTitle + '</h3>' +
+                '<p>' + emptyMsg + '</p>' +
                 '</div>'
             );
+            // En historial vacío también ocultar botón Pagar Todo
+            if (isHistory) $('#payAllWrapper').css('display', 'none');
             return;
         }
 
-        // Calcular el total como suma de valores ya truncados (evita discrepancia con los subtotales mostrados)
-        var computedTotal = 0;
-        var activeCreditsForPayAll = [];
-        credits.forEach(function(credit) {
-            if (credit.status === 'ACTIVE' && floorBal(credit.currentBalance) > 0.01) {
-                computedTotal += floorBal(credit.currentBalance);
-                activeCreditsForPayAll.push(credit);
-            }
-        });
-        $('#totalBalance').text('$' + computedTotal.toFixed(2));
+        if (!isHistory) {
+            // Calcular el total como suma de valores ya truncados (evita discrepancia con los subtotales mostrados)
+            var computedTotal = 0;
+            var activeCreditsForPayAll = [];
+            credits.forEach(function(credit) {
+                if (credit.status === 'ACTIVE' && floorBal(credit.currentBalance) > 0.01) {
+                    computedTotal += floorBal(credit.currentBalance);
+                    activeCreditsForPayAll.push(credit);
+                }
+            });
+            $('#totalBalance').text('$' + computedTotal.toFixed(2));
 
-        // Mostrar botón "Pagar Todo" solo si hay 2 o más créditos activos
-        if (activeCreditsForPayAll.length >= 2) {
-            $('#payAllWrapper').css('display', 'flex');
+            // Mostrar botón "Pagar Todo" solo si hay 2 o más créditos activos
+            if (activeCreditsForPayAll.length >= 2) {
+                $('#payAllWrapper').css('display', 'flex');
+            } else {
+                $('#payAllWrapper').css('display', 'none');
+            }
         } else {
+            // En modo historial nunca mostrar el botón Pagar Todo
             $('#payAllWrapper').css('display', 'none');
         }
 
