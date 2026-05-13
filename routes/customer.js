@@ -1356,7 +1356,9 @@ router.post('/credits/:id/prepare-payphone', authenticateCustomer, async (req, r
     if (!credit) return res.status(404).json({ error: 'Crédito no encontrado', code: 'NOT_FOUND' });
     if (credit.status !== 'ACTIVE') return res.status(400).json({ error: 'Crédito no activo', code: 'CREDIT_NOT_ACTIVE' });
 
-    const balance = parseFloat(credit.currentBalance);
+    // Truncar al centavo (lo que ve el cliente en pantalla) para evitar cobrar
+    // fracciones por debajo del centavo que luego no cuadran con el saldo real
+    const balance = Math.floor(parseFloat(credit.currentBalance) * 100) / 100;
     if (balance <= 0.01) return res.status(400).json({ error: 'Sin saldo pendiente', code: 'NO_BALANCE' });
 
     const { token, storeId } = await getPayphoneCredentials(tenantId);

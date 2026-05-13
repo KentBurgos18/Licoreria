@@ -111,13 +111,11 @@ class CreditService {
     let amount = parseFloat(paymentAmount);
     const currentBalance = parseFloat(credit.currentBalance);
 
-    // Tolerar pequeñas diferencias por redondeo entre el monto preparado
-    // (basado en saldo al momento de iniciar el pago) y el saldo actual
-    // (puede haber variado ligeramente por recálculo de intereses).
+    // Tolerar pequeñas diferencias por redondeo entre el monto preparado y el
+    // saldo actual (variaciones de centésimas por recálculo de intereses).
     if (amount > currentBalance) {
-      if (amount - currentBalance <= 0.05) {
-        // Diferencia despreciable → capar al saldo actual
-        amount = currentBalance;
+      if (amount - currentBalance <= 0.01) {
+        amount = currentBalance; // capar al saldo
       } else {
         throw new Error(`Payment amount (${amount}) exceeds current balance (${currentBalance})`);
       }
