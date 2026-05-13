@@ -10043,6 +10043,14 @@
                 showAlert('La suma de montos no coincide con el total del carrito', 'warning');
                 return;
             }
+            // Validar cuenta bancaria en participantes con transferencia
+            for (var _i = 0; _i < gsParticipantes.length; _i++) {
+                var _p = gsParticipantes[_i];
+                if (_p.paymentMethod === 'TRANSFER' && !_p.bankAccount) {
+                    showAlert('El participante "' + (_p.customerName || 'sin nombre') + '" tiene método Transferencia pero no seleccionó cuenta bancaria', 'warning');
+                    return;
+                }
+            }
 
             const token = localStorage.getItem('adminToken');
             const payload = {
