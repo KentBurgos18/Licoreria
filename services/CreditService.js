@@ -108,11 +108,19 @@ class CreditService {
       throw new Error('Credit not found or not active');
     }
 
-    const amount = parseFloat(paymentAmount);
+    let amount = parseFloat(paymentAmount);
     const currentBalance = parseFloat(credit.currentBalance);
 
+    // Tolerar pequeñas diferencias por redondeo entre el monto preparado
+    // (basado en saldo al momento de iniciar el pago) y el saldo actual
+    // (puede haber variado ligeramente por recálculo de intereses).
     if (amount > currentBalance) {
-      throw new Error(`Payment amount (${amount}) exceeds current balance (${currentBalance})`);
+      if (amount - currentBalance <= 0.05) {
+        // Diferencia despreciable → capar al saldo actual
+        amount = currentBalance;
+      } else {
+        throw new Error(`Payment amount (${amount}) exceeds current balance (${currentBalance})`);
+      }
     }
 
     // Update credit balance
