@@ -1253,6 +1253,19 @@ router.get('/credits', authenticateCustomer, async (req, res) => {
         });
         if (saleData) cr.saleData = saleData.toJSON();
       }
+
+      // Total pagado sobre este crédito (suma de customer_payments vinculados)
+      const whereP = { tenantId, customerId };
+      if (cr.groupPurchaseParticipantId) {
+        whereP[require('sequelize').Op.or] = [
+          { creditId: cr.id },
+          { groupPurchaseParticipantId: cr.groupPurchaseParticipantId }
+        ];
+      } else {
+        whereP.creditId = cr.id;
+      }
+      const totalPaidRow = await CustomerPayment.sum('amount', { where: whereP });
+      cr.totalPaid = parseFloat(totalPaidRow || 0);
     }
 
     res.json({ credits: creditsJson });

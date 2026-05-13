@@ -559,9 +559,16 @@
         }
 
         credits.forEach(function(credit, idx) {
-            var initialAmount  = parseFloat(credit.initialAmount || 0).toFixed(2);
+            var isPaid = credit.status === 'PAID';
+            var initialAmountNum = parseFloat(credit.initialAmount || 0);
+            var initialAmount  = initialAmountNum.toFixed(2);
+            var totalPaid = parseFloat(credit.totalPaid || 0);
             var currentBalance = floorBal(credit.currentBalance).toFixed(2);
-            var interestAmount = Math.max(0, floorBal(credit.currentBalance) - parseFloat(credit.initialAmount || 0)).toFixed(2);
+            // Si está PAID, los intereses son lo pagado por encima del monto inicial.
+            // Si está ACTIVE, los intereses acumulados son saldo actual − monto inicial.
+            var interestAmount = isPaid
+                ? Math.max(0, totalPaid - initialAmountNum).toFixed(2)
+                : Math.max(0, floorBal(credit.currentBalance) - initialAmountNum).toFixed(2);
             var dueDate = credit.dueDate
                 ? new Date(credit.dueDate).toLocaleDateString('es-ES')
                 : null;
@@ -667,8 +674,8 @@
                         '<span class="cr-field-val">$' + initialAmount + '</span>' +
                     '</div>' +
                     '<div class="cr-field">' +
-                        '<span class="cr-field-lbl">Saldo actual</span>' +
-                        '<span class="cr-field-val ' + balanceClass + '">$' + currentBalance + '</span>' +
+                        '<span class="cr-field-lbl">' + (isPaid ? 'Total pagado' : 'Saldo actual') + '</span>' +
+                        '<span class="cr-field-val ' + (isPaid ? 'accent' : balanceClass) + '">$' + (isPaid ? totalPaid.toFixed(2) : currentBalance) + '</span>' +
                     '</div>' +
                     '<div class="cr-field">' +
                         '<span class="cr-field-lbl">Intereses</span>' +
