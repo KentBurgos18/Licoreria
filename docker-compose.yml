@@ -16,6 +16,7 @@ services:
       - ./database/seed.sql:/docker-entrypoint-initdb.d/10-seed.sql
     networks:
       - licoreria-network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U licoreria_user -d licoreria"]
       interval: 10s
