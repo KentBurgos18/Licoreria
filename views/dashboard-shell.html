@@ -1673,7 +1673,7 @@
                                 <label class="form-label">Precio de Venta</label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input type="number" class="form-control" id="productSalePrice" step="0.01" min="0" required>
+                                    <input type="number" class="form-control" id="productSalePrice" step="0.01" min="0.01" required>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -7614,6 +7614,17 @@
             const isEditing = currentEditingProduct !== null;
             const url = isEditing ? `/api/products/${currentEditingProduct.id}` : '/api/products';
             const method = isEditing ? 'PUT' : 'POST';
+
+            // Validaciones básicas
+            const nameVal = ($('#productName').val() || '').trim();
+            if (!nameVal) { showAlert('El nombre del producto es requerido', 'warning'); return; }
+            const salePriceRaw = ($('#productSalePrice').val() || '').toString().trim();
+            const salePriceNum = parseFloat(salePriceRaw);
+            if (salePriceRaw === '' || isNaN(salePriceNum) || !isFinite(salePriceNum) || salePriceNum <= 0) {
+                showAlert('El precio de venta debe ser un número mayor a 0', 'warning');
+                $('#productSalePrice').focus();
+                return;
+            }
 
             // Check if there's a file to upload
             const imageFile = $('#productImage')[0].files[0];

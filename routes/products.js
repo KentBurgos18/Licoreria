@@ -123,6 +123,14 @@ router.post('/', checkPermission('products', 'full'), uploadSingle('image'), asy
       }
     }
 
+    // Validate required fields and numeric sanity (impide NaN/null/Infinity en BD)
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'El nombre del producto es requerido', code: 'NAME_REQUIRED' });
+    }
+    if (!Number.isFinite(salePrice) || salePrice <= 0) {
+      return res.status(400).json({ error: 'El precio de venta debe ser un número mayor a 0', code: 'INVALID_SALE_PRICE' });
+    }
+
     // Handle image upload
     let imageUrl = null;
     if (req.file) {
@@ -483,6 +491,14 @@ router.put('/:id', checkPermission('products', 'full'), uploadSingle('image'), a
         error: 'Product not found',
         code: 'PRODUCT_NOT_FOUND'
       });
+    }
+
+    // Si vienen valores explícitos, validar que sean sanos (rechazar NaN/Infinity/<=0)
+    if (salePrice !== undefined && salePrice !== null && salePrice !== '') {
+      const sp = parseFloat(salePrice);
+      if (!Number.isFinite(sp) || sp <= 0) {
+        return res.status(400).json({ error: 'El precio de venta debe ser un número mayor a 0', code: 'INVALID_SALE_PRICE' });
+      }
     }
 
     // Handle image upload
