@@ -292,6 +292,86 @@ router.post('/bulk-payment', async (req, res) => {
 });
 
 // GET /customer-credits/:id - Get credit by ID
+// GET /customer-credits/:id/sale-detail — detalle de venta vinculada al crédito (admin)
+router.get('/:id/sale-detail', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const tenantId = 1;
+
+    const credit = await CustomerCredit.findOne({
+      where: { id, tenantId },
+      include: [
+        { association: 'customer', attributes: ['id', 'name', 'email'] },
+        {
+          association: 'groupPurchaseParticipant',
+          include: [{
+            association: 'groupPurchase',
+            include: [{
+              association: 'sale',
+              include: [{ association: 'items', include: [{ association: 'product', attributes: ['id', 'name'] }] }]
+            }]
+          }]
+        }
+      ]
+    });
+
+    if (!credit) return res.status(404).json({ error: 'Crédito no encontrado' });
+
+    let items = [];
+    let saleId = null;
+    let saleDate = null;
+    let saleNotes = null;
+
+    // Individual: items vienen del sale_id directo
+    if (credit.saleId) {
+      const sale = await Sale.findOne({
+        where: { id: credit.saleId, tenantId },
+        include: [{ association: 'items', include: [{ association: 'product', attributes: ['id', 'name'] }] }]
+      });
+      if (sale) {
+        saleId = sale.id;
+        saleDate = sale.createdAt;
+        saleNotes = sale.notes;
+        items = (sale.items || []).map(it => ({
+          productName: it.product ? it.product.name : 'Producto eliminado',
+          qty: parseFloat(it.quantity),
+          unitPrice: parseFloat(it.unitPrice),
+          subtotal: parseFloat(it.totalPrice)
+        }));
+      }
+    } else if (credit.groupPurchaseParticipant && credit.groupPurchaseParticipant.groupPurchase) {
+      // Grupal: items vienen de la venta de la compra grupal
+      const gp = credit.groupPurchaseParticipant.groupPurchase;
+      if (gp.sale) {
+        saleId = gp.sale.id;
+        saleDate = gp.sale.createdAt;
+        saleNotes = gp.sale.notes;
+        items = (gp.sale.items || []).map(it => ({
+          productName: it.product ? it.product.name : 'Producto eliminado',
+          qty: parseFloat(it.quantity),
+          unitPrice: parseFloat(it.unitPrice),
+          subtotal: parseFloat(it.totalPrice)
+        }));
+      }
+    }
+
+    res.json({
+      creditId: credit.id,
+      customerName: credit.customer ? credit.customer.name : null,
+      saleId,
+      saleDate,
+      saleNotes,
+      initialAmount: parseFloat(credit.initialAmount),
+      currentBalance: parseFloat(credit.currentBalance),
+      isGroup: !!credit.groupPurchaseParticipantId,
+      items
+    });
+  } catch (error) {
+    console.error('Error getting credit sale detail:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /customer-credits/:id/payments — pagos realizados sobre un crédito (admin)
 router.get('/:id/payments', async (req, res) => {
   try {
