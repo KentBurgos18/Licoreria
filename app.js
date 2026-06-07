@@ -1675,6 +1675,15 @@ async function initializeApp() {
       console.warn('⚠️ Migración inventory_movements.reason:', e.message);
     }
 
+    // Migración: permitir VOIDED en purchase_orders.status
+    try {
+      await sequelize.query(`ALTER TABLE purchase_orders DROP CONSTRAINT IF EXISTS purchase_orders_status_check`);
+      await sequelize.query(`ALTER TABLE purchase_orders ADD CONSTRAINT purchase_orders_status_check CHECK (status IN ('PAID','PENDING','PARTIAL','OVERDUE','VOIDED'))`);
+      console.log('✅ Migración purchase_orders.status (+VOIDED) completada');
+    } catch (e) {
+      console.warn('⚠️ Migración purchase_orders.status:', e.message);
+    }
+
     // Migración: agregar is_returnable a products
     try {
       await sequelize.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_returnable BOOLEAN NOT NULL DEFAULT false`);
