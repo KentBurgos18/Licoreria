@@ -424,10 +424,10 @@ router.patch('/:id/void', async (req, res) => {
         tenantId,
         productId: mv.productId,
         movementType: 'OUT',
-        reason: 'VOID_PURCHASE',
+        reason: 'VOID',
         qty: mv.qty,
         unitCost: mv.unitCost,
-        refType: 'PURCHASE',
+        refType: 'PURCHASE_VOID',
         refId: order.id,
         purchaseOrderId: order.id,
         createdAt: new Date()

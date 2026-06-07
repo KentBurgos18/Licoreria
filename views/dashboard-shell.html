@@ -4707,12 +4707,12 @@
                 data: JSON.stringify({ tenantId: 1 }),
                 success: function() {
                     bootstrap.Modal.getInstance(document.getElementById('purchaseDetailModal')).hide();
-                    showToast('Compra anulada correctamente', 'success');
+                    showAlert('Compra anulada correctamente', 'success');
                     loadPurchases();
                 },
                 error: function(xhr) {
                     const msg = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : 'Error al anular la compra';
-                    showToast(msg, 'danger');
+                    showAlert(msg, 'danger');
                 }
             });
         }
