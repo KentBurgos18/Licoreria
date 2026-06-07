@@ -1666,6 +1666,15 @@ async function initializeApp() {
       console.warn('⚠️ Migración customer_payments.credit_id:', e.message);
     }
 
+    // Migración: ampliar inventory_movements.reason a VARCHAR(30)
+    // (VOID_PURCHASE tiene 13 chars y antes la columna era VARCHAR(10))
+    try {
+      await sequelize.query(`ALTER TABLE inventory_movements ALTER COLUMN reason TYPE VARCHAR(30)`);
+      console.log('✅ Migración inventory_movements.reason VARCHAR(30) completada');
+    } catch (e) {
+      console.warn('⚠️ Migración inventory_movements.reason:', e.message);
+    }
+
     // Migración: agregar is_returnable a products
     try {
       await sequelize.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_returnable BOOLEAN NOT NULL DEFAULT false`);
