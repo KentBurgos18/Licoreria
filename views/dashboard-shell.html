@@ -9370,19 +9370,50 @@
         }
         
         function toggleGroupSaleModal() {
-            isGroupSale = $('#sellCartModalGroupSaleToggle').is(':checked');
+            var wantGroup = $('#sellCartModalGroupSaleToggle').is(':checked');
+
+            // Al DESACTIVAR con participantes ya agregados → pedir confirmación
+            if (!wantGroup && gsParticipantes.length > 0) {
+                var msg = 'Vas a desactivar Venta Grupal y se perderán los ' + gsParticipantes.length + ' participante(s) que agregaste. ¿Continuar?';
+                if (!confirm(msg)) {
+                    // Cancelar: dejar el toggle como estaba (activado)
+                    $('#sellCartModalGroupSaleToggle').prop('checked', true);
+                    return;
+                }
+            }
+
+            isGroupSale = wantGroup;
             if (isGroupSale) {
                 $('#sellCartModalPaymentMethodCol').hide();
                 $('#sellCartModalNormalSaleFields').hide();
                 $('#sellCartModalGroupSaleFields').show();
                 gsParticipantes = [];
                 groupSaleParticipants = [];
+
+                // ── Si había un cliente seleccionado en venta normal, agregarlo
+                // automáticamente como primer participante para no perderlo
+                var preCustomerId   = $('#sellCartModalCustomerId').val();
+                var preCustomerName = ($('#sellCartModalCustomerSearch').val() || '').trim();
+                if (preCustomerId && preCustomerName) {
+                    gsParticipantes.push({
+                        customerId: parseInt(preCustomerId, 10),
+                        customerName: preCustomerName,
+                        amountDue: 0, paymentMethod: '', dueDate: null, interestRate: 0
+                    });
+                    groupSaleParticipants = gsParticipantes;
+                    // Limpiar campos del cliente normal (ya está en la lista grupal)
+                    $('#sellCartModalCustomerId').val('');
+                    $('#sellCartModalCustomerSearch').val('');
+                    if (typeof $('#clearCustomerBtn').hide === 'function') $('#clearCustomerBtn').hide();
+                }
+
                 // Precargar cuentas bancarias para que estén listas al elegir Transferencia
                 if (!_modalBankAccounts) {
                     $.ajax({ url: '/api/public/bank-accounts', method: 'GET',
-                        success: function(r) { _modalBankAccounts = r.accounts || []; gsRender(); }
+                        success: function(r) { _modalBankAccounts = r.accounts || []; gsCalcMontos(); gsRender(); }
                     });
                 }
+                gsCalcMontos();
                 gsRender();
                 gsValidar();
             } else {
