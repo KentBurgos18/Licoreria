@@ -9401,27 +9401,48 @@
         var gsParticipantes = []; // [{customerId, customerName, amountDue, paymentMethod}]
         var gsSearchTimer = null;
 
-        // ── Ajuste al teclado virtual (evita que el footer se monte sobre el input) ──
+        // ── Ajuste al teclado virtual ─────────────────────────────────────────
+        // En móvil, cuando aparece el teclado y se enfoca un input dentro del
+        // modal, el "Resumen del Pedido" y los botones (Vaciar / Procesar)
+        // pueden tapar lo que se está editando. Los ocultamos temporalmente
+        // mientras hay un campo enfocado; vuelven al desenfocar.
         (function setupKeyboardAdjustment() {
-            if (!window.visualViewport) return; // sin soporte (Safari viejo) — saltar
-            function adjust() {
-                var modalContent = document.querySelector('#sellCartModal.show .modal-content');
-                if (!modalContent) return;
-                var keyboardHeight = Math.max(0, window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop);
-                // Si hay teclado abierto, dejar espacio en la parte inferior para que el footer no se cubra
-                modalContent.style.paddingBottom = keyboardHeight > 100 ? keyboardHeight + 'px' : '';
+            if (!window.visualViewport) return;
+            var modalSel = '#sellCartModal.show';
+
+            function isKeyboardOpen() {
+                return (window.innerHeight - window.visualViewport.height) > 100;
             }
-            window.visualViewport.addEventListener('resize', adjust);
-            window.visualViewport.addEventListener('scroll', adjust);
-            // También cuando el modal se abre
-            document.addEventListener('shown.bs.modal', function(e) {
-                if (e.target && e.target.id === 'sellCartModal') setTimeout(adjust, 50);
+            function hideBottomChrome() {
+                var resumen = document.querySelector(modalSel + ' .scm-resumen');
+                var foot    = document.querySelector(modalSel + ' .scm-foot');
+                if (resumen) resumen.style.display = 'none';
+                if (foot)    foot.style.display    = 'none';
+            }
+            function showBottomChrome() {
+                var resumen = document.querySelector(modalSel + ' .scm-resumen');
+                var foot    = document.querySelector(modalSel + ' .scm-foot');
+                if (resumen) resumen.style.display = '';
+                if (foot)    foot.style.display    = '';
+            }
+            // Cuando se enfoca un campo dentro del modal, esperar a ver si abre el teclado
+            document.addEventListener('focusin', function(e) {
+                if (!document.querySelector(modalSel)) return;
+                if (!e.target.matches('input, select, textarea')) return;
+                setTimeout(function() { if (isKeyboardOpen()) hideBottomChrome(); }, 250);
             });
+            document.addEventListener('focusout', function(e) {
+                if (!document.querySelector(modalSel)) return;
+                // Pequeño delay por si otro input toma el foco inmediatamente
+                setTimeout(function() {
+                    if (!document.activeElement || !document.activeElement.matches('input, select, textarea')) {
+                        showBottomChrome();
+                    }
+                }, 100);
+            });
+            // Al cerrar el modal, restaurar
             document.addEventListener('hidden.bs.modal', function(e) {
-                if (e.target && e.target.id === 'sellCartModal') {
-                    var mc = document.querySelector('#sellCartModal .modal-content');
-                    if (mc) mc.style.paddingBottom = '';
-                }
+                if (e.target && e.target.id === 'sellCartModal') showBottomChrome();
             });
         })();
 
