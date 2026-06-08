@@ -456,6 +456,43 @@
             height: 100%;
             overflow: hidden;
         }
+        /* Evitar scroll horizontal accidental dentro del modal y la lista de participantes */
+        #sellCartModal .scm-body { overflow-x: hidden; }
+        #gsParticipantes { overflow-x: hidden; touch-action: pan-y; }
+
+        /* Tarjeta vertical por participante de venta grupal */
+        .gs-part-card {
+            border: 1px solid var(--th-border);
+            border-radius: 10px;
+            padding: 9px 10px;
+            margin-bottom: 6px;
+            background: var(--th-surf2);
+        }
+        .gs-part-head {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 8px; margin-bottom: 7px;
+        }
+        .gs-part-name {
+            font-weight: 700; font-size: 12.5px; color: var(--th-text);
+            flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .gs-part-remove {
+            background: none; border: none; color: var(--th-red);
+            cursor: pointer; padding: 0; font-size: 18px; line-height: 1;
+            flex-shrink: 0;
+        }
+        .gs-part-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px;
+        }
+        .gs-part-field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .gs-part-field-lbl {
+            font-size: 10px; color: var(--th-text3);
+            font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+        }
+        .gs-part-field-full { grid-column: 1 / -1; }
+        .gs-part-card .form-control, .gs-part-card .form-select, .gs-part-card .input-group-text {
+            font-size: 12px;
+        }
         /* Head */
         .scm-wrap .scm-head {
             display: flex; align-items: center; justify-content: space-between;
@@ -9364,6 +9401,30 @@
         var gsParticipantes = []; // [{customerId, customerName, amountDue, paymentMethod}]
         var gsSearchTimer = null;
 
+        // ── Ajuste al teclado virtual (evita que el footer se monte sobre el input) ──
+        (function setupKeyboardAdjustment() {
+            if (!window.visualViewport) return; // sin soporte (Safari viejo) — saltar
+            function adjust() {
+                var modalContent = document.querySelector('#sellCartModal.show .modal-content');
+                if (!modalContent) return;
+                var keyboardHeight = Math.max(0, window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop);
+                // Si hay teclado abierto, dejar espacio en la parte inferior para que el footer no se cubra
+                modalContent.style.paddingBottom = keyboardHeight > 100 ? keyboardHeight + 'px' : '';
+            }
+            window.visualViewport.addEventListener('resize', adjust);
+            window.visualViewport.addEventListener('scroll', adjust);
+            // También cuando el modal se abre
+            document.addEventListener('shown.bs.modal', function(e) {
+                if (e.target && e.target.id === 'sellCartModal') setTimeout(adjust, 50);
+            });
+            document.addEventListener('hidden.bs.modal', function(e) {
+                if (e.target && e.target.id === 'sellCartModal') {
+                    var mc = document.querySelector('#sellCartModal .modal-content');
+                    if (mc) mc.style.paddingBottom = '';
+                }
+            });
+        })();
+
         function gsSearchCustomer(q) {
             clearTimeout(gsSearchTimer);
             var query = (q || '').trim();
@@ -9465,6 +9526,8 @@
                 ].map(function(m) {
                     return '<option value="' + m.v + '"' + (p.paymentMethod === m.v ? ' selected' : '') + '>' + m.l + '</option>';
                 }).join('');
+
+                // Campos extra dependientes del método (ocupan toda la fila)
                 var extraFields = '';
                 if (p.paymentMethod === 'TRANSFER') {
                     var bankOpts = '<option value="">— Cuenta bancaria —</option>';
@@ -9472,28 +9535,49 @@
                         var lbl = (acc.bankName || '') + (acc.accountNumber ? ' - ' + acc.accountNumber : '');
                         bankOpts += '<option value="' + lbl + '"' + (p.bankAccount === lbl ? ' selected' : '') + '>' + lbl + '</option>';
                     });
-                    extraFields = '<select class="form-select form-select-sm flex-shrink-0" style="width:195px;font-size:11px" onchange="gsSetBankAccount(' + i + ',this.value)">' + bankOpts + '</select>';
+                    extraFields =
+                        '<div class="gs-part-field gs-part-field-full">' +
+                            '<span class="gs-part-field-lbl">Cuenta</span>' +
+                            '<select class="form-select form-select-sm" onchange="gsSetBankAccount(' + i + ',this.value)">' + bankOpts + '</select>' +
+                        '</div>';
                 } else if (p.paymentMethod === 'CREDIT') {
                     extraFields =
-                        '<input type="date" class="form-control form-control-sm flex-shrink-0" style="width:130px" title="Fecha límite de pago" value="' + (p.dueDate || '') + '" onchange="gsSetDueDate(' + i + ',this.value)">' +
-                        '<div class="input-group input-group-sm flex-shrink-0" style="width:90px" title="Tasa de interés diaria (%)">' +
-                          '<input type="number" class="form-control p-1" step="0.01" min="0" max="100" placeholder="0" value="' + ((p.interestRate || 0) * 100).toFixed(2) + '" onchange="gsSetInterestRate(' + i + ',this.value)">' +
-                          '<span class="input-group-text p-1">%</span>' +
+                        '<div class="gs-part-field">' +
+                            '<span class="gs-part-field-lbl">Vence</span>' +
+                            '<input type="date" class="form-control form-control-sm" value="' + (p.dueDate || '') + '" onchange="gsSetDueDate(' + i + ',this.value)">' +
+                        '</div>' +
+                        '<div class="gs-part-field">' +
+                            '<span class="gs-part-field-lbl">Interés diario</span>' +
+                            '<div class="input-group input-group-sm">' +
+                                '<input type="number" class="form-control" step="0.01" min="0" max="100" placeholder="0" value="' + ((p.interestRate || 0) * 100).toFixed(2) + '" onchange="gsSetInterestRate(' + i + ',this.value)">' +
+                                '<span class="input-group-text">%</span>' +
+                            '</div>' +
                         '</div>';
                 }
-                var row = '<div class="d-flex align-items-center gap-2 border rounded px-2 py-1 mb-1 flex-wrap">' +
-                    '<span class="small fw-semibold flex-fill text-truncate" title="' + n + '" style="min-width:80px;max-width:130px">' + n + '</span>' +
-                    '<select class="form-select form-select-sm flex-shrink-0" style="width:145px" onchange="gsSetMetodo(' + i + ',this.value)">' + opts + '</select>' +
-                    '<div class="input-group input-group-sm flex-shrink-0" style="width:100px">' +
-                        '<span class="input-group-text p-1">$</span>' +
-                        '<input type="number" class="form-control p-1" step="0.01" min="0" value="' + p.amountDue.toFixed(2) + '" onchange="gsSetMonto(' + i + ',this.value)" oninput="gsValidar()">' +
-                    '</div>' +
-                    extraFields +
-                    '<button class="btn btn-sm btn-link text-danger p-0 flex-shrink-0" type="button" onclick="gsRemove(' + i + ')"><i class="bi bi-x-circle"></i></button>' +
+
+                var card =
+                    '<div class="gs-part-card">' +
+                        '<div class="gs-part-head">' +
+                            '<span class="gs-part-name" title="' + n + '">' + n + '</span>' +
+                            '<button class="gs-part-remove" type="button" title="Quitar" onclick="gsRemove(' + i + ')"><i class="bi bi-x-circle"></i></button>' +
+                        '</div>' +
+                        '<div class="gs-part-grid">' +
+                            '<div class="gs-part-field">' +
+                                '<span class="gs-part-field-lbl">Forma de pago</span>' +
+                                '<select class="form-select form-select-sm" onchange="gsSetMetodo(' + i + ',this.value)">' + opts + '</select>' +
+                            '</div>' +
+                            '<div class="gs-part-field">' +
+                                '<span class="gs-part-field-lbl">Monto</span>' +
+                                '<div class="input-group input-group-sm">' +
+                                    '<span class="input-group-text">$</span>' +
+                                    '<input type="number" class="form-control" step="0.01" min="0" value="' + p.amountDue.toFixed(2) + '" onchange="gsSetMonto(' + i + ',this.value)" oninput="gsValidar()">' +
+                                '</div>' +
+                            '</div>' +
+                            extraFields +
+                        '</div>' +
                     '</div>';
-                $c.append(row);
+                $c.append(card);
             });
-            // Update pay button state
             $('#sellCartModalPayButtonText').text('Procesar Venta Grupal');
             gsValidar();
         }
@@ -12951,7 +13035,7 @@
                                 </div>
                                 <div id="gsDropdown" class="list-group list-group-flush" style="position:absolute;top:100%;left:0;right:0;z-index:1100;max-height:160px;overflow-y:auto;border:1px solid var(--th-border);border-radius:10px;background:var(--th-surf);display:none;box-shadow:0 8px 24px rgba(0,0,0,.35);"></div>
                             </div>
-                            <div id="gsParticipantes" style="max-height:200px;overflow-y:auto;margin-top:6px;"></div>
+                            <div id="gsParticipantes" style="margin-top:6px;"></div>
                             <div class="d-flex align-items-center gap-2 mt-2">
                                 <button class="scm-btn-cerrar" type="button" onclick="gsDividirIgualmente()" style="flex:0;white-space:nowrap;padding:6px 14px;font-size:11.5px;">
                                     <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:3px;vertical-align:middle;"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
