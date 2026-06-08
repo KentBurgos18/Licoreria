@@ -4638,7 +4638,7 @@
             const totalAmount = parseFloat(o.totalAmount || 0);
             const balance = totalAmount - amountPaid;
 
-            $('#purchaseDetailModal .modal-title').text('Detalle de Compra — ' + supplierName);
+            $('#purchaseDetailModal .modal-title').html('Detalle de Compra <span class="text-muted">#' + o.id + '</span> — ' + supplierName);
 
             $('#purchaseDetailInfo').html(`
                 <div class="col-6 col-md-3"><small class="text-muted d-block">Código Proveedor</small><code>${supplierCode}</code></div>
