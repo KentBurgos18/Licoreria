@@ -42,6 +42,10 @@ const session = require('express-session');
 const { configurePassport, passport } = require('./config/passport');
 
 const app = express();
+// Confiar en 1 proxy delante (Nginx Proxy Manager) para leer la IP real del
+// cliente vía X-Forwarded-For. Necesario para que el rate-limiting cuente por
+// usuario real y no por la IP del proxy (que sería la misma para todos).
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 const { Server } = require('socket.io');
 // Orígenes permitidos (configurar en .env separados por coma, ej: ALLOWED_ORIGINS=https://midominio.com,https://admin.midominio.com)
