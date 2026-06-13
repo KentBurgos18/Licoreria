@@ -17,8 +17,8 @@
         </div>
         <div id="successState" class="d-none card card-lb shadow-sm d-inline-block p-4 text-start">
             <h4 class="text-success mb-3"><i class="bi bi-check-circle"></i> ¡Pago confirmado!</h4>
-            <p class="text-muted mb-0">Su pedido ha sido registrado correctamente.</p>
-            <p class="small text-muted mt-2">Redirigiendo a Mis Pedidos...</p>
+            <p id="successMsg" class="text-muted mb-0">Su pedido ha sido registrado correctamente.</p>
+            <p id="successRedirect" class="small text-muted mt-2">Redirigiendo a Mis Pedidos...</p>
         </div>
         <div id="errorState" class="d-none card card-lb shadow-sm d-inline-block p-4 text-start">
             <h4 class="text-danger mb-3"><i class="bi bi-x-circle"></i> Pago no completado</h4>
@@ -67,7 +67,10 @@
                 success: function(response) {
                     document.getElementById('loadingState').classList.add('d-none');
                     document.getElementById('successState').classList.remove('d-none');
-                    if (!isCredit) {
+                    if (isCredit) {
+                        document.getElementById('successMsg').textContent = 'Su pago ha sido registrado correctamente.';
+                        document.getElementById('successRedirect').textContent = 'Redirigiendo a Mis Créditos...';
+                    } else {
                         localStorage.removeItem('customerCart');
                     }
                     setTimeout(function() {
