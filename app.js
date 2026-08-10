@@ -456,6 +456,27 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
       GROUP BY payment_method, transfer_account_info
     `, { replacements: { tenantId } });
 
+    // Pagos inmediatos (efectivo/transferencia) de participantes en ventas grupales MIXTAS.
+    // Estas ventas quedan marcadas como CREDIT (por la mezcla), por lo que la venta en sí
+    // NO se cuenta arriba; pero la parte que se pagó al contado/transferencia SÍ entró y vive
+    // solo en group_purchase_participants.amount_paid. Se suma aquí para no perder ese ingreso.
+    // No hay doble conteo: las ventas 100% CASH/TRANSFER se cuentan por la venta (no son CREDIT).
+    const [groupImmediateRows] = await sequelize.query(`
+      SELECT
+        gpp.payment_method,
+        COALESCE(gpp.transfer_account_info, '') AS transfer_account_info,
+        SUM(gpp.amount_paid) AS total
+      FROM group_purchase_participants gpp
+      JOIN group_purchases gp ON gp.id = gpp.group_purchase_id
+      JOIN sales s ON s.id = gp.sale_id
+      WHERE s.tenant_id = :tenantId
+        AND s.payment_method = 'CREDIT'
+        AND s.status != 'VOIDED'
+        AND gpp.payment_method IN ('CASH', 'TRANSFER')
+        AND gpp.amount_paid > 0
+      GROUP BY gpp.payment_method, gpp.transfer_account_info
+    `, { replacements: { tenantId } });
+
     // Salidas: compras pagadas directamente (no crédito proveedor)
     const [purchaseOutflowRows] = await sequelize.query(`
       SELECT
@@ -545,6 +566,20 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
         const key = row.transfer_account_info || 'unassigned';
         if (!summary.transfer[key]) summary.transfer[key] = { salesTotal: 0, creditsTotal: 0, total: 0 };
         summary.transfer[key].creditsTotal += amt;
+      }
+    }
+
+    // Pagos inmediatos de participantes en ventas grupales mixtas (ver query arriba).
+    // Cuentan como ingreso por venta (salesTotal) en su método/cuenta correspondiente.
+    for (const row of groupImmediateRows) {
+      const amt = parseFloat(row.total) || 0;
+      const method = (row.payment_method || '').toUpperCase();
+      if (method === 'CASH') {
+        summary.cash.salesTotal += amt;
+      } else if (method === 'TRANSFER') {
+        const key = row.transfer_account_info || 'unassigned';
+        if (!summary.transfer[key]) summary.transfer[key] = { salesTotal: 0, creditsTotal: 0, total: 0 };
+        summary.transfer[key].salesTotal += amt;
       }
     }
 
