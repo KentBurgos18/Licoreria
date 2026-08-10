@@ -22,6 +22,8 @@ const ProductCategory = require('./ProductCategory');
 const ProductPresentation = require('./ProductPresentation');
 const Expense = require('./Expense');
 const CreditPaymentRequest = require('./CreditPaymentRequest');
+const Loan = require('./Loan');
+const LoanPayment = require('./LoanPayment');
 
 // Initialize models
 const models = {
@@ -47,7 +49,9 @@ const models = {
   ProductCategory: ProductCategory(sequelize),
   ProductPresentation: ProductPresentation(sequelize),
   Expense: Expense(sequelize),
-  CreditPaymentRequest: CreditPaymentRequest(sequelize)
+  CreditPaymentRequest: CreditPaymentRequest(sequelize),
+  Loan: Loan(sequelize),
+  LoanPayment: LoanPayment(sequelize)
 };
 
 // Setup associations

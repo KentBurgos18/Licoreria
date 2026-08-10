@@ -26,7 +26,8 @@
         '/dashboard/expenses': 'expenses',
         '/dashboard/sell/pos': 'sell-pos',
         '/dashboard/profitability': 'profitability',
-        '/dashboard/treasury': 'treasury'
+        '/dashboard/treasury': 'treasury',
+        '/dashboard/loans': 'loans'
     };
 
     var SECTION_INIT = {
@@ -45,7 +46,8 @@
         expenses: 'initExpensesView',
         'sell-pos': 'initPosView',
         profitability: 'initProfitabilityView',
-        treasury: 'initTreasuryView'
+        treasury: 'initTreasuryView',
+        loans: 'initLoansView'
     };
 
     var SECTION_META = {
@@ -64,7 +66,8 @@
         expenses: { label: 'Gastos', icon: 'bi-cash-stack' },
         'sell-pos': { label: 'Carrito', icon: 'bi-cart3' },
         profitability: { label: 'Rentabilidad', icon: 'bi-graph-up-arrow' },
-        treasury: { label: 'Tesorería', icon: 'bi-safe2' }
+        treasury: { label: 'Tesorería', icon: 'bi-safe2' },
+        loans: { label: 'Préstamos', icon: 'bi-arrow-left-right' }
     };
 
     function getViewFromPath(pathname) {

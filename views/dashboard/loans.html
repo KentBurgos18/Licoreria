@@ -1,0 +1,620 @@
+<div id="spa-view-content">
+  <div id="loans" class="content-section active">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="mb-0"><i class="bi bi-arrow-left-right"></i> Préstamos</h2>
+      <button class="btn btn-primary" onclick="openLoanModal()">
+        <i class="bi bi-plus"></i> Nuevo Préstamo
+      </button>
+    </div>
+
+    <!-- Resumen -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <div class="text-muted small mb-1"><i class="bi bi-arrow-down-left text-success"></i> Nos deben (por cobrar)</div>
+            <div class="fs-3 fw-bold text-success" id="loanLentPending">$0.00</div>
+            <div class="small text-muted" id="loanLentCount">0 préstamos activos</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <div class="text-muted small mb-1"><i class="bi bi-arrow-up-right text-danger"></i> Debemos (por pagar)</div>
+            <div class="fs-3 fw-bold text-danger" id="loanBorrowedPending">$0.00</div>
+            <div class="small text-muted" id="loanBorrowedCount">0 préstamos activos</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-3">
+      <div class="card-body py-2">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Tipo</label>
+            <select class="form-select form-select-sm" id="loanFilterDirection" onchange="loadLoans()">
+              <option value="">Todos</option>
+              <option value="LENT">Nos deben (yo presté)</option>
+              <option value="BORROWED">Debemos (me prestaron)</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Estado</label>
+            <select class="form-select form-select-sm" id="loanFilterStatus" onchange="loadLoans()">
+              <option value="">Activos y pagados</option>
+              <option value="ACTIVE">Solo pendientes</option>
+              <option value="PAID">Solo pagados</option>
+              <option value="VOIDED">Anulados</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small mb-1">Buscar persona</label>
+            <input type="text" class="form-control form-control-sm" id="loanFilterQ" placeholder="Nombre..." oninput="loanDebouncedSearch()">
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetLoanFilters()">
+              <i class="bi bi-x-circle"></i> Limpiar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="loansSpinner" class="text-center py-4">
+      <div class="spinner-border text-primary" role="status"></div>
+    </div>
+    <div id="loansError" class="alert alert-danger" style="display:none"></div>
+
+    <div class="card" id="loansTableCard" style="display:none">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Persona</th>
+              <th>Tipo</th>
+              <th>Fecha</th>
+              <th class="text-end">Monto</th>
+              <th class="text-end">Abonado</th>
+              <th class="text-end">Saldo</th>
+              <th>Método</th>
+              <th>Estado</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="loansTableBody"></tbody>
+        </table>
+      </div>
+      <div id="loansEmpty" class="text-center text-muted py-4" style="display:none">
+        No hay préstamos registrados.
+      </div>
+    </div>
+
+    <!-- ── Modal: crear/editar préstamo ── -->
+    <div class="modal fade" id="loanModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="loanModalTitle">Nuevo Préstamo</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="loanEditId">
+            <div class="mb-3">
+              <label class="form-label">Tipo de préstamo *</label>
+              <select class="form-select" id="loanDirection" onchange="updateLoanMethodLabel()">
+                <option value="LENT">Yo presté (esta persona me debe)</option>
+                <option value="BORROWED">Me prestaron (yo le debo)</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Persona *</label>
+              <input type="text" class="form-control" id="loanPersonName" list="loanPeopleList" placeholder="Nombre de la persona" maxlength="150">
+              <datalist id="loanPeopleList"></datalist>
+              <div class="form-text">Puede escribir un nombre nuevo o elegir uno ya usado.</div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label">Monto *</label>
+                <input type="number" class="form-control" id="loanAmount" step="0.01" min="0.01" placeholder="0.00">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Fecha *</label>
+                <input type="date" class="form-control" id="loanDate">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" id="loanMethodLabel">¿De dónde salió el dinero? *</label>
+              <select class="form-select" id="loanPaymentMethod" onchange="onLoanMethodChange()">
+                <option value="CASH">Efectivo</option>
+                <option value="TRANSFER">Transferencia</option>
+                <option value="CARD">Tarjeta</option>
+              </select>
+            </div>
+            <div class="mb-3 d-none" id="loanAccountWrap">
+              <label class="form-label">Cuenta bancaria *</label>
+              <select class="form-select" id="loanTransferAccount"></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Notas</label>
+              <textarea class="form-control" id="loanNotes" rows="2" placeholder="Motivo, acuerdo de pago, etc."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button class="btn btn-primary" id="loanSaveBtn" onclick="saveLoan()">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Modal: abonos ── -->
+    <div class="modal fade" id="loanPaymentModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="loanPaymentTitle">Abonos</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-secondary py-2 mb-3" id="loanPaymentSummary"></div>
+
+            <div class="border rounded p-3 mb-3" id="loanPaymentFormWrap">
+              <div class="fw-semibold mb-2" id="loanPaymentFormTitle">Registrar abono</div>
+              <input type="hidden" id="loanPaymentLoanId">
+              <div class="row g-2">
+                <div class="col-md-3">
+                  <label class="form-label small mb-1">Monto *</label>
+                  <input type="number" class="form-control form-control-sm" id="loanPaymentAmount" step="0.01" min="0.01" placeholder="0.00">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small mb-1">Fecha *</label>
+                  <input type="date" class="form-control form-control-sm" id="loanPaymentDate">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small mb-1">Método *</label>
+                  <select class="form-select form-select-sm" id="loanPaymentMethodSel" onchange="onLoanPaymentMethodChange()">
+                    <option value="CASH">Efectivo</option>
+                    <option value="TRANSFER">Transferencia</option>
+                    <option value="CARD">Tarjeta</option>
+                  </select>
+                </div>
+                <div class="col-md-3 d-none" id="loanPaymentAccountWrap">
+                  <label class="form-label small mb-1">Cuenta *</label>
+                  <select class="form-select form-select-sm" id="loanPaymentAccount"></select>
+                </div>
+                <div class="col-12">
+                  <input type="text" class="form-control form-control-sm" id="loanPaymentNotes" placeholder="Notas (opcional)">
+                </div>
+              </div>
+              <div class="mt-2 d-flex gap-2">
+                <button class="btn btn-sm btn-success" onclick="saveLoanPayment()">
+                  <i class="bi bi-check-lg"></i> Registrar abono
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="fillLoanPaymentFull()">Abonar todo el saldo</button>
+              </div>
+            </div>
+
+            <div class="fw-semibold mb-2">Historial de abonos</div>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead><tr><th>Fecha</th><th class="text-end">Monto</th><th>Método</th><th>Notas</th><th></th></tr></thead>
+                <tbody id="loanPaymentsBody"></tbody>
+              </table>
+            </div>
+            <div id="loanPaymentsEmpty" class="text-muted small" style="display:none">Sin abonos registrados.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var _loanBankAccounts = [];
+    var _loanSearchTimer = null;
+
+    window.initLoansView = function() {
+      loadLoanBankAccounts();
+      loadLoanPeople();
+      loadLoans();
+    };
+
+    function loanAuthHeaders() {
+      return { 'Authorization': 'Bearer ' + (localStorage.getItem('adminToken') || ''), 'Content-Type': 'application/json' };
+    }
+
+    function loanFmt(v) {
+      return '$' + (parseFloat(v) || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function loanEsc(s) {
+      return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function loanToast(msg, type) {
+      if (typeof showAlert === 'function') showAlert(msg, type || 'info');
+      else alert(msg);
+    }
+
+    function loanMethodLabel(m) {
+      if (m === 'CASH') return 'Efectivo';
+      if (m === 'TRANSFER') return 'Transferencia';
+      if (m === 'CARD') return 'Tarjeta';
+      return m || '—';
+    }
+
+    function loadLoanBankAccounts() {
+      fetch('/api/settings/bank_accounts?tenantId=1', { headers: loanAuthHeaders() })
+        .then(function(r) { return r.json(); })
+        .then(function(r) {
+          try { _loanBankAccounts = JSON.parse(r.value || '[]'); } catch (e) { _loanBankAccounts = []; }
+          renderLoanAccountOptions();
+        })
+        .catch(function() { _loanBankAccounts = []; });
+    }
+
+    function renderLoanAccountOptions() {
+      var html = '<option value="">Seleccione una cuenta...</option>';
+      _loanBankAccounts.forEach(function(acc) {
+        var lbl = (acc.bankName || '') + (acc.accountNumber ? ' - ' + acc.accountNumber : '');
+        html += '<option value="' + loanEsc(lbl) + '">' + loanEsc(lbl) + '</option>';
+      });
+      var a = document.getElementById('loanTransferAccount');
+      var b = document.getElementById('loanPaymentAccount');
+      if (a) a.innerHTML = html;
+      if (b) b.innerHTML = html;
+    }
+
+    function loadLoanPeople() {
+      fetch('/api/loans/people', { headers: loanAuthHeaders() })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          var dl = document.getElementById('loanPeopleList');
+          if (!dl) return;
+          dl.innerHTML = (d.people || []).map(function(n) { return '<option value="' + loanEsc(n) + '">'; }).join('');
+        })
+        .catch(function() {});
+    }
+
+    function loanDebouncedSearch() {
+      clearTimeout(_loanSearchTimer);
+      _loanSearchTimer = setTimeout(loadLoans, 350);
+    }
+
+    function resetLoanFilters() {
+      document.getElementById('loanFilterDirection').value = '';
+      document.getElementById('loanFilterStatus').value = '';
+      document.getElementById('loanFilterQ').value = '';
+      loadLoans();
+    }
+
+    function loadLoans() {
+      var sp = document.getElementById('loansSpinner');
+      var card = document.getElementById('loansTableCard');
+      var err = document.getElementById('loansError');
+      if (sp) sp.style.display = '';
+      if (card) card.style.display = 'none';
+      if (err) err.style.display = 'none';
+
+      var params = new URLSearchParams();
+      var dir = document.getElementById('loanFilterDirection').value;
+      var st = document.getElementById('loanFilterStatus').value;
+      var q = document.getElementById('loanFilterQ').value;
+      if (dir) params.set('direction', dir);
+      if (st) params.set('status', st);
+      if (q && q.trim()) params.set('q', q.trim());
+
+      fetch('/api/loans?' + params.toString(), { headers: loanAuthHeaders() })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (sp) sp.style.display = 'none';
+          if (d.error) {
+            err.textContent = d.error;
+            err.style.display = '';
+            return;
+          }
+          renderLoanSummary(d.summary || {});
+          renderLoansTable(d.loans || []);
+          if (card) card.style.display = '';
+        })
+        .catch(function(e) {
+          if (sp) sp.style.display = 'none';
+          err.textContent = 'Error al cargar préstamos: ' + e.message;
+          err.style.display = '';
+        });
+    }
+
+    function renderLoanSummary(s) {
+      document.getElementById('loanLentPending').textContent = loanFmt(s.lentPending);
+      document.getElementById('loanBorrowedPending').textContent = loanFmt(s.borrowedPending);
+      document.getElementById('loanLentCount').textContent = (s.lentCount || 0) + ' préstamo(s) pendiente(s)';
+      document.getElementById('loanBorrowedCount').textContent = (s.borrowedCount || 0) + ' préstamo(s) pendiente(s)';
+    }
+
+    function renderLoansTable(loans) {
+      var body = document.getElementById('loansTableBody');
+      var empty = document.getElementById('loansEmpty');
+      if (!loans.length) {
+        body.innerHTML = '';
+        empty.style.display = '';
+        return;
+      }
+      empty.style.display = 'none';
+
+      body.innerHTML = loans.map(function(l) {
+        var amount = parseFloat(l.amount) || 0;
+        var balance = parseFloat(l.balance) || 0;
+        var paid = Math.max(0, amount - balance);
+        var isLent = l.direction === 'LENT';
+
+        var dirBadge = isLent
+          ? '<span class="badge bg-success-subtle text-success">Nos deben</span>'
+          : '<span class="badge bg-danger-subtle text-danger">Debemos</span>';
+
+        var stBadge = l.status === 'PAID'
+          ? '<span class="badge bg-secondary">Pagado</span>'
+          : (l.status === 'VOIDED'
+              ? '<span class="badge bg-dark">Anulado</span>'
+              : '<span class="badge bg-warning text-dark">Pendiente</span>');
+
+        var acct = l.transferAccountInfo ? '<br><small class="text-muted">' + loanEsc(l.transferAccountInfo) + '</small>' : '';
+
+        var actions = '';
+        if (l.status === 'ACTIVE') {
+          actions += '<button class="btn btn-sm btn-outline-success me-1" title="Registrar abono" onclick="openLoanPaymentModal(' + l.id + ')"><i class="bi bi-cash-coin"></i></button>';
+        } else {
+          actions += '<button class="btn btn-sm btn-outline-secondary me-1" title="Ver abonos" onclick="openLoanPaymentModal(' + l.id + ')"><i class="bi bi-list-ul"></i></button>';
+        }
+        if (l.status !== 'VOIDED') {
+          actions += '<button class="btn btn-sm btn-outline-primary me-1" title="Editar" onclick="openLoanModal(' + l.id + ')"><i class="bi bi-pencil"></i></button>';
+          actions += '<button class="btn btn-sm btn-outline-warning me-1" title="Anular" onclick="voidLoan(' + l.id + ')"><i class="bi bi-slash-circle"></i></button>';
+        }
+        actions += '<button class="btn btn-sm btn-outline-danger" title="Eliminar" onclick="deleteLoan(' + l.id + ')"><i class="bi bi-trash"></i></button>';
+
+        return '<tr>' +
+          '<td>' + loanEsc(l.personName) + (l.notes ? '<br><small class="text-muted">' + loanEsc(String(l.notes).slice(0, 60)) + '</small>' : '') + '</td>' +
+          '<td>' + dirBadge + '</td>' +
+          '<td>' + loanEsc(l.loanDate) + '</td>' +
+          '<td class="text-end">' + loanFmt(amount) + '</td>' +
+          '<td class="text-end text-success">' + loanFmt(paid) + '</td>' +
+          '<td class="text-end fw-bold ' + (balance > 0 ? (isLent ? 'text-success' : 'text-danger') : 'text-muted') + '">' + loanFmt(balance) + '</td>' +
+          '<td>' + loanMethodLabel(l.paymentMethod) + acct + '</td>' +
+          '<td>' + stBadge + '</td>' +
+          '<td class="text-end text-nowrap">' + actions + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function onLoanMethodChange() {
+      var m = document.getElementById('loanPaymentMethod').value;
+      document.getElementById('loanAccountWrap').classList.toggle('d-none', m !== 'TRANSFER');
+    }
+
+    function onLoanPaymentMethodChange() {
+      var m = document.getElementById('loanPaymentMethodSel').value;
+      document.getElementById('loanPaymentAccountWrap').classList.toggle('d-none', m !== 'TRANSFER');
+    }
+
+    function updateLoanMethodLabel() {
+      var dir = document.getElementById('loanDirection').value;
+      document.getElementById('loanMethodLabel').textContent =
+        dir === 'LENT' ? '¿De dónde salió el dinero? *' : '¿A dónde entró el dinero? *';
+    }
+
+    function openLoanModal(id) {
+      document.getElementById('loanEditId').value = id || '';
+      document.getElementById('loanModalTitle').textContent = id ? 'Editar Préstamo' : 'Nuevo Préstamo';
+      renderLoanAccountOptions();
+
+      if (!id) {
+        document.getElementById('loanDirection').value = 'LENT';
+        document.getElementById('loanDirection').disabled = false;
+        document.getElementById('loanPersonName').value = '';
+        document.getElementById('loanAmount').value = '';
+        document.getElementById('loanDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('loanPaymentMethod').value = 'CASH';
+        document.getElementById('loanTransferAccount').value = '';
+        document.getElementById('loanNotes').value = '';
+        onLoanMethodChange();
+        updateLoanMethodLabel();
+        new bootstrap.Modal(document.getElementById('loanModal')).show();
+        return;
+      }
+
+      fetch('/api/loans/' + id, { headers: loanAuthHeaders() })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.error || !d.loan) { loanToast(d.error || 'No se encontró el préstamo', 'danger'); return; }
+          var l = d.loan;
+          document.getElementById('loanDirection').value = l.direction;
+          document.getElementById('loanDirection').disabled = true; // no cambiar el sentido de un préstamo existente
+          document.getElementById('loanPersonName').value = l.personName || '';
+          document.getElementById('loanAmount').value = parseFloat(l.amount).toFixed(2);
+          document.getElementById('loanDate').value = l.loanDate;
+          document.getElementById('loanPaymentMethod').value = l.paymentMethod || 'CASH';
+          onLoanMethodChange();
+          document.getElementById('loanTransferAccount').value = l.transferAccountInfo || '';
+          document.getElementById('loanNotes').value = l.notes || '';
+          updateLoanMethodLabel();
+          new bootstrap.Modal(document.getElementById('loanModal')).show();
+        })
+        .catch(function(e) { loanToast('Error: ' + e.message, 'danger'); });
+    }
+
+    function saveLoan() {
+      var id = document.getElementById('loanEditId').value;
+      var method = document.getElementById('loanPaymentMethod').value;
+      var payload = {
+        personName: document.getElementById('loanPersonName').value.trim(),
+        direction: document.getElementById('loanDirection').value,
+        amount: document.getElementById('loanAmount').value,
+        loanDate: document.getElementById('loanDate').value,
+        paymentMethod: method,
+        transferAccountInfo: method === 'TRANSFER' ? document.getElementById('loanTransferAccount').value : null,
+        notes: document.getElementById('loanNotes').value.trim() || null
+      };
+
+      if (!payload.personName) { loanToast('Ingrese el nombre de la persona', 'warning'); return; }
+      var amt = parseFloat(payload.amount);
+      if (isNaN(amt) || amt <= 0) { loanToast('El monto debe ser mayor a 0', 'warning'); return; }
+      if (!payload.loanDate) { loanToast('Seleccione la fecha', 'warning'); return; }
+      if (method === 'TRANSFER' && !payload.transferAccountInfo) { loanToast('Seleccione la cuenta bancaria', 'warning'); return; }
+
+      var btn = document.getElementById('loanSaveBtn');
+      btn.disabled = true;
+
+      fetch(id ? '/api/loans/' + id : '/api/loans', {
+        method: id ? 'PUT' : 'POST',
+        headers: loanAuthHeaders(),
+        body: JSON.stringify(payload)
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          btn.disabled = false;
+          if (d.error) { loanToast(d.error, 'danger'); return; }
+          bootstrap.Modal.getInstance(document.getElementById('loanModal')).hide();
+          loanToast(id ? 'Préstamo actualizado' : 'Préstamo registrado', 'success');
+          loadLoanPeople();
+          loadLoans();
+        })
+        .catch(function(e) { btn.disabled = false; loanToast('Error: ' + e.message, 'danger'); });
+    }
+
+    var _loanCurrent = null;
+
+    function openLoanPaymentModal(id) {
+      fetch('/api/loans/' + id, { headers: loanAuthHeaders() })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.error || !d.loan) { loanToast(d.error || 'No se encontró el préstamo', 'danger'); return; }
+          _loanCurrent = d.loan;
+          var l = d.loan;
+          var isLent = l.direction === 'LENT';
+          var balance = parseFloat(l.balance) || 0;
+
+          document.getElementById('loanPaymentTitle').textContent =
+            (isLent ? 'Cobros a ' : 'Pagos a ') + l.personName;
+
+          document.getElementById('loanPaymentSummary').innerHTML =
+            '<b>' + loanEsc(l.personName) + '</b> · ' +
+            (isLent ? 'nos debe' : 'le debemos') + ' · ' +
+            'Monto: ' + loanFmt(l.amount) + ' · ' +
+            'Saldo: <b>' + loanFmt(balance) + '</b>';
+
+          document.getElementById('loanPaymentFormTitle').textContent =
+            isLent ? 'Registrar cobro (nos devuelven)' : 'Registrar pago (le devolvemos)';
+
+          // Sin saldo o anulado → solo historial
+          var canPay = l.status === 'ACTIVE' && balance > 0;
+          document.getElementById('loanPaymentFormWrap').style.display = canPay ? '' : 'none';
+
+          document.getElementById('loanPaymentLoanId').value = l.id;
+          document.getElementById('loanPaymentAmount').value = '';
+          document.getElementById('loanPaymentDate').value = new Date().toISOString().split('T')[0];
+          document.getElementById('loanPaymentMethodSel').value = 'CASH';
+          document.getElementById('loanPaymentNotes').value = '';
+          renderLoanAccountOptions();
+          onLoanPaymentMethodChange();
+
+          renderLoanPayments(d.payments || []);
+          new bootstrap.Modal(document.getElementById('loanPaymentModal')).show();
+        })
+        .catch(function(e) { loanToast('Error: ' + e.message, 'danger'); });
+    }
+
+    function renderLoanPayments(payments) {
+      var body = document.getElementById('loanPaymentsBody');
+      var empty = document.getElementById('loanPaymentsEmpty');
+      if (!payments.length) {
+        body.innerHTML = '';
+        empty.style.display = '';
+        return;
+      }
+      empty.style.display = 'none';
+      body.innerHTML = payments.map(function(p) {
+        return '<tr>' +
+          '<td>' + loanEsc(p.paymentDate) + '</td>' +
+          '<td class="text-end">' + loanFmt(p.amount) + '</td>' +
+          '<td>' + loanMethodLabel(p.paymentMethod) +
+            (p.transferAccountInfo ? '<br><small class="text-muted">' + loanEsc(p.transferAccountInfo) + '</small>' : '') + '</td>' +
+          '<td><small>' + loanEsc(p.notes || '') + '</small></td>' +
+          '<td class="text-end"><button class="btn btn-sm btn-outline-danger" title="Borrar abono" onclick="deleteLoanPayment(' + p.loanId + ',' + p.id + ')"><i class="bi bi-trash"></i></button></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function fillLoanPaymentFull() {
+      if (!_loanCurrent) return;
+      document.getElementById('loanPaymentAmount').value = (parseFloat(_loanCurrent.balance) || 0).toFixed(2);
+    }
+
+    function saveLoanPayment() {
+      var id = document.getElementById('loanPaymentLoanId').value;
+      var method = document.getElementById('loanPaymentMethodSel').value;
+      var payload = {
+        amount: document.getElementById('loanPaymentAmount').value,
+        paymentDate: document.getElementById('loanPaymentDate').value,
+        paymentMethod: method,
+        transferAccountInfo: method === 'TRANSFER' ? document.getElementById('loanPaymentAccount').value : null,
+        notes: document.getElementById('loanPaymentNotes').value.trim() || null
+      };
+
+      var amt = parseFloat(payload.amount);
+      if (isNaN(amt) || amt <= 0) { loanToast('El monto del abono debe ser mayor a 0', 'warning'); return; }
+      if (!payload.paymentDate) { loanToast('Seleccione la fecha del abono', 'warning'); return; }
+      if (method === 'TRANSFER' && !payload.transferAccountInfo) { loanToast('Seleccione la cuenta bancaria', 'warning'); return; }
+
+      fetch('/api/loans/' + id + '/payments', {
+        method: 'POST', headers: loanAuthHeaders(), body: JSON.stringify(payload)
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.error) { loanToast(d.error, 'danger'); return; }
+          loanToast('Abono registrado', 'success');
+          openLoanPaymentModal(id);
+          loadLoans();
+        })
+        .catch(function(e) { loanToast('Error: ' + e.message, 'danger'); });
+    }
+
+    function deleteLoanPayment(loanId, paymentId) {
+      if (!confirm('¿Borrar este abono? El saldo del préstamo volverá a subir.')) return;
+      fetch('/api/loans/' + loanId + '/payments/' + paymentId, { method: 'DELETE', headers: loanAuthHeaders() })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.error) { loanToast(d.error, 'danger'); return; }
+          loanToast('Abono borrado', 'success');
+          openLoanPaymentModal(loanId);
+          loadLoans();
+        })
+        .catch(function(e) { loanToast('Error: ' + e.message, 'danger'); });
+    }
+
+    function voidLoan(id) {
+      if (!confirm('¿Anular este préstamo? Dejará de contar en la tesorería y en los totales.')) return;
+      fetch('/api/loans/' + id + '/void', { method: 'POST', headers: loanAuthHeaders() })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.error) { loanToast(d.error, 'danger'); return; }
+          loanToast('Préstamo anulado', 'success');
+          loadLoans();
+        })
+        .catch(function(e) { loanToast('Error: ' + e.message, 'danger'); });
+    }
+
+    function deleteLoan(id) {
+      if (!confirm('¿Eliminar este préstamo y todos sus abonos? Esta acción no se puede deshacer.')) return;
+      fetch('/api/loans/' + id, { method: 'DELETE', headers: loanAuthHeaders() })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.error) { loanToast(d.error, 'danger'); return; }
+          loanToast('Préstamo eliminado', 'success');
+          loadLoans();
+        })
+        .catch(function(e) { loanToast('Error: ' + e.message, 'danger'); });
+    }
+  </script>
+</div>

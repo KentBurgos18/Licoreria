@@ -407,6 +407,7 @@ app.use('/api/purchases', authenticateAdmin, require('./routes/purchases'));
 app.use('/api/users', authenticateAdmin, require('./routes/users'));
 app.use('/api/roles', authenticateAdmin, require('./routes/roles'));
 app.use('/api/expenses', authenticateAdmin, require('./routes/expenses'));
+app.use('/api/loans', authenticateAdmin, require('./routes/loans'));
 app.use('/api/group-purchases', authenticateAdmin, require('./routes/groupPurchases'));
 app.use('/api/customer-payments', authenticateAdmin, require('./routes/customerPayments'));
 app.use('/api/customer-credits', authenticateAdmin, require('./routes/customerCredits'));
@@ -477,6 +478,27 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
       GROUP BY gpp.payment_method, gpp.transfer_account_info
     `, { replacements: { tenantId } });
 
+    // Préstamos de dinero. NO son ventas ni gastos (no afectan ganancia), pero sí mueven
+    // caja/banco, así que se reportan en su propia línea "Préstamos".
+    //   LENT (prestamos nosotros): entrega = SALIDA · abonos que nos devuelven = ENTRADA
+    //   BORROWED (nos prestaron):  recepción = ENTRADA · abonos que devolvemos = SALIDA
+    const [loanPrincipalRows] = await sequelize.query(`
+      SELECT direction, payment_method, COALESCE(transfer_account_info, '') AS transfer_account_info,
+             SUM(amount) AS total
+      FROM loans
+      WHERE tenant_id = :tenantId AND status != 'VOIDED'
+      GROUP BY direction, payment_method, transfer_account_info
+    `, { replacements: { tenantId } });
+
+    const [loanPaymentRows] = await sequelize.query(`
+      SELECT l.direction, lp.payment_method, COALESCE(lp.transfer_account_info, '') AS transfer_account_info,
+             SUM(lp.amount) AS total
+      FROM loan_payments lp
+      JOIN loans l ON l.id = lp.loan_id
+      WHERE l.tenant_id = :tenantId AND l.status != 'VOIDED'
+      GROUP BY l.direction, lp.payment_method, lp.transfer_account_info
+    `, { replacements: { tenantId } });
+
     // Salidas: compras pagadas directamente (no crédito proveedor)
     const [purchaseOutflowRows] = await sequelize.query(`
       SELECT
@@ -527,16 +549,16 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
 
     // Construir resumen
     const summary = {
-      cash:     { salesTotal: 0, creditsTotal: 0, total: 0 },
-      card:     { salesTotal: 0, creditsTotal: 0, total: 0 },
+      cash:     { salesTotal: 0, creditsTotal: 0, loansTotal: 0, total: 0 },
+      card:     { salesTotal: 0, creditsTotal: 0, loansTotal: 0, total: 0 },
       transfer: {},
       grandTotal: 0
     };
 
     // Outflows structure mirrors inflows
     const outflows = {
-      cash:     { purchasesTotal: 0, expensesTotal: 0, total: 0 },
-      card:     { purchasesTotal: 0, expensesTotal: 0, total: 0 },
+      cash:     { purchasesTotal: 0, expensesTotal: 0, loansTotal: 0, total: 0 },
+      card:     { purchasesTotal: 0, expensesTotal: 0, loansTotal: 0, total: 0 },
       transfer: {},
       grandTotal: 0
     };
@@ -550,7 +572,7 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
         summary.card.salesTotal += amt;
       } else if (method === 'TRANSFER') {
         const key = row.transfer_account_info || 'unassigned';
-        if (!summary.transfer[key]) summary.transfer[key] = { salesTotal: 0, creditsTotal: 0, total: 0 };
+        if (!summary.transfer[key]) summary.transfer[key] = { salesTotal: 0, creditsTotal: 0, loansTotal: 0, total: 0 };
         summary.transfer[key].salesTotal += amt;
       }
     }
@@ -564,7 +586,7 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
         summary.card.creditsTotal += amt;
       } else if (method === 'TRANSFER') {
         const key = row.transfer_account_info || 'unassigned';
-        if (!summary.transfer[key]) summary.transfer[key] = { salesTotal: 0, creditsTotal: 0, total: 0 };
+        if (!summary.transfer[key]) summary.transfer[key] = { salesTotal: 0, creditsTotal: 0, loansTotal: 0, total: 0 };
         summary.transfer[key].creditsTotal += amt;
       }
     }
@@ -578,7 +600,7 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
         summary.cash.salesTotal += amt;
       } else if (method === 'TRANSFER') {
         const key = row.transfer_account_info || 'unassigned';
-        if (!summary.transfer[key]) summary.transfer[key] = { salesTotal: 0, creditsTotal: 0, total: 0 };
+        if (!summary.transfer[key]) summary.transfer[key] = { salesTotal: 0, creditsTotal: 0, loansTotal: 0, total: 0 };
         summary.transfer[key].salesTotal += amt;
       }
     }
@@ -592,7 +614,7 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
         outflows.card.purchasesTotal += amt;
       } else if (method === 'TRANSFER') {
         const key = row.transfer_account_info || 'unassigned';
-        if (!outflows.transfer[key]) outflows.transfer[key] = { purchasesTotal: 0, expensesTotal: 0, total: 0 };
+        if (!outflows.transfer[key]) outflows.transfer[key] = { purchasesTotal: 0, expensesTotal: 0, loansTotal: 0, total: 0 };
         outflows.transfer[key].purchasesTotal += amt;
       }
     }
@@ -606,27 +628,57 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
         outflows.card.expensesTotal += amt;
       } else if (method === 'TRANSFER') {
         const key = row.transfer_account_info || 'unassigned';
-        if (!outflows.transfer[key]) outflows.transfer[key] = { purchasesTotal: 0, expensesTotal: 0, total: 0 };
+        if (!outflows.transfer[key]) outflows.transfer[key] = { purchasesTotal: 0, expensesTotal: 0, loansTotal: 0, total: 0 };
         outflows.transfer[key].expensesTotal += amt;
       }
     }
 
+    // Distribuir préstamos en su línea propia (loansTotal), como entrada o salida según el caso.
+    const addLoan = (isInflow, method, accountKey, amt) => {
+      const bucket = isInflow ? summary : outflows;
+      if (method === 'CASH') {
+        bucket.cash.loansTotal += amt;
+      } else if (method === 'CARD') {
+        bucket.card.loansTotal += amt;
+      } else if (method === 'TRANSFER') {
+        const key = accountKey || 'unassigned';
+        if (isInflow) {
+          if (!summary.transfer[key]) summary.transfer[key] = { salesTotal: 0, creditsTotal: 0, loansTotal: 0, total: 0 };
+          summary.transfer[key].loansTotal += amt;
+        } else {
+          if (!outflows.transfer[key]) outflows.transfer[key] = { purchasesTotal: 0, expensesTotal: 0, loansTotal: 0, total: 0 };
+          outflows.transfer[key].loansTotal += amt;
+        }
+      }
+    };
+
+    // Entrega/recepción del préstamo: LENT = salida (dimos plata) · BORROWED = entrada (recibimos)
+    for (const row of loanPrincipalRows) {
+      const amt = parseFloat(row.total) || 0;
+      addLoan(row.direction === 'BORROWED', (row.payment_method || '').toUpperCase(), row.transfer_account_info, amt);
+    }
+    // Abonos: sobre LENT nos devuelven (entrada) · sobre BORROWED devolvemos (salida)
+    for (const row of loanPaymentRows) {
+      const amt = parseFloat(row.total) || 0;
+      addLoan(row.direction === 'LENT', (row.payment_method || '').toUpperCase(), row.transfer_account_info, amt);
+    }
+
     // Calcular totales de ingresos
-    summary.cash.total = summary.cash.salesTotal + summary.cash.creditsTotal;
-    summary.card.total = summary.card.salesTotal + summary.card.creditsTotal;
+    summary.cash.total = summary.cash.salesTotal + summary.cash.creditsTotal + summary.cash.loansTotal;
+    summary.card.total = summary.card.salesTotal + summary.card.creditsTotal + summary.card.loansTotal;
     let transferGrand = 0;
     for (const key of Object.keys(summary.transfer)) {
-      summary.transfer[key].total = summary.transfer[key].salesTotal + summary.transfer[key].creditsTotal;
+      summary.transfer[key].total = summary.transfer[key].salesTotal + summary.transfer[key].creditsTotal + (summary.transfer[key].loansTotal || 0);
       transferGrand += summary.transfer[key].total;
     }
     summary.grandTotal = summary.cash.total + summary.card.total + transferGrand;
 
     // Calcular totales de egresos
-    outflows.cash.total = outflows.cash.purchasesTotal + outflows.cash.expensesTotal;
-    outflows.card.total = outflows.card.purchasesTotal + outflows.card.expensesTotal;
+    outflows.cash.total = outflows.cash.purchasesTotal + outflows.cash.expensesTotal + outflows.cash.loansTotal;
+    outflows.card.total = outflows.card.purchasesTotal + outflows.card.expensesTotal + outflows.card.loansTotal;
     let outflowTransferGrand = 0;
     for (const key of Object.keys(outflows.transfer)) {
-      outflows.transfer[key].total = outflows.transfer[key].purchasesTotal + outflows.transfer[key].expensesTotal;
+      outflows.transfer[key].total = outflows.transfer[key].purchasesTotal + outflows.transfer[key].expensesTotal + (outflows.transfer[key].loansTotal || 0);
       outflowTransferGrand += outflows.transfer[key].total;
     }
     outflows.grandTotal = outflows.cash.total + outflows.card.total + outflowTransferGrand;
@@ -655,7 +707,7 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
       } else if (key === 'CARD') {
         outflows.card.expensesTotal += amt;
       } else {
-        if (!outflows.transfer[key]) outflows.transfer[key] = { purchasesTotal: 0, expensesTotal: 0, total: 0 };
+        if (!outflows.transfer[key]) outflows.transfer[key] = { purchasesTotal: 0, expensesTotal: 0, loansTotal: 0, total: 0 };
         outflows.transfer[key].expensesTotal += amt;
       }
     }
@@ -668,26 +720,26 @@ app.get('/api/treasury', authenticateAdmin, async (req, res) => {
       } else if (key === 'CARD') {
         summary.card.creditsTotal += amt;
       } else {
-        if (!summary.transfer[key]) summary.transfer[key] = { salesTotal: 0, creditsTotal: 0, total: 0 };
+        if (!summary.transfer[key]) summary.transfer[key] = { salesTotal: 0, creditsTotal: 0, loansTotal: 0, total: 0 };
         summary.transfer[key].creditsTotal += amt;
       }
     }
 
-    // Recalcular totales después de agregar transferencias
-    summary.cash.total = summary.cash.salesTotal + summary.cash.creditsTotal;
-    summary.card.total = summary.card.salesTotal + summary.card.creditsTotal;
+    // Recalcular totales después de agregar transferencias (incluye la línea de préstamos)
+    summary.cash.total = summary.cash.salesTotal + summary.cash.creditsTotal + summary.cash.loansTotal;
+    summary.card.total = summary.card.salesTotal + summary.card.creditsTotal + summary.card.loansTotal;
     transferGrand = 0;
     for (const key of Object.keys(summary.transfer)) {
-      summary.transfer[key].total = summary.transfer[key].salesTotal + summary.transfer[key].creditsTotal;
+      summary.transfer[key].total = summary.transfer[key].salesTotal + summary.transfer[key].creditsTotal + (summary.transfer[key].loansTotal || 0);
       transferGrand += summary.transfer[key].total;
     }
     summary.grandTotal = summary.cash.total + summary.card.total + transferGrand;
 
-    outflows.cash.total = outflows.cash.purchasesTotal + outflows.cash.expensesTotal;
-    outflows.card.total = outflows.card.purchasesTotal + outflows.card.expensesTotal;
+    outflows.cash.total = outflows.cash.purchasesTotal + outflows.cash.expensesTotal + outflows.cash.loansTotal;
+    outflows.card.total = outflows.card.purchasesTotal + outflows.card.expensesTotal + outflows.card.loansTotal;
     outflowTransferGrand = 0;
     for (const key of Object.keys(outflows.transfer)) {
-      outflows.transfer[key].total = outflows.transfer[key].purchasesTotal + outflows.transfer[key].expensesTotal;
+      outflows.transfer[key].total = outflows.transfer[key].purchasesTotal + outflows.transfer[key].expensesTotal + (outflows.transfer[key].loansTotal || 0);
       outflowTransferGrand += outflows.transfer[key].total;
     }
     outflows.grandTotal = outflows.cash.total + outflows.card.total + outflowTransferGrand;
@@ -796,6 +848,7 @@ app.get('/dashboard/users', (req, res) => sendDashboardView(req, res, 'users.htm
 app.get('/dashboard/audit', (req, res) => sendDashboardView(req, res, 'audit.html'));
 app.get('/dashboard/settings', (req, res) => sendDashboardView(req, res, 'settings.html'));
 app.get('/dashboard/expenses', (req, res) => sendDashboardView(req, res, 'expenses.html'));
+app.get('/dashboard/loans', (req, res) => sendDashboardView(req, res, 'loans.html'));
 app.get('/dashboard/sell/pos', (req, res) => sendDashboardView(req, res, 'pos.html'));
 app.get('/dashboard/profitability', (req, res) => sendDashboardView(req, res, 'profitability.html'));
 app.get('/dashboard/treasury', (req, res) => sendDashboardView(req, res, 'treasury.html'));
@@ -1703,6 +1756,49 @@ async function initializeApp() {
       console.log('✅ Migración customer_payments.credit_id completada');
     } catch (e) {
       console.warn('⚠️ Migración customer_payments.credit_id:', e.message);
+    }
+
+    // Migración: préstamos de dinero (LENT = nos deben · BORROWED = debemos) + abonos
+    try {
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS loans (
+          id BIGSERIAL PRIMARY KEY,
+          tenant_id BIGINT NOT NULL DEFAULT 1,
+          person_name VARCHAR(150) NOT NULL,
+          customer_id BIGINT REFERENCES customers(id) ON DELETE SET NULL,
+          direction VARCHAR(10) NOT NULL CHECK (direction IN ('LENT','BORROWED')),
+          amount DECIMAL(12,2) NOT NULL CHECK (amount > 0),
+          balance DECIMAL(12,2) NOT NULL DEFAULT 0,
+          loan_date DATE NOT NULL,
+          payment_method VARCHAR(30) NOT NULL DEFAULT 'CASH',
+          transfer_account_info VARCHAR(255),
+          status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','PAID','VOIDED')),
+          notes TEXT,
+          created_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+      `);
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS loan_payments (
+          id BIGSERIAL PRIMARY KEY,
+          tenant_id BIGINT NOT NULL DEFAULT 1,
+          loan_id BIGINT NOT NULL REFERENCES loans(id) ON DELETE CASCADE,
+          amount DECIMAL(12,2) NOT NULL CHECK (amount > 0),
+          payment_date DATE NOT NULL,
+          payment_method VARCHAR(30) NOT NULL DEFAULT 'CASH',
+          transfer_account_info VARCHAR(255),
+          notes TEXT,
+          created_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+      `);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_loans_tenant    ON loans(tenant_id)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_loans_status    ON loans(status)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_loans_direction ON loans(direction)`);
+      await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_loan_payments_loan ON loan_payments(loan_id)`);
+      console.log('✅ Migración loans / loan_payments completada');
+    } catch (e) {
+      console.warn('⚠️ Migración loans:', e.message);
     }
 
     // Migración: ampliar inventory_movements.reason a VARCHAR(30)
