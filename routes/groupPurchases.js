@@ -187,6 +187,17 @@ router.post('/from-cart', async (req, res) => {
     const allTransfer = methods.every(m => m === 'TRANSFER');
     const salePaymentMethod = allCash ? 'CASH' : allTransfer ? 'TRANSFER' : 'CREDIT';
 
+    // Cuenta de transferencia de la venta: si TODOS los participantes de transferencia
+    // usaron la misma cuenta, se guarda en la venta para que la tesorería la atribuya
+    // correctamente (si hay cuentas distintas o mixto, queda null y se atribuye por participante).
+    let saleTransferAccount = null;
+    if (salePaymentMethod === 'TRANSFER') {
+      const distinctAccounts = [...new Set(
+        participants.map(p => p.transferAccountInfo).filter(Boolean)
+      )];
+      saleTransferAccount = distinctAccounts.length === 1 ? distinctAccounts[0] : null;
+    }
+
     // Create Sale — PENDING si algún participante paga con crédito
     const saleStatus = salePaymentMethod === 'CREDIT' ? 'PENDING' : 'COMPLETED';
     const sale = await Sale.create({
@@ -197,6 +208,7 @@ router.post('/from-cart', async (req, res) => {
       taxRate,
       taxAmount,
       paymentMethod: salePaymentMethod,
+      transferAccountInfo: saleTransferAccount,
       notes: notes || `Venta grupal - ${participants.length} participantes`
     }, { transaction });
 
