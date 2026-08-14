@@ -3249,7 +3249,7 @@
         // Función para extraer la sección desde la ruta real
         function getSectionFromPath() {
             const path = window.location.pathname;
-            const validSections = ['dashboard', 'products', 'suppliers', 'purchases', 'sell', 'sales', 'group-purchases', 'credits', 'customers', 'users', 'settings', 'expenses'];
+            const validSections = ['dashboard', 'products', 'suppliers', 'purchases', 'sell', 'sales', 'group-purchases', 'credits', 'customers', 'users', 'settings', 'expenses', 'loans', 'treasury', 'profitability', 'audit'];
             
             // Si la ruta es /dashboard o /, retornar 'dashboard'
             if (path === '/dashboard' || path === '/') {
@@ -3321,7 +3321,7 @@
             
             // Restaurar sección desde ruta real de URL al cargar la página
             // Nota: El script inline ya estableció el estado correcto, solo verificamos y cargamos datos
-            const validSections = ['dashboard', 'products', 'suppliers', 'purchases', 'sell', 'sales', 'group-purchases', 'credits', 'customers', 'users', 'settings', 'expenses'];
+            const validSections = ['dashboard', 'products', 'suppliers', 'purchases', 'sell', 'sales', 'group-purchases', 'credits', 'customers', 'users', 'settings', 'expenses', 'loans', 'treasury', 'profitability', 'audit'];
             const sectionToShow = getSectionFromPath();
             
             // Verificar que el estado esté correcto (el script inline ya lo hizo, pero por si acaso)
@@ -13210,7 +13210,7 @@
     })();
     </script>
 
-    <script src="/js/dashboard-spa-router.js?v=2"></script>
+    <script src="/js/dashboard-spa-router.js?v=3"></script>
     <script>
         // Verifica si Bootstrap CSS cargó (d-none debe dar display:none)
         function checkCssLoaded() {
